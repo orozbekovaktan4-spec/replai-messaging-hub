@@ -1,0 +1,56 @@
+{
+  "business": {
+    "name": "Arzanshop ",
+    "description": "we sell the clothes ",
+    "hours": {
+      "monday": "9:00 AM - 6:00 PM",
+      "tuesday": "9:00 AM - 6:00 PM",
+      "wednesday": "9:00 AM - 6:00 PM",
+      "thursday": "9:00 AM - 6:00 PM",
+      "friday": "9:00 AM - 6:00 PM",
+      "saturday": "10:00 AM - 2:00 PM",
+      "sunday": "Closed"
+    },
+    "services": [
+      {
+        "name": "Consulting",
+        "description": "Professional business consulting",
+        "price": "$150/hour"
+      },
+      {
+        "name": "Web Development",
+        "description": "Custom website development",
+        "price": "Starting at $2,000"
+      },
+      {
+        "name": "Digital Marketing",
+        "description": "Social media and SEO services",
+        "price": "$500/month"
+      }
+    ],
+    "contact": {
+      "phone": "+1-555-123-4567",
+      "email": "info@acmeservices.com",
+      "address": "123 Business Street, Suite 100, City, State 12345",
+      "website": "www.acmeservices.com"
+    },
+    "faqs": [
+      {
+        "question": "Do you offer free consultations?",
+        "answer": "Yes! We offer a free 30-minute initial consultation."
+      },
+      {
+        "question": "What payment methods do you accept?",
+        "answer": "We accept credit cards, bank transfers, and PayPal."
+      },
+      {
+        "question": "How long does a typical project take?",
+        "answer": "Most projects take 2-4 weeks, depending on complexity."
+      },
+      {
+        "question": "Do you offer refunds?",
+        "answer": "Yes, we offer a 30-day money-back guarantee on all services."
+      }
+    ]
+  }
+}

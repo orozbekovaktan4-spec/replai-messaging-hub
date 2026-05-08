@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REPLAI - AI Messaging Hub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 40px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        .logo .repl {
+            color: white;
+        }
+
+        .logo .ai {
+            background: linear-gradient(135deg, #60efff 0%, #0061ff 50%, #ff00d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .menu-item {
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .menu-item.active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 30px;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #333;
+        }
+
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .status-badge.online {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .platform-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .platform-card.connected {
+            border-color: #28a745;
+            background: #f0fff4;
+        }
+
+        .platform-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .platform-icon {
+            font-size: 32px;
+        }
+
+        .platform-status {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 12px;
+        }
+
+        .platform-status.connected {
+            background: #28a745;
+            color: white;
+        }
+
+        .platform-status.disconnected {
+            background: #dc3545;
+            color: white;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .chat-log {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .chat-message {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+
+        .chat-message .platform {
+            font-size: 12px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .chat-message .time {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .chat-message .text {
+            margin-top: 5px;
+            color: #333;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .connection-steps {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .connection-steps ol {
+            margin-left: 20px;
+        }
+
+        .connection-steps li {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo">
+            <span class="repl">REPL</span><span class="ai">AI</span>
+        </div>
+        <div class="menu-item active" onclick="showSection('dashboard')">
+            📊 Dashboard
+        </div>
+        <div class="menu-item" onclick="showSection('platforms')">
+            🔗 Connect Platforms
+        </div>
+        <div class="menu-item" onclick="showSection('business')">
+            🏪 Business Info
+        </div>
+        <div class="menu-item" onclick="showSection('ai-settings')">
+            ⚙️ AI Settings
+        </div>
+        <div class="menu-item" onclick="showSection('chat-logs')">
+            💬 Chat Logs
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>REPLAI Dashboard</h1>
+            <div class="status-badge online">🟢 System Online</div>
+        </div>
+
+        <div id="success-message" class="success-message">
+            ✅ Settings saved successfully!
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboard-section" class="content-section active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="total-messages">0</div>
+                    <div class="stat-label">Total Messages</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="today-messages">0</div>
+                    <div class="stat-label">Today's Messages</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="connected-platforms">0</div>
+                    <div class="stat-label">Connected Platforms</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">$0</div>
+                    <div class="stat-label">Monthly Cost</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Quick Overview</h2>
+                <p>Welcome to REPLAI! Connect your Instagram, Telegram, and WhatsApp accounts to start receiving and responding to customer messages automatically.</p>
+                <br>
+                <p><strong>Status:</strong> System is running and ready to receive messages.</p>
+                <p><strong>AI Provider:</strong> Groq (FREE)</p>
+                <p><strong>Response Time:</strong> ~1-2 seconds</p>
+            </div>
+        </div>
+
+        <!-- Platforms Section -->
+        <div id="platforms-section" class="content-section">
+            <div class="card">
+                <h2>Connect Your Platforms</h2>
+                <p>Connect your social media accounts to enable AI responses</p>
+
+                <!-- Telegram -->
+                <div class="platform-card" id="telegram-card">
+                    <div class="platform-info">
+                        <div class="platform-icon">📱</div>
+                        <div>
+                            <h3>Telegram</h3>
+                            <span class="platform-status disconnected" id="telegram-status">Disconnected</span>
+                        </div>
+                    </div>
+                    <button class="btn" onclick="togglePlatformSetup('telegram')">Connect</button>
+                </div>
+
+                <div id="telegram-setup" class="connection-steps" style="display: none;">
+                    <h4>How to Connect Telegram:</h4>
+                    <ol>
+                        <li>Open Telegram and search for <strong>@BotFather</strong></li>
+                        <li>Send <code>/newbot</code> command</li>
+                        <li>Follow the prompts to create your bot</li>
+                        <li>Copy the bot token</li>
+                        <li>Paste it below:</li>
+                    </ol>
+                    <div class="form-group">
+                        <label>Telegram Bot Token</label>
+                        <input type="text" id="telegram-token" placeholder="123456789:ABCdef...">
+                    </div>
+                    <button class="btn btn-success" onclick="connectTelegram()">Save & Connect</button>
+                </div>
+
+                <!-- Instagram -->
+                <div class="platform-card" id="instagram-card">
+                    <div class="platform-info">
+                        <div class="platform-icon">📸</div>
+                        <div>
+                            <h3>Instagram</h3>
+                            <span class="platform-status disconnected" id="instagram-status">Disconnected</span>
+                        </div>
+                    </div>
+                    <button class="btn" onclick="togglePlatformSetup('instagram')">Connect</button>
+                </div>
+
+                <div id="instagram-setup" class="connection-steps" style="display: none;">
+                    <h4>How to Connect Instagram:</h4>
+                    <ol>
+                        <li>Go to <a href="https://developers.facebook.com" target="_blank">Facebook Developers</a></li>
+                        <li>Create a new app</li>
+                        <li>Add Instagram product</li>
+                        <li>Get your access token</li>
+                        <li>Paste it below:</li>
+                    </ol>
+                    <div class="form-group">
+                        <label>Instagram Access Token</label>
+                        <input type="text" id="instagram-token" placeholder="Your Instagram access token">
+                    </div>
+                    <button class="btn btn-success" onclick="connectInstagram()">Save & Connect</button>
+                </div>
+
+                <!-- WhatsApp -->
+                <div class="platform-card" id="whatsapp-card">
+                    <div class="platform-info">
+                        <div class="platform-icon">📞</div>
+                        <div>
+                            <h3>WhatsApp</h3>
+                            <span class="platform-status disconnected" id="whatsapp-status">Disconnected</span>
+                        </div>
+                    </div>
+                    <button class="btn" onclick="togglePlatformSetup('whatsapp')">Connect</button>
+                </div>
+
+                <div id="whatsapp-setup" class="connection-steps" style="display: none;">
+                    <h4>How to Connect WhatsApp:</h4>
+                    <ol>
+                        <li>Go to <a href="https://developers.facebook.com" target="_blank">Facebook Developers</a></li>
+                        <li>Create WhatsApp Business account</li>
+                        <li>Get your access token and phone number ID</li>
+                        <li>Paste them below:</li>
+                    </ol>
+                    <div class="form-group">
+                        <label>WhatsApp Access Token</label>
+                        <input type="text" id="whatsapp-token" placeholder="Your WhatsApp access token">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone Number ID</label>
+                        <input type="text" id="whatsapp-phone" placeholder="Your phone number ID">
+                    </div>
+                    <button class="btn btn-success" onclick="connectWhatsApp()">Save & Connect</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Business Info Section -->
+        <div id="business-section" class="content-section">
+            <div class="card">
+                <h2>Business Information</h2>
+                <p>This information will be used by the AI to answer customer questions</p>
+
+                <div class="form-group">
+                    <label>Business Name</label>
+                    <input type="text" id="business-name" placeholder="e.g., Arzanshop">
+                </div>
+
+                <div class="form-group">
+                    <label>Business Description</label>
+                    <textarea id="business-description" placeholder="What does your business do?"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Products/Services (one per line)</label>
+                    <textarea id="business-products" placeholder="T-Shirts - $15&#10;Jeans - $40&#10;Dresses - $30"></textarea>
+                    <div class="help-text">Format: Product Name - Price</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Business Hours</label>
+                    <textarea id="business-hours" placeholder="Monday-Friday: 9 AM - 6 PM&#10;Saturday: 10 AM - 2 PM&#10;Sunday: Closed"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Contact Information</label>
+                    <input type="text" id="business-contact" placeholder="Phone, Email, Address">
+                </div>
+
+                <div class="form-group">
+                    <label>FAQs (one per line, format: Q: question | A: answer)</label>
+                    <textarea id="business-faqs" placeholder="Q: Do you ship internationally? | A: Yes, worldwide shipping available"></textarea>
+                </div>
+
+                <button class="btn" onclick="saveBusinessInfo()">Save Business Info</button>
+            </div>
+        </div>
+
+        <!-- AI Settings Section -->
+        <div id="ai-settings-section" class="content-section">
+            <div class="card">
+                <h2>AI Configuration</h2>
+
+                <div class="form-group">
+                    <label>Admin Panel Language</label>
+                    <select id="language-selector" onchange="changeLanguage()">
+                        <option value="en">🇬🇧 English</option>
+                        <option value="ru">🇷🇺 Русский</option>
+                        <option value="ky">🇰🇬 Кыргызча</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>AI Provider</label>
+                    <select id="ai-provider">
+                        <option value="groq">Groq (FREE - Recommended)</option>
+                        <option value="huggingface">Hugging Face</option>
+                        <option value="openrouter">OpenRouter</option>
+                        <option value="together">Together AI</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Response Style</label>
+                    <select id="response-style">
+                        <option value="friendly">Friendly & Casual</option>
+                        <option value="professional">Professional</option>
+                        <option value="concise">Short & Concise</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Response Language</label>
+                    <select id="response-language">
+                        <option value="auto">Auto-detect (Recommended)</option>
+                        <option value="en">English</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Max Response Length</label>
+                    <select id="max-length">
+                        <option value="short">Short (1-2 sentences)</option>
+                        <option value="medium" selected>Medium (2-3 sentences)</option>
+                        <option value="long">Long (3-5 sentences)</option>
+                    </select>
+                </div>
+
+                <button class="btn" onclick="saveAISettings()">Save AI Settings</button>
+            </div>
+        </div>
+
+        <!-- Chat Logs Section -->
+        <div id="chat-logs-section" class="content-section">
+            <div class="card">
+                <h2>Recent Conversations</h2>
+                <div class="chat-log" id="chat-log">
+                    <p style="text-align: center; color: #999;">No messages yet. Connect your platforms to start receiving messages!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Language translations
+        const translations = {
+            en: {
+                dashboard: "REPLAI Dashboard",
+                systemOnline: "System Online",
+                totalMessages: "Total Messages",
+                todayMessages: "Today's Messages",
+                connectedPlatforms: "Connected Platforms",
+                monthlyCost: "Monthly Cost",
+                menuDashboard: "📊 Dashboard",
+                menuPlatforms: "🔗 Connect Platforms",
+                menuBusiness: "🏪 Business Info",
+                menuAI: "⚙️ AI Settings",
+                menuLogs: "💬 Chat Logs",
+                // Connect Platforms
+                platformsTitle: "Connect Your Platforms",
+                platformsDesc: "Connect Instagram, Telegram, and WhatsApp to start receiving messages",
+                telegram: "Telegram",
+                instagram: "Instagram",
+                whatsapp: "WhatsApp",
+                connected: "Connected",
+                disconnected: "Disconnected",
+                connect: "Connect",
+                // Business Info
+                businessTitle: "Business Information",
+                businessDesc: "This information will be used by the AI to answer customer questions",
+                businessName: "Business Name",
+                businessNamePlaceholder: "e.g., Arzanshop",
+                businessDescription: "Business Description",
+                businessDescPlaceholder: "What does your business do?",
+                productsServices: "Products/Services (one per line)",
+                productsPlaceholder: "T-Shirts - $15\nJeans - $40\nDresses - $30",
+                formatHelp: "Format: Product Name - Price",
+                businessHours: "Business Hours",
+                hoursPlaceholder: "Monday-Friday: 9 AM - 6 PM\nSaturday: 10 AM - 2 PM\nSunday: Closed",
+                contactInfo: "Contact Information",
+                contactPlaceholder: "Phone, Email, Address",
+                faqs: "FAQs (one per line, format: Q: question | A: answer)",
+                faqsPlaceholder: "Q: Do you ship internationally? | A: Yes, worldwide shipping available",
+                saveButton: "Save Settings",
+                // AI Settings
+                aiTitle: "AI Configuration",
+                aiDesc: "Configure how your AI assistant responds to customers",
+                adminPanelLanguage: "Admin Panel Language",
+                aiProvider: "AI Provider",
+                responseStyle: "Response Style",
+                friendlyCasual: "Friendly & Casual",
+                professional: "Professional",
+                shortConcise: "Short & Concise",
+                responseLanguage: "Response Language",
+                autoDetect: "Auto-detect (Recommended)",
+                english: "English",
+                spanish: "Spanish",
+                french: "French",
+                german: "German",
+                maxResponseLength: "Max Response Length",
+                shortLength: "Short (1-2 sentences)",
+                mediumLength: "Medium (2-3 sentences)",
+                longLength: "Long (3-5 sentences)",
+                saveAISettings: "Save AI Settings",
+                aiTone: "AI Response Tone",
+                friendly: "Friendly",
+                casual: "Casual",
+                aiLanguage: "AI Response Language",
+                russian: "Russian",
+                kyrgyz: "Kyrgyz",
+                responseLength: "Response Length",
+                short: "Short",
+                medium: "Medium",
+                detailed: "Detailed",
+                // Chat Logs
+                logsTitle: "Chat Logs",
+                logsDesc: "View all conversations with customers",
+                noChatLogs: "No chat logs yet. Messages will appear here once customers start chatting.",
+                platform: "Platform",
+                time: "Time"
+            },
+            ru: {
+                dashboard: "Панель REPLAI",
+                systemOnline: "Система Онлайн",
+                totalMessages: "Всего Сообщений",
+                todayMessages: "Сообщений Сегодня",
+                connectedPlatforms: "Подключенные Платформы",
+                monthlyCost: "Месячная Стоимость",
+                menuDashboard: "📊 Панель",
+                menuPlatforms: "🔗 Подключить Платформы",
+                menuBusiness: "🏪 Информация о Бизнесе",
+                menuAI: "⚙️ Настройки ИИ",
+                menuLogs: "💬 Журнал Чатов",
+                // Connect Platforms
+                platformsTitle: "Подключите Ваши Платформы",
+                platformsDesc: "Подключите Instagram, Telegram и WhatsApp для получения сообщений",
+                telegram: "Telegram",
+                instagram: "Instagram",
+                whatsapp: "WhatsApp",
+                connected: "Подключено",
+                disconnected: "Отключено",
+                connect: "Подключить",
+                // Business Info
+                businessTitle: "Информация о Бизнесе",
+                businessDesc: "Эта информация будет использоваться ИИ для ответов на вопросы клиентов",
+                businessName: "Название Бизнеса",
+                businessNamePlaceholder: "например, Арзаншоп",
+                businessDescription: "Описание Бизнеса",
+                businessDescPlaceholder: "Чем занимается ваш бизнес?",
+                productsServices: "Товары/Услуги (по одному на строку)",
+                productsPlaceholder: "Футболки - 1500 сом\nДжинсы - 4000 сом\nПлатья - 3000 сом",
+                formatHelp: "Формат: Название Товара - Цена",
+                businessHours: "Часы Работы",
+                hoursPlaceholder: "Понедельник-Пятница: 9:00 - 18:00\nСуббота: 10:00 - 14:00\nВоскресенье: Выходной",
+                contactInfo: "Контактная Информация",
+                contactPlaceholder: "Телефон, Email, Адрес",
+                faqs: "Часто Задаваемые Вопросы (по одному на строку, формат: В: вопрос | О: ответ)",
+                faqsPlaceholder: "В: Доставляете ли вы по всей стране? | О: Да, доставка по всему Кыргызстану",
+                saveButton: "Сохранить Настройки",
+                // AI Settings
+                aiTitle: "Настройки ИИ",
+                aiDesc: "Настройте, как ваш ИИ-ассистент отвечает клиентам",
+                adminPanelLanguage: "Язык Панели Администратора",
+                aiProvider: "Провайдер ИИ",
+                responseStyle: "Стиль Ответов",
+                friendlyCasual: "Дружелюбный и Неформальный",
+                professional: "Профессиональный",
+                shortConcise: "Короткий и Лаконичный",
+                responseLanguage: "Язык Ответов",
+                autoDetect: "Автоопределение (Рекомендуется)",
+                english: "Английский",
+                spanish: "Испанский",
+                french: "Французский",
+                german: "Немецкий",
+                maxResponseLength: "Максимальная Длина Ответа",
+                shortLength: "Короткий (1-2 предложения)",
+                mediumLength: "Средний (2-3 предложения)",
+                longLength: "Длинный (3-5 предложений)",
+                saveAISettings: "Сохранить Настройки ИИ",
+                aiTone: "Тон Ответов ИИ",
+                friendly: "Дружелюбный",
+                casual: "Неформальный",
+                aiLanguage: "Язык Ответов ИИ",
+                russian: "Русский",
+                kyrgyz: "Кыргызский",
+                responseLength: "Длина Ответов",
+                short: "Короткие",
+                medium: "Средние",
+                detailed: "Подробные",
+                // Chat Logs
+                logsTitle: "Журнал Чатов",
+                logsDesc: "Просмотр всех разговоров с клиентами",
+                noChatLogs: "Пока нет чатов. Сообщения появятся здесь, когда клиенты начнут писать.",
+                platform: "Платформа",
+                time: "Время"
+            },
+            ky: {
+                dashboard: "REPLAI Панели",
+                systemOnline: "Система Иштеп Жатат",
+                totalMessages: "Бардык Билдирүүлөр",
+                todayMessages: "Бүгүнкү Билдирүүлөр",
+                connectedPlatforms: "Туташкан Платформалар",
+                monthlyCost: "Айлык Наркы",
+                menuDashboard: "📊 Панель",
+                menuPlatforms: "🔗 Платформаларды Туташтыруу",
+                menuBusiness: "🏪 Бизнес Маалыматы",
+                menuAI: "⚙️ AI Тууралоолор",
+                menuLogs: "💬 Чат Журналы",
+                // Connect Platforms
+                platformsTitle: "Платформаларыңызды Туташтырыңыз",
+                platformsDesc: "Билдирүүлөрдү алуу үчүн Instagram, Telegram жана WhatsApp туташтырыңыз",
+                telegram: "Telegram",
+                instagram: "Instagram",
+                whatsapp: "WhatsApp",
+                connected: "Туташты",
+                disconnected: "Ажыратылды",
+                connect: "Туташтыруу",
+                // Business Info
+                businessTitle: "Бизнес Маалыматы",
+                businessDesc: "Бул маалымат AI тарабынан кардарлардын суроолоруна жооп берүү үчүн колдонулат",
+                businessName: "Бизнестин Аталышы",
+                businessNamePlaceholder: "мисалы, Арзаншоп",
+                businessDescription: "Бизнестин Сүрөттөлүшү",
+                businessDescPlaceholder: "Сиздин бизнесиңиз эмне менен алектенет?",
+                productsServices: "Товарлар/Кызматтар (ар бир сапта бирден)",
+                productsPlaceholder: "Футболкалар - 1500 сом\nДжинсы - 4000 сом\nКөйнөктөр - 3000 сом",
+                formatHelp: "Формат: Товардын Аталышы - Баасы",
+                businessHours: "Иш Убактысы",
+                hoursPlaceholder: "Дүйшөмбү-Жума: 9:00 - 18:00\nИшемби: 10:00 - 14:00\nЖекшемби: Эс алуу күнү",
+                contactInfo: "Байланыш Маалыматы",
+                contactPlaceholder: "Телефон, Email, Дарек",
+                faqs: "Көп Берилүүчү Суроолор (ар бир сапта бирден, формат: С: суроо | Ж: жооп)",
+                faqsPlaceholder: "С: Бүткүл өлкө боюнча жеткирүү барбы? | Ж: Ооба, Кыргызстан боюнча жеткирүү бар",
+                saveButton: "Тууралоолорду Сактоо",
+                // AI Settings
+                aiTitle: "AI Тууралоолору",
+                aiDesc: "AI ассистентиңиз кардарларга кандай жооп берерин тууралаңыз",
+                adminPanelLanguage: "Администратор Панелинин Тили",
+                aiProvider: "AI Провайдери",
+                responseStyle: "Жооптордун Стили",
+                friendlyCasual: "Достук жана Эркин",
+                professional: "Кесиптик",
+                shortConcise: "Кыска жана Так",
+                responseLanguage: "Жооптордун Тили",
+                autoDetect: "Автоматтык аныктоо (Сунушталат)",
+                english: "Англисче",
+                spanish: "Испанча",
+                french: "Французча",
+                german: "Немисче",
+                maxResponseLength: "Жооптун Максималдуу Узундугу",
+                shortLength: "Кыска (1-2 сүйлөм)",
+                mediumLength: "Орточо (2-3 сүйлөм)",
+                longLength: "Узун (3-5 сүйлөм)",
+                saveAISettings: "AI Тууралоолорун Сактоо",
+                aiTone: "AI Жоопторунун Тону",
+                friendly: "Достук",
+                casual: "Эркин",
+                aiLanguage: "AI Жоопторунун Тили",
+                russian: "Орусча",
+                kyrgyz: "Кыргызча",
+                responseLength: "Жоопторунун Узундугу",
+                short: "Кыска",
+                medium: "Орточо",
+                detailed: "Толук",
+                // Chat Logs
+                logsTitle: "Чат Журналы",
+                logsDesc: "Кардарлар менен бардык сүйлөшүүлөрдү көрүү",
+                noChatLogs: "Азырынча чаттар жок. Кардарлар жазып баштаганда билдирүүлөр бул жерде пайда болот.",
+                platform: "Платформа",
+                time: "Убакыт"
+            }
+        };
+
+        // Change language
+        function changeLanguage() {
+            const lang = document.getElementById('language-selector').value;
+            localStorage.setItem('replai-language', lang);
+
+            const t = translations[lang];
+
+            // Update header
+            document.querySelector('.header h1').textContent = t.dashboard;
+            document.querySelector('.status-badge').innerHTML = '🟢 ' + t.systemOnline;
+
+            // Update menu items
+            const menuItems = document.querySelectorAll('.menu-item');
+            menuItems[0].innerHTML = t.menuDashboard;
+            menuItems[1].innerHTML = t.menuPlatforms;
+            menuItems[2].innerHTML = t.menuBusiness;
+            menuItems[3].innerHTML = t.menuAI;
+            menuItems[4].innerHTML = t.menuLogs;
+
+            // Update stat labels
+            const statLabels = document.querySelectorAll('.stat-label');
+            statLabels[0].textContent = t.totalMessages;
+            statLabels[1].textContent = t.todayMessages;
+            statLabels[2].textContent = t.connectedPlatforms;
+            statLabels[3].textContent = t.monthlyCost;
+
+            // Update Connect Platforms section
+            const platformsSection = document.getElementById('platforms-section');
+            if (platformsSection) {
+                platformsSection.querySelector('h2').textContent = t.platformsTitle;
+                platformsSection.querySelector('p').textContent = t.platformsDesc;
+            }
+
+            // Update Business Info section
+            const businessSection = document.getElementById('business-section');
+            if (businessSection) {
+                const labels = businessSection.querySelectorAll('label');
+                businessSection.querySelector('h2').textContent = t.businessTitle;
+                businessSection.querySelector('p').textContent = t.businessDesc;
+                labels[0].textContent = t.businessName;
+                labels[1].textContent = t.businessDescription;
+                labels[2].textContent = t.productsServices;
+                labels[3].textContent = t.businessHours;
+                labels[4].textContent = t.contactInfo;
+                labels[5].textContent = t.faqs;
+
+                const inputs = businessSection.querySelectorAll('input, textarea');
+                inputs[0].placeholder = t.businessNamePlaceholder;
+                inputs[1].placeholder = t.businessDescPlaceholder;
+                inputs[2].placeholder = t.productsPlaceholder;
+                inputs[3].placeholder = t.hoursPlaceholder;
+                inputs[4].placeholder = t.contactPlaceholder;
+                inputs[5].placeholder = t.faqsPlaceholder;
+
+                businessSection.querySelector('.help-text').textContent = t.formatHelp;
+                businessSection.querySelector('.btn-primary').textContent = t.saveButton;
+            }
+
+            // Update AI Settings section
+            const aiSection = document.getElementById('ai-settings-section');
+            if (aiSection) {
+                const labels = aiSection.querySelectorAll('label');
+                aiSection.querySelector('h2').textContent = t.aiTitle;
+                const descP = aiSection.querySelector('p');
+                if (descP) descP.textContent = t.aiDesc;
+
+                labels[0].textContent = t.adminPanelLanguage;
+                labels[1].textContent = t.aiProvider;
+                labels[2].textContent = t.responseStyle;
+                labels[3].textContent = t.responseLanguage;
+                labels[4].textContent = t.maxResponseLength;
+
+                // Update AI Provider dropdown
+                const providerSelect = document.getElementById('ai-provider');
+                providerSelect.options[0].text = 'Groq (' + (lang === 'ru' ? 'БЕСПЛАТНО - Рекомендуется' : lang === 'ky' ? 'АКЫСЫЗ - Сунушталат' : 'FREE - Recommended') + ')';
+                providerSelect.options[1].text = 'Hugging Face';
+                providerSelect.options[2].text = 'OpenRouter';
+                providerSelect.options[3].text = 'Together AI';
+
+                // Update Response Style dropdown
+                const styleSelect = document.getElementById('response-style');
+                styleSelect.options[0].text = t.friendlyCasual;
+                styleSelect.options[1].text = t.professional;
+                styleSelect.options[2].text = t.shortConcise;
+
+                // Update Response Language dropdown
+                const langSelect = document.getElementById('response-language');
+                langSelect.options[0].text = t.autoDetect;
+                langSelect.options[1].text = t.english;
+                langSelect.options[2].text = t.spanish;
+                langSelect.options[3].text = t.french;
+                langSelect.options[4].text = t.german;
+
+                // Update Max Length dropdown
+                const lengthSelect = document.getElementById('max-length');
+                lengthSelect.options[0].text = t.shortLength;
+                lengthSelect.options[1].text = t.mediumLength;
+                lengthSelect.options[2].text = t.longLength;
+
+                // Update button
+                const saveBtn = aiSection.querySelector('.btn');
+                if (saveBtn) saveBtn.textContent = t.saveAISettings;
+            }
+
+            // Update Chat Logs section
+            const logsSection = document.getElementById('chat-logs-section');
+            if (logsSection) {
+                logsSection.querySelector('h2').textContent = t.logsTitle;
+                logsSection.querySelector('p').textContent = t.logsDesc;
+            }
+        }
+
+        // Load saved language on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedLang = localStorage.getItem('replai-language') || 'en';
+            document.getElementById('language-selector').value = savedLang;
+            if (savedLang !== 'en') {
+                changeLanguage();
+            }
+        });
+
+        // Show section
+        function showSection(section) {
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(s => {
+                s.classList.remove('active');
+            });
+            document.querySelectorAll('.menu-item').forEach(m => {
+                m.classList.remove('active');
+            });
+
+            // Show selected section
+            document.getElementById(section + '-section').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Toggle platform setup
+        function togglePlatformSetup(platform) {
+            const setup = document.getElementById(platform + '-setup');
+            setup.style.display = setup.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Connect Telegram
+        async function connectTelegram() {
+            const token = document.getElementById('telegram-token').value;
+            if (!token) {
+                alert('Please enter your Telegram bot token');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/connect/telegram', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+
+                if (response.ok) {
+                    document.getElementById('telegram-status').textContent = 'Connected';
+                    document.getElementById('telegram-status').className = 'platform-status connected';
+                    document.getElementById('telegram-card').classList.add('connected');
+                    document.getElementById('telegram-setup').style.display = 'none';
+                    showSuccess();
+                    updateStats();
+                } else {
+                    alert('Failed to connect Telegram. Please check your token.');
+                }
+            } catch (error) {
+                alert('Error connecting Telegram: ' + error.message);
+            }
+        }
+
+        // Connect Instagram
+        async function connectInstagram() {
+            const token = document.getElementById('instagram-token').value;
+            if (!token) {
+                alert('Please enter your Instagram access token');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/connect/instagram', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+
+                if (response.ok) {
+                    document.getElementById('instagram-status').textContent = 'Connected';
+                    document.getElementById('instagram-status').className = 'platform-status connected';
+                    document.getElementById('instagram-card').classList.add('connected');
+                    document.getElementById('instagram-setup').style.display = 'none';
+                    showSuccess();
+                    updateStats();
+                } else {
+                    alert('Failed to connect Instagram. Please check your token.');
+                }
+            } catch (error) {
+                alert('Error connecting Instagram: ' + error.message);
+            }
+        }
+
+        // Connect WhatsApp
+        async function connectWhatsApp() {
+            const token = document.getElementById('whatsapp-token').value;
+            const phone = document.getElementById('whatsapp-phone').value;
+
+            if (!token || !phone) {
+                alert('Please enter both WhatsApp token and phone number ID');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/connect/whatsapp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, phone })
+                });
+
+                if (response.ok) {
+                    document.getElementById('whatsapp-status').textContent = 'Connected';
+                    document.getElementById('whatsapp-status').className = 'platform-status connected';
+                    document.getElementById('whatsapp-card').classList.add('connected');
+                    document.getElementById('whatsapp-setup').style.display = 'none';
+                    showSuccess();
+                    updateStats();
+                } else {
+                    alert('Failed to connect WhatsApp. Please check your credentials.');
+                }
+            } catch (error) {
+                alert('Error connecting WhatsApp: ' + error.message);
+            }
+        }
+
+        // Save business info
+        async function saveBusinessInfo() {
+            const data = {
+                name: document.getElementById('business-name').value,
+                description: document.getElementById('business-description').value,
+                products: document.getElementById('business-products').value,
+                hours: document.getElementById('business-hours').value,
+                contact: document.getElementById('business-contact').value,
+                faqs: document.getElementById('business-faqs').value
+            };
+
+            try {
+                const response = await fetch('/api/admin/business-info', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    showSuccess();
+                } else {
+                    alert('Failed to save business info');
+                }
+            } catch (error) {
+                alert('Error saving: ' + error.message);
+            }
+        }
+
+        // Save AI settings
+        async function saveAISettings() {
+            const data = {
+                provider: document.getElementById('ai-provider').value,
+                style: document.getElementById('response-style').value,
+                language: document.getElementById('response-language').value,
+                maxLength: document.getElementById('max-length').value
+            };
+
+            try {
+                const response = await fetch('/api/admin/ai-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    showSuccess();
+                } else {
+                    alert('Failed to save AI settings');
+                }
+            } catch (error) {
+                alert('Error saving: ' + error.message);
+            }
+        }
+
+        // Show success message
+        function showSuccess() {
+            const msg = document.getElementById('success-message');
+            msg.classList.add('show');
+            setTimeout(() => {
+                msg.classList.remove('show');
+            }, 3000);
+        }
+
+        // Update stats
+        function updateStats() {
+            const connected = document.querySelectorAll('.platform-status.connected').length;
+            document.getElementById('connected-platforms').textContent = connected;
+        }
+
+        // Load settings on page load
+        window.addEventListener('load', async () => {
+            try {
+                // Load business info
+                const response = await fetch('/api/admin/settings');
+                const data = await response.json();
+
+                if (data.business) {
+                    document.getElementById('business-name').value = data.business.name || '';
+                    document.getElementById('business-description').value = data.business.description || '';
+                }
+
+                // Load platform status
+                const statusResponse = await fetch('/api/admin/platform-status');
+                const status = await statusResponse.json();
+
+                if (status.telegram) {
+                    document.getElementById('telegram-status').textContent = 'Connected';
+                    document.getElementById('telegram-status').className = 'platform-status connected';
+                    document.getElementById('telegram-card').classList.add('connected');
+                }
+                if (status.instagram) {
+                    document.getElementById('instagram-status').textContent = 'Connected';
+                    document.getElementById('instagram-status').className = 'platform-status connected';
+                    document.getElementById('instagram-card').classList.add('connected');
+                }
+                if (status.whatsapp) {
+                    document.getElementById('whatsapp-status').textContent = 'Connected';
+                    document.getElementById('whatsapp-status').className = 'platform-status connected';
+                    document.getElementById('whatsapp-card').classList.add('connected');
+                }
+
+                updateStats();
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            }
+        });
+    </script>
+</body>
+</html>
