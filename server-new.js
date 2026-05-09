@@ -54,10 +54,23 @@ app.get('/api/health', (req, res) => {
 
 // Store platform connections and settings
 const platformConnections = {
-  telegram: { connected: false, token: null },
-  instagram: { connected: false, token: null },
-  whatsapp: { connected: false, token: null, phone: null },
-  tiktok: { connected: false, token: null }
+  telegram: {
+    connected: Boolean(process.env.TELEGRAM_BOT_TOKEN),
+    token: process.env.TELEGRAM_BOT_TOKEN || null
+  },
+  instagram: {
+    connected: Boolean(process.env.INSTAGRAM_ACCESS_TOKEN),
+    token: process.env.INSTAGRAM_ACCESS_TOKEN || null
+  },
+  whatsapp: {
+    connected: Boolean(process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_ID),
+    token: process.env.WHATSAPP_ACCESS_TOKEN || null,
+    phone: process.env.WHATSAPP_PHONE_ID || null
+  },
+  tiktok: {
+    connected: Boolean(process.env.TIKTOK_ACCESS_TOKEN),
+    token: process.env.TIKTOK_ACCESS_TOKEN || null
+  }
 };
 
 const chatLogs = [];
@@ -301,6 +314,56 @@ app.get('/api/admin/platform-status', (req, res) => {
     whatsapp: platformConnections.whatsapp.connected,
     tiktok: platformConnections.tiktok.connected
   });
+});
+
+// Telegram webhook status
+app.get('/api/telegram/webhook-info', async (req, res) => {
+  try {
+    const token = platformConnections.telegram.token || process.env.TELEGRAM_BOT_TOKEN;
+
+    if (!token) {
+      return res.status(400).json({ error: 'TELEGRAM_BOT_TOKEN is not configured' });
+    }
+
+    const response = await fetch(`https://api.telegram.org/bot${token}/getWebhookInfo`);
+    const data = await response.json();
+    res.status(response.ok ? 200 : 502).json(data);
+  } catch (error) {
+    console.error('[Telegram] Error getting webhook info:', error.message);
+    res.status(500).json({ error: 'Error getting Telegram webhook info' });
+  }
+});
+
+// Configure Telegram webhook. Body: { "url": "https://your-domain/webhook/telegram" }
+app.post('/api/telegram/set-webhook', async (req, res) => {
+  try {
+    const token = platformConnections.telegram.token || process.env.TELEGRAM_BOT_TOKEN;
+    const webhookUrl = req.body.url;
+
+    if (!token) {
+      return res.status(400).json({ error: 'TELEGRAM_BOT_TOKEN is not configured' });
+    }
+
+    if (!webhookUrl || !webhookUrl.startsWith('https://')) {
+      return res.status(400).json({ error: 'A public HTTPS webhook url is required' });
+    }
+
+    const response = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: webhookUrl })
+    });
+    const data = await response.json();
+
+    if (data.ok) {
+      platformConnections.telegram = { connected: true, token };
+    }
+
+    res.status(response.ok && data.ok ? 200 : 502).json(data);
+  } catch (error) {
+    console.error('[Telegram] Error setting webhook:', error.message);
+    res.status(500).json({ error: 'Error setting Telegram webhook' });
+  }
 });
 
 // Get stats
