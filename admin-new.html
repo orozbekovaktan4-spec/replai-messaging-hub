@@ -1301,7 +1301,6 @@
                 <!-- Instagram Connection Wizard Modal -->
                 <div id="instagram-wizard-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); backdrop-filter:blur(12px); z-index:10000; align-items:center; justify-content:center;">
                     <div id="instagram-wizard" style="background:var(--bg-primary); border-radius:24px; max-width:560px; width:92%; max-height:90vh; overflow-y:auto; box-shadow:0 30px 80px rgba(0,0,0,0.4); border:1px solid var(--border-color); animation: fadeIn 0.35s ease;">
-                        <!-- Wizard Header -->
                         <div style="background:linear-gradient(135deg,#833ab4 0%,#fd1d1d 50%,#fcb045 100%); padding:28px 32px; border-radius:24px 24px 0 0; position:relative;">
                             <button onclick="closeInstagramWizard()" style="position:absolute;top:16px;right:20px;background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.35)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">✕</button>
                             <div style="display:flex;align-items:center;gap:14px;">
@@ -1311,30 +1310,25 @@
                                     <div style="color:rgba(255,255,255,0.8);font-size:13px;margin-top:2px;" data-i18n="igWizardSubtitle">REPLAI · Connection Instructions</div>
                                 </div>
                             </div>
-                            <!-- Step indicators -->
                             <div style="display:flex;gap:8px;margin-top:20px;">
                                 <div id="igStep1Dot" style="height:4px;border-radius:2px;background:white;flex:2;transition:all 0.4s;"></div>
                                 <div id="igStep2Dot" style="height:4px;border-radius:2px;background:rgba(255,255,255,0.35);flex:1;transition:all 0.4s;"></div>
-                                <div id="igStep3Dot" style="height:4px;border-radius:2px;background:rgba(255,255,255,0.35);flex:1;transition:all 0.4s;"></div>
+                                <div id="igStep3Dot" style="height:4px;border-radius:2px;background:rgba(255,255,255,0.35);flex:0;transition:all 0.4s;"></div>
                             </div>
                         </div>
 
-                        <!-- Step 1: Prepare Profile -->
                         <div id="ig-step-1" style="padding:28px 32px;">
                             <div style="font-size:13px;font-weight:700;color:#833ab4;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;" data-i18n="igStep1Of2">Step 1 of 2</div>
-                            <div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:6px;" data-i18n="igStep1Title">Prepare Profile</div>
-                            <div style="font-size:14px;color:var(--text-secondary);margin-bottom:22px;line-height:1.5;" data-i18n="igStep1Desc">Before connecting, please ensure these two settings are active in your Instagram app:</div>
+                            <div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:6px;" data-i18n="igStep1Title">Preparing your profile</div>
+                            <div style="font-size:14px;color:var(--text-secondary);margin-bottom:22px;line-height:1.5;" data-i18n="igStep1Desc">Before clicking the connect button on your computer, make sure two things are set up on your phone:</div>
 
                             <div style="background:linear-gradient(135deg,rgba(131,58,180,0.07) 0%,rgba(253,29,29,0.05) 100%);border:1px solid rgba(131,58,180,0.2);border-radius:16px;padding:20px;margin-bottom:16px;">
                                 <div style="display:flex;gap:12px;align-items:flex-start;">
                                     <div style="width:36px;height:36px;min-width:36px;background:linear-gradient(135deg,#833ab4,#fd1d1d);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;">1️⃣</div>
                                     <div>
                                         <div style="font-weight:700;color:var(--text-primary);font-size:15px;margin-bottom:6px;" data-i18n="igAccountType">Account Type</div>
-                                        <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;" data-i18n="igAccountTypeDesc">You must have a <strong style="color:var(--text-primary);">Business Account</strong> or <strong style="color:var(--text-primary);">Creator Account</strong>. Personal accounts are not supported.</div>
-                                        <div style="margin-top:10px;background:var(--bg-secondary);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--text-secondary);line-height:1.7;border:1px solid var(--border-color);">
-                                            <span data-i18n="igAccountTypeHow">📍 <strong>How to switch:</strong><br>
-                                            Instagram Settings → Account type and tools → Switch to professional account</span>
-                                        </div>
+                                        <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;" data-i18n="igAccountTypeDesc">You must have a <strong>Business Account</strong> or <strong>Creator Account</strong>. Personal accounts are not supported.</div>
+                                        <div style="margin-top:10px;background:var(--bg-secondary);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--text-secondary);line-height:1.7;border:1px solid var(--border-color);" data-i18n="igAccountTypeHow">📍 <strong>How to switch:</strong><br>Instagram Settings → Account type and tools → Switch to professional account</div>
                                     </div>
                                 </div>
                             </div>
@@ -1344,68 +1338,49 @@
                                     <div style="width:36px;height:36px;min-width:36px;background:linear-gradient(135deg,#833ab4,#fd1d1d);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;">2️⃣</div>
                                     <div>
                                         <div style="font-weight:700;color:var(--text-primary);font-size:15px;margin-bottom:6px;" data-i18n="igMessageAccess">Message Access</div>
-                                        <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;" data-i18n="igMessageAccessDesc">You must allow our services to read your messages.</div>
-                                        <div style="margin-top:10px;background:var(--bg-secondary);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--text-secondary);line-height:1.7;border:1px solid var(--border-color);">
-                                            <span data-i18n="igMessageAccessHow">📍 <strong>Where to enable:</strong><br>
-                                            Settings → Messages and story replies → Message controls → <strong style="color:var(--text-primary);">Allow access to messages</strong> (ON)</span>
-                                        </div>
+                                        <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;" data-i18n="igMessageAccessDesc">You must allow services to read your messages.</div>
+                                        <div style="margin-top:10px;background:var(--bg-secondary);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--text-secondary);line-height:1.7;border:1px solid var(--border-color);" data-i18n="igMessageAccessHow">📍 <strong>Where to enable:</strong><br>Settings → Messages and story replies → Message controls → <strong>Allow access to messages</strong> (ON)</div>
                                     </div>
                                 </div>
                             </div>
 
                             <div style="display:flex;gap:12px;">
-                                <button onclick="closeInstagramWizard()" style="flex:1;padding:14px;border:2px solid var(--border-color);background:transparent;color:var(--text-secondary);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--primary-blue)'" onmouseout="this.style.borderColor='var(--border-color)'"> <span data-i18n="igCancel">Cancel</span></button>
-                                <button onclick="igGoToStep(2)" style="flex:2;padding:14px;background:linear-gradient(135deg,#833ab4 0%,#fd1d1d 50%,#fcb045 100%);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 15px rgba(131,58,180,0.3);" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 25px rgba(131,58,180,0.4)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 15px rgba(131,58,180,0.3)'"> <span data-i18n="igContinue">✅ Done, Continue →</span></button>
+                                <button onclick="closeInstagramWizard()" style="flex:1;padding:14px;border:2px solid var(--border-color);background:transparent;color:var(--text-secondary);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--primary-blue)'" onmouseout="this.style.borderColor='var(--border-color)'" data-i18n="igCancel">Cancel</button>
+                                <button onclick="igGoToStep(2)" style="flex:2;padding:14px;background:linear-gradient(135deg,#833ab4 0%,#fd1d1d 50%,#fcb045 100%);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 15px rgba(131,58,180,0.3);" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 25px rgba(131,58,180,0.4)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 15px rgba(131,58,180,0.3)'" data-i18n="igContinue">✅ Done, Continue →</button>
                             </div>
                         </div>
 
-                        <!-- Step 2: Connect -->
                         <div id="ig-step-2" style="display:none;padding:28px 32px;">
                             <div style="font-size:13px;font-weight:700;color:#833ab4;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;" data-i18n="igStep2Of2">Step 2 of 2</div>
-                            <div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:6px;" data-i18n="igStep2Title">Connect to REPLAI</div>
+                            <div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:6px;" data-i18n="igStep2Title">Connecting to REPLAI</div>
                             <div style="font-size:14px;color:var(--text-secondary);margin-bottom:24px;line-height:1.5;" data-i18n="igStep2Desc">Enter your Facebook Page Access Token with Instagram permissions:</div>
-
                             <div id="ig-login-error" style="display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:14px 16px;margin-bottom:16px;color:#ef4444;font-size:13px;"></div>
 
                             <div style="margin-bottom:18px;">
                                 <label style="display:block;font-weight:600;font-size:13px;color:var(--text-primary);margin-bottom:8px;" data-i18n="igPageToken">Page Access Token</label>
-                                <div style="position:relative;">
-                                    <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;">🔑</span>
-                                    <input type="text" id="ig-access-token" data-i18n-placeholder="igPageTokenPlaceholder" placeholder="EAA... (from Meta for Developers)" style="width:100%;padding:13px 14px 13px 44px;border:2px solid var(--border-color);border-radius:12px;font-size:14px;background:var(--bg-primary);color:var(--text-primary);transition:all 0.2s;outline:none;font-family:monospace;" onfocus="this.style.borderColor='#833ab4';this.style.boxShadow='0 0 0 3px rgba(131,58,180,0.12)'" onblur="this.style.borderColor='var(--border-color)';this.style.boxShadow=''">
-                                </div>
+                                <div style="position:relative;"><span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;">🔑</span><input type="text" id="ig-access-token" data-i18n-placeholder="igPageTokenPlaceholder" placeholder="EAA... (from Meta for Developers)" style="width:100%;padding:13px 14px 13px 44px;border:2px solid var(--border-color);border-radius:12px;font-size:14px;background:var(--bg-primary);color:var(--text-primary);transition:all 0.2s;outline:none;font-family:monospace;" onfocus="this.style.borderColor='#833ab4';this.style.boxShadow='0 0 0 3px rgba(131,58,180,0.12)'" onblur="this.style.borderColor='var(--border-color)';this.style.boxShadow=''"></div>
                             </div>
-
                             <div style="margin-bottom:20px;">
                                 <label style="display:block;font-weight:600;font-size:13px;color:var(--text-primary);margin-bottom:8px;" data-i18n="igAccountId">Instagram Business Account ID (optional)</label>
-                                <div style="position:relative;">
-                                    <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;">📸</span>
-                                    <input type="text" id="ig-account-id" data-i18n-placeholder="igAccountIdPlaceholder" placeholder="Auto-detected if empty" style="width:100%;padding:13px 14px 13px 44px;border:2px solid var(--border-color);border-radius:12px;font-size:14px;background:var(--bg-primary);color:var(--text-primary);transition:all 0.2s;outline:none;font-family:monospace;" onfocus="this.style.borderColor='#833ab4';this.style.boxShadow='0 0 0 3px rgba(131,58,180,0.12)'" onblur="this.style.borderColor='var(--border-color)';this.style.boxShadow=''">
-                                </div>
+                                <div style="position:relative;"><span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;">📸</span><input type="text" id="ig-account-id" data-i18n-placeholder="igAccountIdPlaceholder" placeholder="Auto-detected if empty" style="width:100%;padding:13px 14px 13px 44px;border:2px solid var(--border-color);border-radius:12px;font-size:14px;background:var(--bg-primary);color:var(--text-primary);transition:all 0.2s;outline:none;font-family:monospace;" onfocus="this.style.borderColor='#833ab4';this.style.boxShadow='0 0 0 3px rgba(131,58,180,0.12)'" onblur="this.style.borderColor='var(--border-color)';this.style.boxShadow=''"></div>
                             </div>
-
-                            <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:14px 16px;margin-bottom:20px;font-size:12px;color:var(--text-secondary);line-height:1.7;">
-                                <span data-i18n="igTokenHelp">⚠️ <strong style="color:var(--text-primary);">How to get your Page Access Token:</strong><br>
-                                1. Go to <a href="https://developers.facebook.com" target="_blank" style="color:#833ab4;">Meta for Developers</a><br>
-                                2. Create an app → Add "Instagram Graph API" product<br>
-                                3. Link your Facebook Page with Instagram Business<br>
-                                4. Generate a Page Access Token with <code style="background:var(--bg-secondary);padding:2px 6px;border-radius:4px;">instagram_manage_messages</code> permission<br>
-                                5. Paste it above</span>
+                            <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:12px;color:var(--text-secondary);line-height:1.7;" data-i18n="igTokenHelp">⚠️ <strong>How to get your Page Access Token:</strong><br>1. Go to <a href="https://developers.facebook.com" target="_blank">Meta for Developers</a><br>2. Create an app → Add "Instagram Graph API" product<br>3. Link your Facebook Page with Instagram Business<br>4. Generate a Page Access Token with <code>instagram_manage_messages</code> permission<br>5. Paste it above</div>
+                            <div id="ig-troubleshooting" style="display:none;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.22);border-radius:12px;padding:14px 16px;margin-bottom:20px;font-size:12px;color:var(--text-secondary);line-height:1.8;">
+                                <div style="font-weight:700;color:var(--text-primary);margin-bottom:6px;" data-i18n="igTroubleshooting">If the connection fails, check:</div>
+                                <ul style="margin-left:18px;"><li data-i18n="igTroubleshootingBrowser">You are using an official, up-to-date browser</li><li data-i18n="igTroubleshootingVPN">You have disabled your VPN or anonymizer</li><li data-i18n="igTroubleshootingAccount">Your account has been switched to Professional status (Business or Creator)</li></ul>
                             </div>
-
                             <div style="display:flex;gap:12px;">
-                                <button onclick="igGoToStep(1)" style="flex:1;padding:14px;border:2px solid var(--border-color);background:transparent;color:var(--text-secondary);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--primary-blue)'" onmouseout="this.style.borderColor='var(--border-color)'"> <span data-i18n="back">← Back</span></button>
-                                <button id="ig-authorize-btn" onclick="connectInstagram()" style="flex:2;padding:14px;background:linear-gradient(135deg,#833ab4 0%,#fd1d1d 50%,#fcb045 100%);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 15px rgba(131,58,180,0.3);" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 25px rgba(131,58,180,0.4)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 15px rgba(131,58,180,0.3)'"> <span data-i18n="igAuthorize">🔗 Connect & Setup Webhook</span></button>
+                                <button onclick="igGoToStep(1)" style="flex:1;padding:14px;border:2px solid var(--border-color);background:transparent;color:var(--text-secondary);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--primary-blue)'" onmouseout="this.style.borderColor='var(--border-color)'" data-i18n="back">← Back</button>
+                                <button id="ig-authorize-btn" onclick="connectInstagram()" style="flex:2;padding:14px;background:linear-gradient(135deg,#833ab4 0%,#fd1d1d 50%,#fcb045 100%);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 15px rgba(131,58,180,0.3);" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 25px rgba(131,58,180,0.4)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 15px rgba(131,58,180,0.3)'" data-i18n="igAuthorize">🔗 Connect & Setup Webhook</button>
                             </div>
                         </div>
 
-                        <!-- Step 3: Success -->
                         <div id="ig-step-3" style="display:none;padding:48px 32px;text-align:center;">
                             <div style="width:80px;height:80px;background:linear-gradient(135deg,#10b981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 20px;box-shadow:0 8px 30px rgba(16,185,129,0.4);">✅</div>
                             <div style="font-size:24px;font-weight:700;color:var(--text-primary);margin-bottom:10px;" data-i18n="igSuccess">Connection Established!</div>
                             <div style="font-size:15px;color:var(--text-secondary);line-height:1.6;margin-bottom:30px;" data-i18n="igSuccessDesc">Your Instagram account is now connected to REPLAI. The bot will start responding to your messages automatically.</div>
-                            <div id="ig-connected-username" style="display:inline-flex;align-items:center;gap:10px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:40px;padding:10px 20px;font-size:14px;font-weight:600;color:#10b981;margin-bottom:28px;"></div>
-                            <br>
-                            <button onclick="closeInstagramWizard()" style="padding:14px 36px;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(16,185,129,0.3);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''"> <span data-i18n="igDone">Done 🎉</span></button>
+                            <div id="ig-connected-username" style="display:inline-flex;align-items:center;gap:10px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:40px;padding:10px 20px;font-size:14px;font-weight:600;color:#10b981;margin-bottom:28px;"></div><br>
+                            <button onclick="closeInstagramWizard()" style="padding:14px 36px;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(16,185,129,0.3);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''" data-i18n="igDone">Done 🎉</button>
                         </div>
                     </div>
                 </div>
@@ -1414,14 +1389,9 @@
                 <div class="platform-card" id="whatsapp-card">
                     <div class="platform-info">
                         <div class="platform-icon" style="background:linear-gradient(135deg,rgba(37,211,102,0.15) 0%,rgba(18,140,126,0.15) 100%);">
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="stroke:#25D366;">
-                                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
-                            </svg>
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="stroke:#25D366;"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                         </div>
-                        <div>
-                            <h3 data-i18n="whatsapp">WhatsApp Business</h3>
-                            <span class="platform-status disconnected" id="whatsapp-status" data-i18n="statusDisconnected">Disconnected</span>
-                        </div>
+                        <div><h3 data-i18n="whatsapp">WhatsApp Business</h3><span class="platform-status disconnected" id="whatsapp-status" data-i18n="statusDisconnected">Disconnected</span></div>
                     </div>
                     <button class="btn" id="whatsapp-connect-btn" onclick="openWhatsAppWizard()" style="background:linear-gradient(135deg,#25D366 0%,#128C7E 100%);box-shadow:0 4px 15px rgba(37,211,102,0.35);" data-i18n="connect">Connect</button>
                 </div>
@@ -1429,170 +1399,19 @@
                 <!-- WhatsApp QR Wizard Modal -->
                 <div id="whatsapp-wizard-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);backdrop-filter:blur(12px);z-index:10000;align-items:center;justify-content:center;">
                     <div id="whatsapp-wizard" style="background:var(--bg-primary);border-radius:24px;max-width:580px;width:92%;max-height:92vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,0.4);border:1px solid var(--border-color);animation:fadeIn 0.35s ease;">
-                        <!-- Header -->
                         <div style="background:linear-gradient(135deg,#25D366 0%,#128C7E 100%);padding:28px 32px;border-radius:24px 24px 0 0;position:relative;">
                             <button onclick="closeWhatsAppWizard()" style="position:absolute;top:16px;right:20px;background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.35)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">✕</button>
-                            <div style="display:flex;align-items:center;gap:14px;">
-                                <div style="width:50px;height:50px;background:rgba(255,255,255,0.2);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;">💬</div>
-                                <div>
-                                    <div style="color:white;font-size:20px;font-weight:700;letter-spacing:-0.4px;" data-i18n="waWizardTitle">WhatsApp Connection</div>
-                                    <div style="color:rgba(255,255,255,0.8);font-size:13px;margin-top:2px;" data-i18n="waWizardSubtitle">REPLAI · Connection Instructions</div>
-                                </div>
-                            </div>
-                            <!-- Step dots -->
-                            <div style="display:flex;gap:8px;margin-top:20px;">
-                                <div id="waDot1" style="height:4px;border-radius:2px;background:white;flex:2;transition:all 0.4s;"></div>
-                                <div id="waDot2" style="height:4px;border-radius:2px;background:rgba(255,255,255,0.35);flex:1;transition:all 0.4s;"></div>
-                                <div id="waDot3" style="height:4px;border-radius:2px;background:rgba(255,255,255,0.35);flex:1;transition:all 0.4s;"></div>
-                                <div id="waDot4" style="height:4px;border-radius:2px;background:rgba(255,255,255,0.35);flex:1;transition:all 0.4s;"></div>
-                            </div>
+                            <div style="display:flex;align-items:center;gap:14px;"><div style="width:50px;height:50px;background:rgba(255,255,255,0.2);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;">💬</div><div><div style="color:white;font-size:20px;font-weight:700;letter-spacing:-0.4px;" data-i18n="waWizardTitle">WhatsApp Connection</div><div style="color:rgba(255,255,255,0.8);font-size:13px;margin-top:2px;" data-i18n="waWizardSubtitle">REPLAI · Connection Instructions</div></div></div>
+                            <div style="display:flex;gap:8px;margin-top:20px;"><div id="waDot1" style="height:4px;border-radius:2px;background:white;flex:2;transition:all 0.4s;"></div><div id="waDot2" style="height:4px;border-radius:2px;background:rgba(255,255,255,0.35);flex:1;transition:all 0.4s;"></div><div id="waDot3" style="height:4px;border-radius:2px;background:rgba(255,255,255,0.35);flex:1;transition:all 0.4s;"></div><div id="waDot4" style="height:4px;border-radius:2px;background:rgba(255,255,255,0.35);flex:1;transition:all 0.4s;"></div></div>
                         </div>
 
-                        <!-- Step 1: QR Code -->
-                        <div id="wa-step-1" style="padding:28px 32px;">
-                            <div style="font-size:13px;font-weight:700;color:#25D366;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;" data-i18n="waStep1Of4">Step 1 of 4</div>
-                            <div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:6px;" data-i18n="waStep1Title">Scan QR Code</div>
-                            <div style="font-size:14px;color:var(--text-secondary);margin-bottom:22px;line-height:1.5;" data-i18n="waStep1Desc">Click the "Connect" button below to generate a QR code, then scan it using the WhatsApp app on your phone.</div>
+                        <div id="wa-step-1" style="padding:28px 32px;"><div style="font-size:13px;font-weight:700;color:#25D366;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;" data-i18n="waStep1Of4">Step 1 of 4</div><div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:6px;" data-i18n="waStep1Title">Scan the QR code</div><div style="font-size:14px;color:var(--text-secondary);margin-bottom:22px;line-height:1.5;" data-i18n="waStep1Desc">Click the 'Connect' button below. A QR code will appear, then scan it using WhatsApp on your phone.</div><div style="background:linear-gradient(135deg,rgba(37,211,102,0.07) 0%,rgba(18,140,126,0.05) 100%);border:1px solid rgba(37,211,102,0.2);border-radius:16px;padding:24px;margin-bottom:20px;text-align:center;"><div id="wa-qr-placeholder" style="width:180px;height:180px;margin:0 auto 16px;background:var(--bg-secondary);border-radius:12px;display:flex;align-items:center;justify-content:center;border:2px dashed rgba(37,211,102,0.4);"><div style="text-align:center;"><div style="font-size:48px;margin-bottom:8px;">📱</div><div style="font-size:12px;color:var(--text-secondary);" data-i18n="waQRPlaceholder">QR code will appear<br>after clicking connect</div></div></div><div id="wa-qr-img" style="display:none;width:180px;height:180px;margin:0 auto 16px;background:white;border-radius:12px;padding:8px;"></div><button id="wa-get-qr-btn" onclick="waGetQR()" style="padding:12px 28px;background:linear-gradient(135deg,#25D366 0%,#128C7E 100%);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(37,211,102,0.3);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''" data-i18n="waConnect">🔗 Connect</button><div id="wa-qr-status" style="margin-top:12px;font-size:13px;color:var(--text-secondary);display:none;"></div></div><div style="display:flex;gap:12px;"><button onclick="closeWhatsAppWizard()" style="flex:1;padding:14px;border:2px solid var(--border-color);background:transparent;color:var(--text-secondary);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border-color)'" data-i18n="waCancel">Cancel</button><button onclick="waGoToStep(2)" style="flex:2;padding:14px;background:linear-gradient(135deg,#25D366 0%,#128C7E 100%);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(37,211,102,0.3);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''" data-i18n="waNext">Next →</button></div></div>
 
-                            <div style="background:linear-gradient(135deg,rgba(37,211,102,0.07) 0%,rgba(18,140,126,0.05) 100%);border:1px solid rgba(37,211,102,0.2);border-radius:16px;padding:24px;margin-bottom:20px;text-align:center;">
-                                <div id="wa-qr-placeholder" style="width:180px;height:180px;margin:0 auto 16px;background:var(--bg-secondary);border-radius:12px;display:flex;align-items:center;justify-content:center;border:2px dashed rgba(37,211,102,0.4);">
-                                    <div style="text-align:center;">
-                                        <div style="font-size:48px;margin-bottom:8px;">📱</div>
-                                        <div style="font-size:12px;color:var(--text-secondary);" data-i18n="waQRPlaceholder">QR code will appear<br>after clicking connect</div>
-                                    </div>
-                                </div>
-                                <div id="wa-qr-img" style="display:none;width:180px;height:180px;margin:0 auto 16px;background:white;border-radius:12px;padding:8px;">
-                                    <!-- QR image injected by JS -->
-                                </div>
-                                <button id="wa-get-qr-btn" onclick="waGetQR()" style="padding:12px 28px;background:linear-gradient(135deg,#25D366 0%,#128C7E 100%);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(37,211,102,0.3);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''" data-i18n="waConnect">🔗 Connect</button>
-                                <div id="wa-qr-status" style="margin-top:12px;font-size:13px;color:var(--text-secondary);display:none;"></div>
-                            </div>
+                        <div id="wa-step-2" style="display:none;padding:28px 32px;"><div style="font-size:13px;font-weight:700;color:#25D366;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;" data-i18n="waStep2Of4">Step 2 of 4</div><div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:6px;" data-i18n="waStep2Title">Open the scanner in WhatsApp</div><div style="font-size:14px;color:var(--text-secondary);margin-bottom:20px;line-height:1.5;" data-i18n="waStep2Desc">Next steps depend on your phone (Android or iPhone).</div><div style="background:linear-gradient(135deg,rgba(37,211,102,0.07) 0%,rgba(18,140,126,0.05) 100%);border:1px solid rgba(37,211,102,0.2);border-radius:16px;padding:18px;margin-bottom:14px;"><div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;"><div style="font-size:24px;">🤖</div><div style="font-weight:700;color:var(--text-primary);font-size:15px;" data-i18n="waAndroid">Android</div></div><ol style="margin-left:18px;color:var(--text-secondary);font-size:13px;line-height:1.9;"><li data-i18n="waAndroid1">Open <strong>WhatsApp</strong></li><li data-i18n="waAndroid2">Tap the three dots <strong>⋮</strong> in the top right corner</li><li data-i18n="waAndroid3">Select <strong>Linked devices</strong></li><li data-i18n="waAndroid4">Tap <strong>Link a device</strong></li></ol><div style="margin-top:10px;background:var(--bg-secondary);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--text-secondary);line-height:1.6;border:1px solid var(--border-color);" data-i18n="waAndroidNote">📝 If prompted, unlock your phone (fingerprint or PIN).</div></div><div style="background:linear-gradient(135deg,rgba(37,211,102,0.07) 0%,rgba(18,140,126,0.05) 100%);border:1px solid rgba(37,211,102,0.2);border-radius:16px;padding:18px;margin-bottom:22px;"><div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;"><div style="font-size:24px;">🍎</div><div style="font-weight:700;color:var(--text-primary);font-size:15px;" data-i18n="waIphone">iPhone (iOS)</div></div><ol style="margin-left:18px;color:var(--text-secondary);font-size:13px;line-height:1.9;"><li data-i18n="waIphone1">Open <strong>WhatsApp</strong></li><li data-i18n="waIphone2">Go to <strong>Settings ⚙️</strong> (bottom right)</li><li data-i18n="waIphone3">Select <strong>Linked devices</strong></li><li data-i18n="waIphone4">Tap <strong>Link a device</strong></li></ol><div style="margin-top:10px;background:var(--bg-secondary);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--text-secondary);line-height:1.6;border:1px solid var(--border-color);" data-i18n="waIphoneNote">📝 Use Face ID or Touch ID if requested.</div></div><div style="display:flex;gap:12px;"><button onclick="waGoToStep(1)" style="flex:1;padding:14px;border:2px solid var(--border-color);background:transparent;color:var(--text-secondary);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border-color)'" data-i18n="back">← Back</button><button onclick="waGoToStep(3)" style="flex:2;padding:14px;background:linear-gradient(135deg,#25D366 0%,#128C7E 100%);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(37,211,102,0.3);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''" data-i18n="waOpened">✅ Opened, Continue →</button></div></div>
 
-                            <div style="display:flex;gap:12px;">
-                                <button onclick="closeWhatsAppWizard()" style="flex:1;padding:14px;border:2px solid var(--border-color);background:transparent;color:var(--text-secondary);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border-color)'"> <span data-i18n="igCancel">Cancel</span></button>
-                                <button onclick="waGoToStep(2)" style="flex:2;padding:14px;background:linear-gradient(135deg,#25D366 0%,#128C7E 100%);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(37,211,102,0.3);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''" data-i18n="waNext">Next →</button>
-                            </div>
-                        </div>
+                        <div id="wa-step-3" style="display:none;padding:28px 32px;"><div style="font-size:13px;font-weight:700;color:#25D366;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;" data-i18n="waStep3Of4">Step 3 of 4</div><div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:6px;" data-i18n="waStep3Title">Integration</div><div style="font-size:14px;color:var(--text-secondary);margin-bottom:22px;line-height:1.5;" data-i18n="waStep3Desc">Point your phone camera at the QR code displayed on the screen.</div><div style="background:linear-gradient(135deg,rgba(37,211,102,0.07) 0%,rgba(18,140,126,0.05) 100%);border:1px solid rgba(37,211,102,0.2);border-radius:16px;padding:20px;margin-bottom:20px;"><div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:14px;"><div style="width:36px;height:36px;min-width:36px;background:linear-gradient(135deg,#25D366,#128C7E);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;">📷</div><div><div style="font-weight:700;color:var(--text-primary);font-size:15px;margin-bottom:4px;" data-i18n="waScanTitle">Scan QR Code</div><div style="font-size:13px;color:var(--text-secondary);line-height:1.6;" data-i18n="waScanDesc">Aim the camera at the QR code — it will connect automatically.</div></div></div><div style="display:flex;gap:14px;align-items:flex-start;"><div style="width:36px;height:36px;min-width:36px;background:linear-gradient(135deg,#25D366,#128C7E);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;">✅</div><div><div style="font-weight:700;color:var(--text-primary);font-size:15px;margin-bottom:4px;" data-i18n="waAgentTitle">Agent Connected</div><div style="font-size:13px;color:var(--text-secondary);line-height:1.6;" data-i18n="waAgentDesc">After successful scan, you will see a confirmation. Click Continue.</div></div></div></div><div style="display:flex;gap:12px;"><button onclick="waGoToStep(2)" style="flex:1;padding:14px;border:2px solid var(--border-color);background:transparent;color:var(--text-secondary);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border-color)'" data-i18n="back">← Back</button><button onclick="waGoToStep(4)" style="flex:2;padding:14px;background:linear-gradient(135deg,#25D366 0%,#128C7E 100%);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(37,211,102,0.3);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''" data-i18n="continue">Continue →</button></div></div>
 
-                        <!-- Step 2: Open Scanner -->
-                        <div id="wa-step-2" style="display:none;padding:28px 32px;">
-                            <div style="font-size:13px;font-weight:700;color:#25D366;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;" data-i18n="waStep2Of4">Step 2 of 4</div>
-                            <div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:6px;" data-i18n="waStep2Title">Open WhatsApp Scanner</div>
-                            <div style="font-size:14px;color:var(--text-secondary);margin-bottom:20px;line-height:1.5;" data-i18n="waStep2Desc">Open WhatsApp on your phone and follow the instructions below:</div>
-
-                            <!-- Android -->
-                            <div style="background:linear-gradient(135deg,rgba(37,211,102,0.07) 0%,rgba(18,140,126,0.05) 100%);border:1px solid rgba(37,211,102,0.2);border-radius:16px;padding:18px;margin-bottom:14px;">
-                                <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
-                                    <div style="font-size:24px;">🤖</div>
-                                    <div style="font-weight:700;color:var(--text-primary);font-size:15px;" data-i18n="waAndroid">Android</div>
-                                </div>
-                                <ol style="margin-left:18px;color:var(--text-secondary);font-size:13px;line-height:1.9;">
-                                    <li data-i18n="waAndroid1">Open <strong style="color:var(--text-primary);">WhatsApp</strong></li>
-                                    <li data-i18n="waAndroid2">Tap the three dots <strong style="color:var(--text-primary);">⋮</strong> in the top right corner</li>
-                                    <li data-i18n="waAndroid3">Select <strong style="color:var(--text-primary);">Linked devices</strong></li>
-                                    <li data-i18n="waAndroid4">Tap <strong style="color:var(--text-primary);">Link a device</strong></li>
-                                </ol>
-                                <div style="margin-top:10px;background:var(--bg-secondary);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--text-secondary);line-height:1.6;border:1px solid var(--border-color);" data-i18n="waAndroidNote">
-                                    📝 If prompted, unlock your phone (fingerprint or PIN).
-                                </div>
-                            </div>
-
-                            <!-- iPhone -->
-                            <div style="background:linear-gradient(135deg,rgba(37,211,102,0.07) 0%,rgba(18,140,126,0.05) 100%);border:1px solid rgba(37,211,102,0.2);border-radius:16px;padding:18px;margin-bottom:22px;">
-                                <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
-                                    <div style="font-size:24px;">🍎</div>
-                                    <div style="font-weight:700;color:var(--text-primary);font-size:15px;" data-i18n="waIphone">iPhone (iOS)</div>
-                                </div>
-                                <ol style="margin-left:18px;color:var(--text-secondary);font-size:13px;line-height:1.9;">
-                                    <li data-i18n="waAndroid1">Open <strong style="color:var(--text-primary);">WhatsApp</strong></li>
-                                    <li data-i18n="waIphone2">Go to <strong style="color:var(--text-primary);">Settings ⚙️</strong> (bottom right)</li>
-                                    <li data-i18n="waAndroid3">Select <strong style="color:var(--text-primary);">Linked devices</strong></li>
-                                    <li data-i18n="waAndroid4">Tap <strong style="color:var(--text-primary);">Link a device</strong></li>
-                                </ol>
-                                <div style="margin-top:10px;background:var(--bg-secondary);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--text-secondary);line-height:1.6;border:1px solid var(--border-color);" data-i18n="waIphoneNote">
-                                    📝 Use Face ID or Touch ID if requested.
-                                </div>
-                            </div>
-
-                            <div style="display:flex;gap:12px;">
-                                <button onclick="waGoToStep(1)" style="flex:1;padding:14px;border:2px solid var(--border-color);background:transparent;color:var(--text-secondary);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border-color)'"> <span data-i18n="back">← Back</span></button>
-                                <button onclick="waGoToStep(3)" style="flex:2;padding:14px;background:linear-gradient(135deg,#25D366 0%,#128C7E 100%);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(37,211,102,0.3);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''" data-i18n="waOpened">✅ Opened, Continue →</button>
-                            </div>
-                        </div>
-
-                        <!-- Step 3: Scan QR -->
-                        <div id="wa-step-3" style="display:none;padding:28px 32px;">
-                            <div style="font-size:13px;font-weight:700;color:#25D366;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;" data-i18n="waStep3Of4">Step 3 of 4</div>
-                            <div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:6px;" data-i18n="waStep3Title">Integrate</div>
-                            <div style="font-size:14px;color:var(--text-secondary);margin-bottom:22px;line-height:1.5;" data-i18n="waStep3Desc">Point your phone camera at the QR code displayed on the screen.</div>
-
-                            <div style="background:linear-gradient(135deg,rgba(37,211,102,0.07) 0%,rgba(18,140,126,0.05) 100%);border:1px solid rgba(37,211,102,0.2);border-radius:16px;padding:20px;margin-bottom:20px;">
-                                <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:14px;">
-                                    <div style="width:36px;height:36px;min-width:36px;background:linear-gradient(135deg,#25D366,#128C7E);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;">📷</div>
-                                    <div>
-                                        <div style="font-weight:700;color:var(--text-primary);font-size:15px;margin-bottom:4px;" data-i18n="waStep1Title">Scan QR Code</div>
-                                        <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;" data-i18n="waScanDesc">Aim the camera at the QR code — it will connect automatically.</div>
-                                    </div>
-                                </div>
-                                <div style="display:flex;gap:14px;align-items:flex-start;">
-                                    <div style="width:36px;height:36px;min-width:36px;background:linear-gradient(135deg,#25D366,#128C7E);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;">✅</div>
-                                    <div>
-                                        <div style="font-weight:700;color:var(--text-primary);font-size:15px;margin-bottom:4px;" data-i18n="waAgentTitle">Agent Connected</div>
-                                        <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;" data-i18n="waAgentDesc">After successful scan, you will see a confirmation. Click Continue.</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div style="display:flex;gap:12px;">
-                                <button onclick="waGoToStep(2)" style="flex:1;padding:14px;border:2px solid var(--border-color);background:transparent;color:var(--text-secondary);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border-color)'"> <span data-i18n="back">← Back</span></button>
-                                <button onclick="waGoToStep(4)" style="flex:2;padding:14px;background:linear-gradient(135deg,#25D366 0%,#128C7E 100%);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(37,211,102,0.3);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''" data-i18n="continue">Continue →</button>
-                            </div>
-                        </div>
-
-                        <!-- Step 4: Settings -->
-                        <div id="wa-step-4" style="display:none;padding:28px 32px;">
-                            <div style="font-size:13px;font-weight:700;color:#25D366;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;" data-i18n="waStep4Of4">Step 4 of 4</div>
-                            <div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:6px;" data-i18n="waStep4Title">Configuration</div>
-                            <div style="font-size:14px;color:var(--text-secondary);margin-bottom:22px;line-height:1.5;" data-i18n="waStep4Desc">Panel for your connected number. Set AI-Agent behavior parameters.</div>
-
-                            <div style="background:linear-gradient(135deg,rgba(37,211,102,0.07) 0%,rgba(18,140,126,0.05) 100%);border:1px solid rgba(37,211,102,0.2);border-radius:16px;padding:20px;margin-bottom:16px;">
-                                <!-- AI Agent toggle -->
-                                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border-color);">
-                                    <div>
-                                        <div style="font-weight:700;color:var(--text-primary);font-size:14px;" data-i18n="waAgentActive">🤖 AI-Agent active</div>
-                                        <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;" data-i18n="waAgentActiveDesc">The agent will answer incoming messages</div>
-                                    </div>
-                                    <label style="position:relative;display:inline-block;width:48px;height:26px;cursor:pointer;">
-                                        <input type="checkbox" id="wa-agent-toggle" checked style="opacity:0;width:0;height:0;">
-                                        <span id="wa-agent-slider" style="position:absolute;top:0;left:0;right:0;bottom:0;background:#25D366;border-radius:26px;transition:0.3s;" onclick="waToggleSwitch('wa-agent-toggle','wa-agent-slider')">
-                                            <span style="position:absolute;content:'';height:20px;width:20px;left:3px;bottom:3px;background:white;border-radius:50%;transition:0.3s;transform:translateX(22px);display:block;"></span>
-                                        </span>
-                                    </label>
-                                </div>
-                                <!-- Group reply toggle -->
-                                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;">
-                                    <div>
-                                        <div style="font-weight:700;color:var(--text-primary);font-size:14px;" data-i18n="waGroupReply">💬 Reply in Groups</div>
-                                        <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;" data-i18n="waGroupReplyDesc">AI-Agent replies to messages in group chats</div>
-                                    </div>
-                                    <label style="position:relative;display:inline-block;width:48px;height:26px;cursor:pointer;">
-                                        <input type="checkbox" id="wa-group-toggle" style="opacity:0;width:0;height:0;">
-                                        <span id="wa-group-slider" style="position:absolute;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:26px;transition:0.3s;" onclick="waToggleSwitch('wa-group-toggle','wa-group-slider')">
-                                            <span style="position:absolute;content:'';height:20px;width:20px;left:3px;bottom:3px;background:white;border-radius:50%;transition:0.3s;transform:translateX(0px);display:block;"></span>
-                                        </span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div style="background:rgba(37,211,102,0.1);border:1px solid rgba(37,211,102,0.3);border-radius:12px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:var(--text-secondary);line-height:1.6;" data-i18n="waAllSet">
-                                ✅ <strong style="color:var(--text-primary);">All set!</strong> Your AI Agent is successfully connected to WhatsApp Business. Configure the settings above and click "Finish".
-                            </div>
-
-                            <div style="display:flex;gap:12px;">
-                                <button onclick="waGoToStep(3)" style="flex:1;padding:14px;border:2px solid var(--border-color);background:transparent;color:var(--text-secondary);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border-color)'"> <span data-i18n="back">← Back</span></button>
-                                <button onclick="waFinish()" style="flex:2;padding:14px;background:linear-gradient(135deg,#25D366 0%,#128C7E 100%);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(37,211,102,0.3);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''" data-i18n="waFinish">🎉 Finish</button>
-                            </div>
-                        </div>
+                        <div id="wa-step-4" style="display:none;padding:28px 32px;"><div style="font-size:13px;font-weight:700;color:#25D366;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;" data-i18n="waStep4Of4">Step 4 of 4</div><div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:6px;" data-i18n="waStep4Title">Configuring Operation</div><div style="font-size:14px;color:var(--text-secondary);margin-bottom:22px;line-height:1.5;" data-i18n="waStep4Desc">You will now see the control panel for the connected number. Set AI-Agent behavior parameters.</div><div style="background:linear-gradient(135deg,rgba(37,211,102,0.07) 0%,rgba(18,140,126,0.05) 100%);border:1px solid rgba(37,211,102,0.2);border-radius:16px;padding:20px;margin-bottom:16px;"><div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border-color);"><div><div style="font-weight:700;color:var(--text-primary);font-size:14px;" data-i18n="waAgentActive">🤖 AI-Agent active</div><div style="font-size:12px;color:var(--text-secondary);margin-top:2px;" data-i18n="waAgentActiveDesc">The agent will answer incoming messages</div></div><label style="position:relative;display:inline-block;width:48px;height:26px;cursor:pointer;"><input type="checkbox" id="wa-agent-toggle" checked style="opacity:0;width:0;height:0;"><span id="wa-agent-slider" style="position:absolute;top:0;left:0;right:0;bottom:0;background:#25D366;border-radius:26px;transition:0.3s;" onclick="waToggleSwitch('wa-agent-toggle','wa-agent-slider')"><span style="position:absolute;content:'';height:20px;width:20px;left:3px;bottom:3px;background:white;border-radius:50%;transition:0.3s;transform:translateX(22px);display:block;"></span></span></label></div><div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;"><div><div style="font-weight:700;color:var(--text-primary);font-size:14px;" data-i18n="waGroupReply">💬 Reply in Groups</div><div style="font-size:12px;color:var(--text-secondary);margin-top:2px;" data-i18n="waGroupReplyDesc">AI-Agent replies to messages in group chats</div></div><label style="position:relative;display:inline-block;width:48px;height:26px;cursor:pointer;"><input type="checkbox" id="wa-group-toggle" style="opacity:0;width:0;height:0;"><span id="wa-group-slider" style="position:absolute;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:26px;transition:0.3s;" onclick="waToggleSwitch('wa-group-toggle','wa-group-slider')"><span style="position:absolute;content:'';height:20px;width:20px;left:3px;bottom:3px;background:white;border-radius:50%;transition:0.3s;transform:translateX(0px);display:block;"></span></span></label></div></div><div style="background:rgba(37,211,102,0.1);border:1px solid rgba(37,211,102,0.3);border-radius:12px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:var(--text-secondary);line-height:1.6;" data-i18n="waAllSet">✅ <strong>All set!</strong> Your AI Agent is successfully connected to WhatsApp Business. Configure the settings above and click 'Finish'.</div><div style="display:flex;gap:12px;"><button onclick="waGoToStep(3)" style="flex:1;padding:14px;border:2px solid var(--border-color);background:transparent;color:var(--text-secondary);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border-color)'" data-i18n="back">← Back</button><button onclick="waFinish()" style="flex:2;padding:14px;background:linear-gradient(135deg,#25D366 0%,#128C7E 100%);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(37,211,102,0.3);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''" data-i18n="waFinish">🎉 Finish</button></div></div>
                     </div>
                 </div>
 
@@ -2137,18 +1956,18 @@
                 igWizardTitle: "Instagram Connection",
                 igWizardSubtitle: "REPLAI · Connection Instructions",
                 igStep1Of2: "Step 1 of 2",
-                igStep1Title: "Prepare Profile",
-                igStep1Desc: "Before connecting, please ensure these two settings are active in your Instagram app:",
+                igStep1Title: "Preparing your profile",
+                igStep1Desc: "Before clicking the connect button on your computer, make sure two things are set up on your phone:",
                 igAccountType: "Account Type",
                 igAccountTypeDesc: "You must have a <strong>Business Account</strong> or <strong>Creator Account</strong>. Personal accounts are not supported.",
                 igAccountTypeHow: "📍 <strong>How to switch:</strong><br>Instagram Settings → Account type and tools → Switch to professional account",
                 igMessageAccess: "Message Access",
-                igMessageAccessDesc: "You must allow our services to read your messages.",
+                igMessageAccessDesc: "You must allow services to read your messages.",
                 igMessageAccessHow: "📍 <strong>Where to enable:</strong><br>Settings → Messages and story replies → Message controls → <strong>Allow access to messages</strong> (ON)",
                 igCancel: "Cancel",
                 igContinue: "✅ Done, Continue →",
                 igStep2Of2: "Step 2 of 2",
-                igStep2Title: "Connect to REPLAI",
+                igStep2Title: "Connecting to REPLAI",
                 igStep2Desc: "Enter your Facebook Page Access Token with Instagram permissions:",
                 igPageToken: "Page Access Token",
                 igPageTokenPlaceholder: "EAA... (from Meta for Developers)",
@@ -2162,19 +1981,23 @@
                 igErrorToken: "⚠️ Enter your Page Access Token",
                 igConnecting: "⏳ Connecting...",
                 igConnectError: "❌ Connection error. Check your token.",
+                igTroubleshooting: "If the connection fails, check:",
+                igTroubleshootingBrowser: "You are using an official, up-to-date browser",
+                igTroubleshootingVPN: "You have disabled your VPN or anonymizer",
+                igTroubleshootingAccount: "Your account has been switched to Professional status (Business or Creator)",
                 igNetworkError: "❌ Network error: ",
                 waWizardTitle: "WhatsApp Connection",
                 waWizardSubtitle: "REPLAI · Connection Instructions",
                 waStep1Of4: "Step 1 of 4",
-                waStep1Title: "Scan QR Code",
-                waStep1Desc: "Click the \"Connect\" button below to generate a QR code, then scan it using the WhatsApp app on your phone.",
+                waStep1Title: "Scan the QR code",
+                waStep1Desc: "Click the 'Connect' button below. A QR code will appear, then scan it using WhatsApp on your phone.",
                 waQRPlaceholder: "QR code will appear<br>after clicking connect",
                 waConnect: "🔗 Connect",
                 waNext: "Next →",
                 waCancel: "Cancel",
                 waStep2Of4: "Step 2 of 4",
-                waStep2Title: "Open WhatsApp Scanner",
-                waStep2Desc: "Open WhatsApp on your phone and follow the instructions below:",
+                waStep2Title: "Open the scanner in WhatsApp",
+                waStep2Desc: "Next steps depend on your phone (Android or iPhone).",
                 waAndroid: "Android",
                 waAndroid1: "Open <strong>WhatsApp</strong>",
                 waAndroid2: "Tap the three dots <strong>⋮</strong> in the top right corner",
@@ -2196,13 +2019,13 @@
                 waAgentTitle: "Agent Connected",
                 waAgentDesc: "After successful scan, you will see a confirmation. Click Continue.",
                 waStep4Of4: "Step 4 of 4",
-                waStep4Title: "Configuration",
-                waStep4Desc: "Panel for your connected number. Set AI-Agent behavior parameters.",
+                waStep4Title: "Configuring Operation",
+                waStep4Desc: "You will now see the control panel for the connected number. Set AI-Agent behavior parameters.",
                 waAgentActive: "🤖 AI-Agent active",
                 waAgentActiveDesc: "The agent will answer incoming messages",
                 waGroupReply: "💬 Reply in Groups",
                 waGroupReplyDesc: "AI-Agent replies to messages in group chats",
-                waAllSet: "✅ <strong>All set!</strong> Your AI Agent is successfully connected to WhatsApp Business. Configure the settings above and click \"Finish\".",
+                waAllSet: "✅ <strong>All set!</strong> Your AI Agent is successfully connected to WhatsApp Business. Configure the settings above and click 'Finish'.",
                 waFinish: "🎉 Finish",
                 waQRGenerating: "⏳ Generating QR...",
                 waQRRequesting: "Requesting QR code from server...",
@@ -2351,13 +2174,13 @@
                 igWizardTitle: "Подключение Instagram",
                 igWizardSubtitle: "REPLAI · Инструкция по подключению",
                 igStep1Of2: "Шаг 1 из 2",
-                igStep1Title: "Подготовка Профиля",
-                igStep1Desc: "Перед подключением убедитесь, что эти две настройки активны в вашем приложении Instagram:",
+                igStep1Title: "Подготовка профиля",
+                igStep1Desc: "Перед нажатием кнопки подключения на компьютере убедитесь, что на телефоне настроены две вещи:",
                 igAccountType: "Тип Аккаунта",
                 igAccountTypeDesc: "У вас должен быть <strong>Бизнес-аккаунт</strong> или <strong>Аккаунт автора</strong>. Личные аккаунты не поддерживаются.",
                 igAccountTypeHow: "📍 <strong>Как переключить:</strong><br>Настройки Instagram → Тип аккаунта и инструменты → Переключиться на профессиональный аккаунт",
                 igMessageAccess: "Доступ к Сообщениям",
-                igMessageAccessDesc: "Вы должны разрешить нашим сервисам читать ваши сообщения.",
+                igMessageAccessDesc: "Вы должны разрешить сервисам читать ваши сообщения.",
                 igMessageAccessHow: "📍 <strong>Где включить:</strong><br>Настройки → Сообщения и ответы на истории → Управление сообщениями → <strong>Разрешить доступ к сообщениям</strong> (ВКЛ)",
                 igCancel: "Отмена",
                 igContinue: "✅ Готово, Продолжить →",
@@ -2376,19 +2199,23 @@
                 igErrorToken: "⚠️ Введите токен доступа страницы",
                 igConnecting: "⏳ Подключение...",
                 igConnectError: "❌ Ошибка подключения. Проверьте токен.",
+                igTroubleshooting: "Если подключение не удалось, проверьте:",
+                igTroubleshootingBrowser: "Вы используете официальный и актуальный браузер",
+                igTroubleshootingVPN: "VPN или анонимайзер отключены",
+                igTroubleshootingAccount: "Ваш аккаунт переведён в профессиональный статус (Business или Creator)",
                 igNetworkError: "❌ Ошибка сети: ",
                 waWizardTitle: "Подключение WhatsApp",
                 waWizardSubtitle: "REPLAI · Инструкция по подключению",
                 waStep1Of4: "Шаг 1 из 4",
                 waStep1Title: "Сканирование QR-кода",
-                waStep1Desc: "Нажмите кнопку «Подключить» ниже, чтобы сгенерировать QR-код, затем отсканируйте его через приложение WhatsApp на телефоне.",
+                waStep1Desc: "Нажмите кнопку «Подключить» ниже. Появится QR-код, затем отсканируйте его через WhatsApp на телефоне.",
                 waQRPlaceholder: "QR-код появится<br>после нажатия «Подключить»",
                 waConnect: "🔗 Подключить",
                 waNext: "Далее →",
                 waCancel: "Отмена",
                 waStep2Of4: "Шаг 2 из 4",
-                waStep2Title: "Откройте Сканер WhatsApp",
-                waStep2Desc: "Откройте WhatsApp на телефоне и следуйте инструкциям ниже:",
+                waStep2Title: "Откройте сканер в WhatsApp",
+                waStep2Desc: "Дальнейшие шаги зависят от вашего телефона (Android или iPhone).",
                 waAndroid: "Android",
                 waAndroid1: "Откройте <strong>WhatsApp</strong>",
                 waAndroid2: "Нажмите на три точки <strong>⋮</strong> в правом верхнем углу",
@@ -2410,13 +2237,13 @@
                 waAgentTitle: "Агент Подключён",
                 waAgentDesc: "После успешного сканирования вы увидите подтверждение. Нажмите Продолжить.",
                 waStep4Of4: "Шаг 4 из 4",
-                waStep4Title: "Настройка",
-                waStep4Desc: "Панель для вашего подключённого номера. Настройте параметры поведения ИИ-агента.",
+                waStep4Title: "Настройка работы",
+                waStep4Desc: "Теперь вы увидите панель управления подключённым номером. Настройте параметры поведения AI-агента.",
                 waAgentActive: "🤖 ИИ-Агент активен",
                 waAgentActiveDesc: "Агент будет отвечать на входящие сообщения",
                 waGroupReply: "💬 Ответы в Группах",
                 waGroupReplyDesc: "ИИ-агент отвечает на сообщения в групповых чатах",
-                waAllSet: "✅ <strong>Всё готово!</strong> Ваш ИИ-агент успешно подключен к WhatsApp Business. Настройте параметры выше и нажмите «Завершить».",
+                waAllSet: "✅ <strong>Всё готово!</strong> Ваш AI-агент успешно подключен к WhatsApp Business. Настройте параметры выше и нажмите «Завершить».",
                 waFinish: "🎉 Завершить",
                 waQRGenerating: "⏳ Генерация QR...",
                 waQRRequesting: "Запрашиваем QR-код от сервера...",
@@ -2565,18 +2392,18 @@
                 igWizardTitle: "Instagram'ды Туташтыруу",
                 igWizardSubtitle: "REPLAI · Туташтыруу боюнча нускама",
                 igStep1Of2: "1-кадам, 2дан",
-                igStep1Title: "Профилди Даярдоо",
-                igStep1Desc: "Туташтыруудан мурун, Instagram тиркемеңизде бул эки тууралоо активдүү экенин текшериңиз:",
+                igStep1Title: "Профилди даярдоо",
+                igStep1Desc: "Компьютердеги туташтыруу баскычын басуудан мурун телефонуңузда эки нерсе туураланганын текшериңиз:",
                 igAccountType: "Аккаунт Тиб",
                 igAccountTypeDesc: "Сизде <strong>Бизнес аккаунт</strong> же <strong>Автор аккаунту</strong> болушу керек. Жеке аккаунттар колдоого алынбайт.",
                 igAccountTypeHow: "📍 <strong>Кантип өзгөртүү:</strong><br>Instagram Тууралоолор → Аккаунт тиби жана куралдар → Профессионал аккаунтка өтүү",
                 igMessageAccess: "Билдирүүлөргө Кирүү",
-                igMessageAccessDesc: "Биздин сервисдерге билдирүүлөрүңүздү окууга уруксат беришиңиз керек.",
+                igMessageAccessDesc: "Сервисдерге билдирүүлөрүңүздү окууга уруксат беришиңиз керек.",
                 igMessageAccessHow: "📍 <strong>Кайдан иштетүү:</strong><br>Тууралоолор → Билдирүүлөр жана история жооптору → Билдирүүлөрдү башкаруу → <strong>Билдирүүлөргө кирүүгө уруксат</strong> (КҮЙҮК)",
                 igCancel: "Жокко чыгаруу",
                 igContinue: "✅ Даяр, Улантуу →",
                 igStep2Of2: "2-кадам, 2ден",
-                igStep2Title: "REPLAI'га Туташтыруу",
+                igStep2Title: "REPLAI'га туташтыруу",
                 igStep2Desc: "Instagram уруксаттары менен Facebook баракчаңыздын кирүү токенін киргизиңиз:",
                 igPageToken: "Баракча Кирүү Токени",
                 igPageTokenPlaceholder: "EAA... (Meta for Developers'дан)",
@@ -2590,19 +2417,23 @@
                 igErrorToken: "⚠️ Баракча кирүү токенін киргизиңиз",
                 igConnecting: "⏳ Туташтырылууда...",
                 igConnectError: "❌ Туташуу катасы. Токенди текшериңиз.",
+                igTroubleshooting: "Туташуу ишке ашпаса, төмөнкүлөрдү текшериңиз:",
+                igTroubleshootingBrowser: "Расмий жана жаңыртылган браузерди колдонуп жатасыз",
+                igTroubleshootingVPN: "VPN же анонимайзер өчүрүлгөн",
+                igTroubleshootingAccount: "Аккаунтуңуз Professional статусуна которулган (Business же Creator)",
                 igNetworkError: "❌ Тармак катасы: ",
                 waWizardTitle: "WhatsApp'ты Туташтыруу",
                 waWizardSubtitle: "REPLAI · Туташтыруу боюнча нускама",
                 waStep1Of4: "1-кадам, 4төн",
-                waStep1Title: "QR-кодду Скандоо",
-                waStep1Desc: "QR-кодду түзүү үчүн төмөнкү «Туташтыруу» баскычын басыңыз, андан кийин телефонуңуздагы WhatsApp тиркемеси менен скандоо.",
+                waStep1Title: "QR-кодду скандоо",
+                waStep1Desc: "Төмөнкү «Туташтыруу» баскычын басыңыз. QR-код пайда болот, андан кийин телефонуңуздагы WhatsApp менен скандаңыз.",
                 waQRPlaceholder: "QR-код пайда болот<br>«Туташтыруу» баскычын баскандан кийин",
                 waConnect: "🔗 Туташтыруу",
                 waNext: "Кийинки →",
                 waCancel: "Жокко чыгаруу",
                 waStep2Of4: "2-кадам, 4төн",
-                waStep2Title: "WhatsApp Сканерин Ачыңыз",
-                waStep2Desc: "Телефонуңузда WhatsApp'ты ачып, төмөнкү көрсөтмөлөрдү аткарыңыз:",
+                waStep2Title: "WhatsApp'та сканерди ачыңыз",
+                waStep2Desc: "Кийинки кадамдар телефонуңузга жараша болот (Android же iPhone).",
                 waAndroid: "Android",
                 waAndroid1: "<strong>WhatsApp</strong>'ты ачыңыз",
                 waAndroid2: "Жогорку оң бурчтагы үч чекитти <strong>⋮</strong> басыңыз",
@@ -2624,8 +2455,8 @@
                 waAgentTitle: "Агент Туташты",
                 waAgentDesc: "Ийгиликтүү скандоодон кийин ырастоону көрөсүз. Улантуу баскычын басыңыз.",
                 waStep4Of4: "4-кадам, 4төн",
-                waStep4Title: "Тууралоо",
-                waStep4Desc: "Туташкан номериңиз үчүн панель. AI-аракет параметрлерин орнотуңуз.",
+                waStep4Title: "Иштөө режимин тууралоо",
+                waStep4Desc: "Эми туташкан номер үчүн башкаруу панелин көрөсүз. AI-агенттин жүрүм-турум параметрлерин орнотуңуз.",
                 waAgentActive: "🤖 AI-Агент активдүү",
                 waAgentActiveDesc: "Агент кирүүчү билдирүүлөргө жооп берет",
                 waGroupReply: "💬 Группаларда Жооп берүү",
@@ -2781,7 +2612,7 @@
             dots.forEach((dot, i) => {
                 if (!dot) return;
                 dot.style.background = i < step ? 'white' : 'rgba(255,255,255,0.35)';
-                dot.style.flex = i === step - 1 ? '2' : '1';
+                dot.style.flex = step === 3 ? '1' : (i === step - 1 ? '2' : '1');
             });
         }
 
@@ -2824,7 +2655,7 @@
                 qrImg.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;background:linear-gradient(135deg,rgba(37,211,102,0.1),rgba(18,140,126,0.1));border-radius:8px;"><div style="font-size:36px;">📱</div><div style="font-size:11px;color:#25D366;font-weight:700;">${tr('waQRReady')}</div></div>`;
                 placeholder.style.display = 'none';
                 qrImg.style.display = 'block';
-                btn.textContent = '🔄 Обновить';
+                btn.textContent = tr('waQRUpdate');
                 btn.disabled = false;
             }
         }
@@ -2901,6 +2732,15 @@
         function openInstagramWizard() {
             const overlay = document.getElementById('instagram-wizard-overlay');
             overlay.style.display = 'flex';
+            const errorBox = document.getElementById('ig-login-error');
+            const troubleshooting = document.getElementById('ig-troubleshooting');
+            if (errorBox) errorBox.style.display = 'none';
+            if (troubleshooting) troubleshooting.style.display = 'none';
+            const btn = document.getElementById('ig-authorize-btn');
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = tr('igAuthorize');
+            }
             igGoToStep(1);
         }
 
@@ -2939,7 +2779,10 @@
             const errBox = document.getElementById('ig-login-error');
             const btn = document.getElementById('ig-authorize-btn');
 
+            const troubleshooting = document.getElementById('ig-troubleshooting');
+
             errBox.style.display = 'none';
+            if (troubleshooting) troubleshooting.style.display = 'none';
 
             if (!accessToken) {
                 errBox.textContent = tr('igErrorToken');
@@ -2974,12 +2817,14 @@
                     const msg = result.error || tr('igConnectError').replace('❌ ', '');
                     errBox.textContent = '❌ ' + msg;
                     errBox.style.display = 'block';
+                    if (troubleshooting) troubleshooting.style.display = 'block';
                     btn.textContent = tr('igAuthorize');
                     btn.disabled = false;
                 }
             } catch (error) {
                 errBox.textContent = tr('igNetworkError') + error.message;
                 errBox.style.display = 'block';
+                if (troubleshooting) troubleshooting.style.display = 'block';
                 btn.textContent = tr('igAuthorize');
                 btn.disabled = false;
             }
