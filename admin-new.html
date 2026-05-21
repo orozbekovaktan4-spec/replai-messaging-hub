@@ -60,6 +60,7 @@
             color: var(--text-primary);
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
         }
 
         .sidebar {
@@ -632,6 +633,7 @@
             justify-content: center;
             opacity: 0;
             animation: fadeIn 1s forwards;
+            overflow: hidden;
         }
 
         .onboarding-container {
@@ -641,6 +643,14 @@
             color: white;
             max-height: 90vh;
             overflow-y: auto;
+        }
+
+        /* Disable scrolling when onboarding is active */
+        body.onboarding-active {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
         }
 
         .onboarding-step {
@@ -888,6 +898,132 @@
             .theme-btn {
                 width: 100%;
             }
+
+            .logo {
+                font-size: 24px;
+                margin-bottom: 24px;
+            }
+
+            .stat-number {
+                font-size: 20px;
+            }
+
+            .card {
+                padding: 12px;
+            }
+
+            .main-content {
+                padding: 16px 12px;
+            }
+        }
+
+        /* Mobile Menu Button */
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            top: 8px;
+            left: 8px;
+            z-index: 1001;
+            background: linear-gradient(135deg, #60efff 0%, #0061ff 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 97, 255, 0.3);
+            width: 48px;
+            height: 48px;
+        }
+
+        .mobile-menu-btn svg {
+            width: 24px;
+            height: 24px;
+            stroke: white;
+            stroke-width: 2;
+        }
+
+        /* Sidebar Overlay */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Enhanced Mobile Styles */
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .sidebar {
+                position: fixed;
+                left: -100%;
+                top: 0;
+                width: 280px;
+                height: 100vh;
+                z-index: 1000;
+                transition: left 0.3s ease;
+                overflow-y: auto;
+            }
+
+            .sidebar.mobile-open {
+                left: 0;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 60px 12px 12px 12px;
+                width: 100%;
+                max-width: 100vw;
+            }
+
+            /* Better touch targets */
+            .form-group input,
+            .form-group textarea,
+            .form-group select {
+                font-size: 16px; /* Prevents zoom on iOS */
+                min-height: 48px;
+            }
+
+            /* Prevent horizontal scroll */
+            body {
+                overflow-x: hidden;
+                position: relative;
+            }
+
+            html {
+                overflow-x: hidden;
+            }
+
+            table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+        }
+
+        /* Landscape mobile */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .sidebar {
+                width: 240px;
+            }
+
+            .main-content {
+                padding: 70px 16px 16px 16px;
+            }
         }
     </style>
 </head>
@@ -897,13 +1033,13 @@
         <div class="onboarding-container">
             <!-- Step 1: Welcome -->
             <div class="onboarding-step active" data-step="1">
-                <div class="onboarding-title">Welcome to REPLAI</div>
-                <div class="onboarding-subtitle">AI-Powered Messaging for Your Startup</div>
-                <div class="onboarding-text">
+                <div class="onboarding-title" data-i18n="onboardingWelcome">Welcome to REPLAI</div>
+                <div class="onboarding-subtitle" data-i18n="onboardingSubtitle">AI-Powered Messaging for Your Startup</div>
+                <div class="onboarding-text" data-i18n="onboardingText">
                     Built by entrepreneurs, for entrepreneurs. Automate customer conversations on Instagram, Telegram, and WhatsApp — all powered by free AI.
                 </div>
                 <div class="onboarding-buttons">
-                    <button class="onboarding-btn onboarding-btn-primary" onclick="nextOnboardingStep()">Get Started →</button>
+                    <button class="onboarding-btn onboarding-btn-primary" onclick="nextOnboardingStep()" data-i18n="getStarted">Get Started →</button>
                 </div>
                 <div class="onboarding-progress">
                     <div class="onboarding-dot active"></div>
@@ -914,41 +1050,41 @@
 
             <!-- Step 2: Features -->
             <div class="onboarding-step" data-step="2">
-                <div class="onboarding-title">What You Can Do</div>
-                <div class="onboarding-subtitle">Powerful features, zero cost</div>
+                <div class="onboarding-title" data-i18n="onboardingFeatures">What You Can Do</div>
+                <div class="onboarding-subtitle" data-i18n="onboardingFeaturesSub">Powerful features, zero cost</div>
                 <div class="onboarding-features">
                     <div class="onboarding-feature">
                         <div class="onboarding-feature-icon">
                             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                         </div>
-                        <div class="onboarding-feature-title">AI Responses</div>
-                        <div class="onboarding-feature-desc">Instant replies 24/7 using free Groq AI</div>
+                        <div class="onboarding-feature-title" data-i18n="featureAI">AI Responses</div>
+                        <div class="onboarding-feature-desc" data-i18n="featureAIDesc">Instant replies 24/7 using free Groq AI</div>
                     </div>
                     <div class="onboarding-feature">
                         <div class="onboarding-feature-icon">
                             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
                         </div>
-                        <div class="onboarding-feature-title">Analytics</div>
-                        <div class="onboarding-feature-desc">Track messages, peak hours, trends</div>
+                        <div class="onboarding-feature-title" data-i18n="featureAnalytics">Analytics</div>
+                        <div class="onboarding-feature-desc" data-i18n="featureAnalyticsDesc">Track messages, peak hours, trends</div>
                     </div>
                     <div class="onboarding-feature">
                         <div class="onboarding-feature-icon">
                             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
                         </div>
-                        <div class="onboarding-feature-title">Multi-Language</div>
-                        <div class="onboarding-feature-desc">English, Russian, Kyrgyz support</div>
+                        <div class="onboarding-feature-title" data-i18n="featureMultiLang">Multi-Language</div>
+                        <div class="onboarding-feature-desc" data-i18n="featureMultiLangDesc">English, Russian, Kyrgyz support</div>
                     </div>
                     <div class="onboarding-feature">
                         <div class="onboarding-feature-icon">
                             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
                         </div>
-                        <div class="onboarding-feature-title">Themes</div>
-                        <div class="onboarding-feature-desc">Light, Dark, Auto modes</div>
+                        <div class="onboarding-feature-title" data-i18n="featureThemes">Themes</div>
+                        <div class="onboarding-feature-desc" data-i18n="featureThemesDesc">Light, Dark, Auto modes</div>
                     </div>
                 </div>
                 <div class="onboarding-buttons">
-                    <button class="onboarding-btn onboarding-btn-secondary" onclick="prevOnboardingStep()">← Back</button>
-                    <button class="onboarding-btn onboarding-btn-primary" onclick="nextOnboardingStep()">Continue →</button>
+                    <button class="onboarding-btn onboarding-btn-secondary" onclick="prevOnboardingStep()" data-i18n="back">← Back</button>
+                    <button class="onboarding-btn onboarding-btn-primary" onclick="nextOnboardingStep()" data-i18n="continue">Continue →</button>
                 </div>
                 <div class="onboarding-progress">
                     <div class="onboarding-dot"></div>
@@ -959,25 +1095,25 @@
 
             <!-- Step 3: Next Steps -->
             <div class="onboarding-step" data-step="3">
-                <div class="onboarding-title">Ready to Launch</div>
-                <div class="onboarding-subtitle">3 steps to go live</div>
+                <div class="onboarding-title" data-i18n="onboardingReady">Ready to Launch</div>
+                <div class="onboarding-subtitle" data-i18n="onboardingReadySub">3 steps to go live</div>
                 <div class="onboarding-text" style="text-align: left; max-width: 500px; margin: 40px auto;">
                     <div style="margin-bottom: 30px;">
-                        <div style="font-size: 20px; font-weight: 600; margin-bottom: 10px;">1️⃣ Add Your Business Info</div>
-                        <div style="color: rgba(255,255,255,0.6);">Go to Business Info → Add products, prices, FAQs</div>
+                        <div style="font-size: 20px; font-weight: 600; margin-bottom: 10px;" data-i18n="step1Title">1️⃣ Add Your Business Info</div>
+                        <div style="color: rgba(255,255,255,0.6);" data-i18n="step1Desc">Go to Business Info → Add products, prices, FAQs</div>
                     </div>
                     <div style="margin-bottom: 30px;">
-                        <div style="font-size: 20px; font-weight: 600; margin-bottom: 10px;">2️⃣ Connect Platforms</div>
-                        <div style="color: rgba(255,255,255,0.6);">Go to Connect Platforms → Add Instagram, Telegram, or WhatsApp</div>
+                        <div style="font-size: 20px; font-weight: 600; margin-bottom: 10px;" data-i18n="step2Title">2️⃣ Connect Platforms</div>
+                        <div style="color: rgba(255,255,255,0.6);" data-i18n="step2Desc">Go to Connect Platforms → Add Instagram, Telegram, or WhatsApp</div>
                     </div>
                     <div style="margin-bottom: 30px;">
-                        <div style="font-size: 20px; font-weight: 600; margin-bottom: 10px;">3️⃣ Test & Launch</div>
-                        <div style="color: rgba(255,255,255,0.6);">Send a test message and watch AI respond!</div>
+                        <div style="font-size: 20px; font-weight: 600; margin-bottom: 10px;" data-i18n="step3Title">3️⃣ Test & Launch</div>
+                        <div style="color: rgba(255,255,255,0.6);" data-i18n="step3Desc">Send a test message and watch AI respond!</div>
                     </div>
                 </div>
                 <div class="onboarding-buttons">
-                    <button class="onboarding-btn onboarding-btn-secondary" onclick="prevOnboardingStep()">← Back</button>
-                    <button class="onboarding-btn onboarding-btn-primary" onclick="completeOnboarding()">Start Building 🚀</button>
+                    <button class="onboarding-btn onboarding-btn-secondary" onclick="prevOnboardingStep()" data-i18n="back">← Back</button>
+                    <button class="onboarding-btn onboarding-btn-primary" onclick="completeOnboarding()" data-i18n="startBuilding">Start Building 🚀</button>
                 </div>
                 <div class="onboarding-progress">
                     <div class="onboarding-dot"></div>
@@ -988,41 +1124,53 @@
         </div>
     </div>
 
-    <div class="sidebar">
+    <!-- Mobile Menu Button -->
+    <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+    </button>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" onclick="closeMobileMenu()"></div>
+
+    <div class="sidebar" id="sidebar">
         <div class="logo">
             <span class="repl">REPL</span><span class="ai">AI</span>
         </div>
         <div class="menu-item active" onclick="showSection('dashboard')">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-            <span>Dashboard</span>
+            <span data-i18n="menuDashboard">Dashboard</span>
         </div>
         <div class="menu-item" onclick="showSection('platforms')">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-            <span>Connect Platforms</span>
+            <span data-i18n="menuPlatforms">Connect Platforms</span>
         </div>
         <div class="menu-item" onclick="showSection('business')">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-            <span>Business Info</span>
+            <span data-i18n="menuBusiness">Business Info</span>
         </div>
         <div class="menu-item" onclick="showSection('ai-settings')">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m0 6l4.2 4.2M23 12h-6m-6 0H1m18.2 5.2l-4.2-4.2m0-6l4.2-4.2"></path></svg>
-            <span>AI Settings</span>
+            <span data-i18n="menuAI">AI Settings</span>
         </div>
         <div class="menu-item" onclick="showSection('chat-logs')">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-            <span>Chat Logs</span>
+            <span data-i18n="menuLogs">Chat Logs</span>
         </div>
 
         <div class="theme-switcher">
-            <div class="theme-switcher-label">Theme</div>
+            <div class="theme-switcher-label" data-i18n="theme">Theme</div>
             <div class="theme-buttons">
-                <button class="theme-btn active" onclick="setTheme('light')" data-theme="light" title="Light Mode">
+                <button class="theme-btn active" onclick="setTheme('light')" data-theme="light" title="Light Mode" data-i18n-title="lightMode">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
                 </button>
-                <button class="theme-btn" onclick="setTheme('auto')" data-theme="auto" title="Auto">
+                <button class="theme-btn" onclick="setTheme('auto')" data-theme="auto" title="Auto" data-i18n-title="autoMode">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 0 0 20z"></path></svg>
                 </button>
-                <button class="theme-btn" onclick="setTheme('dark')" data-theme="dark" title="Dark Mode">
+                <button class="theme-btn" onclick="setTheme('dark')" data-theme="dark" title="Dark Mode" data-i18n-title="darkMode">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
                 </button>
             </div>
@@ -1031,12 +1179,12 @@
 
     <div class="main-content">
         <div class="header">
-            <h1>REPLAI Dashboard</h1>
+            <h1 data-i18n="dashboard">REPLAI Dashboard</h1>
         </div>
 
         <div id="success-message" class="success-message">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 8px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-            Settings saved successfully!
+            <span data-i18n="settingsSaved">Settings saved successfully!</span>
         </div>
 
         <!-- Dashboard Section -->
@@ -1044,19 +1192,19 @@
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-number" id="total-messages">0</div>
-                    <div class="stat-label">Total Messages</div>
+                    <div class="stat-label" data-i18n="totalMessages">Total Messages</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-number" id="today-messages">0</div>
-                    <div class="stat-label">Today's Messages</div>
+                    <div class="stat-label" data-i18n="todayMessages">Today's Messages</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-number" id="connected-platforms">0</div>
-                    <div class="stat-label">Connected Platforms</div>
+                    <div class="stat-label" data-i18n="connectedPlatforms">Connected Platforms</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-number">$0</div>
-                    <div class="stat-label">Monthly Cost</div>
+                    <div class="stat-label" data-i18n="monthlyCost">Monthly Cost</div>
                 </div>
             </div>
 
@@ -1064,24 +1212,24 @@
             <div class="card">
                 <h2>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 8px;"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-                    Message Analytics
+                    <span data-i18n="messageAnalytics">Message Analytics</span>
                 </h2>
-                <p>Insights into your customer messages and engagement</p>
+                <p data-i18n="analyticsDesc">Insights into your customer messages and engagement</p>
             </div>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; margin-bottom: 24px;">
                 <div class="card">
-                    <h3 style="margin-bottom: 16px; color: var(--text-primary);">Peak Hours</h3>
+                    <h3 style="margin-bottom: 16px; color: var(--text-primary);" data-i18n="peakHours">Peak Hours</h3>
                     <canvas id="peakHoursChart"></canvas>
                 </div>
                 <div class="card">
-                    <h3 style="margin-bottom: 16px; color: var(--text-primary);">Platform Distribution</h3>
+                    <h3 style="margin-bottom: 16px; color: var(--text-primary);" data-i18n="platformDistribution">Platform Distribution</h3>
                     <canvas id="platformChart"></canvas>
                 </div>
             </div>
 
             <div class="card">
-                <h3 style="margin-bottom: 16px; color: var(--text-primary);">Daily Message Trend (Last 7 Days)</h3>
+                <h3 style="margin-bottom: 16px; color: var(--text-primary);" data-i18n="dailyTrend">Daily Message Trend (Last 7 Days)</h3>
                 <canvas id="dailyTrendChart"></canvas>
             </div>
 
@@ -1090,8 +1238,8 @@
         <!-- Platforms Section -->
         <div id="platforms-section" class="content-section">
             <div class="card">
-                <h2>Connect Your Platforms</h2>
-                <p>Connect your social media accounts to enable AI responses</p>
+                <h2 data-i18n="platformsTitle">Connect Your Platforms</h2>
+                <p data-i18n="platformsDesc">Connect your social media accounts to enable AI responses</p>
 
                 <!-- Telegram -->
                 <div class="platform-card" id="telegram-card">
@@ -1100,90 +1248,352 @@
                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg>
                         </div>
                         <div>
-                            <h3>Telegram</h3>
-                            <span class="platform-status disconnected" id="telegram-status">Disconnected</span>
+                            <h3 data-i18n="telegram">Telegram</h3>
+                            <span class="platform-status disconnected" id="telegram-status" data-i18n="disconnected">Disconnected</span>
                         </div>
                     </div>
-                    <button class="btn" onclick="togglePlatformSetup('telegram')">Connect</button>
+                    <button class="btn" onclick="togglePlatformSetup('telegram')" data-i18n="connect">Connect</button>
                 </div>
 
                 <div id="telegram-setup" class="connection-steps" style="display: none;">
-                    <h4>How to Connect Telegram:</h4>
+                    <h4 data-i18n="telegramSetupTitle">How to Connect Telegram:</h4>
                     <ol>
-                        <li>Open Telegram and search for <strong>@BotFather</strong></li>
-                        <li>Send <code>/newbot</code> command</li>
-                        <li>Follow the prompts to create your bot</li>
-                        <li>Copy the bot token</li>
-                        <li>Paste it below:</li>
+                        <li data-i18n="telegramStep1">Open Telegram and search for <strong>@BotFather</strong></li>
+                        <li data-i18n="telegramStep2">Send <code>/newbot</code> command</li>
+                        <li data-i18n="telegramStep3">Follow the prompts to create your bot</li>
+                        <li data-i18n="telegramStep4">Copy the bot token</li>
+                        <li data-i18n="telegramStep5">Paste it below:</li>
                     </ol>
                     <div class="form-group">
-                        <label>Telegram Bot Token</label>
-                        <input type="text" id="telegram-token" placeholder="123456789:ABCdef...">
+                        <label data-i18n="telegramTokenLabel">Telegram Bot Token</label>
+                        <input type="text" id="telegram-token" data-i18n-placeholder="telegramTokenPlaceholder" placeholder="123456789:ABCdef...">
                     </div>
-                    <button class="btn btn-success" onclick="connectTelegram()">Save & Connect</button>
+                    <button class="btn btn-success" onclick="connectTelegram()" data-i18n="telegramConnectBtn">Save & Connect</button>
                 </div>
 
                 <!-- Instagram -->
                 <div class="platform-card" id="instagram-card">
                     <div class="platform-info">
-                        <div class="platform-icon">
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                        <div class="platform-icon" style="background: linear-gradient(135deg, rgba(225,48,108,0.15) 0%, rgba(131,58,180,0.15) 100%);">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="stroke: url(#igGrad); color: #E1306C;">
+                                <defs>
+                                    <linearGradient id="igGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                                        <stop offset="0%" stop-color="#f09433"/>
+                                        <stop offset="25%" stop-color="#e6683c"/>
+                                        <stop offset="50%" stop-color="#dc2743"/>
+                                        <stop offset="75%" stop-color="#cc2366"/>
+                                        <stop offset="100%" stop-color="#bc1888"/>
+                                    </linearGradient>
+                                </defs>
+                                <rect x="2" y="2" width="20" height="20" rx="5" ry="5" stroke="url(#igGrad)"></rect>
+                                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" stroke="url(#igGrad)"></path>
+                                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" stroke="url(#igGrad)"></line>
+                            </svg>
                         </div>
                         <div>
-                            <h3>Instagram</h3>
-                            <span class="platform-status disconnected" id="instagram-status">Disconnected</span>
+                            <h3 data-i18n="instagram">Instagram</h3>
+                            <span class="platform-status disconnected" id="instagram-status" data-i18n="statusDisconnected">Disconnected</span>
                         </div>
                     </div>
-                    <button class="btn" onclick="togglePlatformSetup('instagram')">Connect</button>
+                    <button class="btn" id="instagram-connect-btn" onclick="openInstagramWizard()" style="background: linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%); box-shadow: 0 4px 15px rgba(131,58,180,0.35);" data-i18n="connect">Connect</button>
                 </div>
 
-                <div id="instagram-setup" class="connection-steps" style="display: none;">
-                    <h4>How to Connect Instagram:</h4>
-                    <ol>
-                        <li>Go to <a href="https://developers.facebook.com" target="_blank">Facebook Developers</a></li>
-                        <li>Create a new app</li>
-                        <li>Add Instagram product</li>
-                        <li>Get your access token</li>
-                        <li>Paste it below:</li>
-                    </ol>
-                    <div class="form-group">
-                        <label>Instagram Access Token</label>
-                        <input type="text" id="instagram-token" placeholder="Your Instagram access token">
+                <!-- Instagram Connection Wizard Modal -->
+                <div id="instagram-wizard-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); backdrop-filter:blur(12px); z-index:10000; align-items:center; justify-content:center;">
+                    <div id="instagram-wizard" style="background:var(--bg-primary); border-radius:24px; max-width:560px; width:92%; max-height:90vh; overflow-y:auto; box-shadow:0 30px 80px rgba(0,0,0,0.4); border:1px solid var(--border-color); animation: fadeIn 0.35s ease;">
+                        <!-- Wizard Header -->
+                        <div style="background:linear-gradient(135deg,#833ab4 0%,#fd1d1d 50%,#fcb045 100%); padding:28px 32px; border-radius:24px 24px 0 0; position:relative;">
+                            <button onclick="closeInstagramWizard()" style="position:absolute;top:16px;right:20px;background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.35)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">✕</button>
+                            <div style="display:flex;align-items:center;gap:14px;">
+                                <div style="width:50px;height:50px;background:rgba(255,255,255,0.2);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;">📸</div>
+                                <div>
+                                    <div style="color:white;font-size:20px;font-weight:700;letter-spacing:-0.4px;" data-i18n="igWizardTitle">Instagram Connection</div>
+                                    <div style="color:rgba(255,255,255,0.8);font-size:13px;margin-top:2px;" data-i18n="igWizardSubtitle">REPLAI · Connection Instructions</div>
+                                </div>
+                            </div>
+                            <!-- Step indicators -->
+                            <div style="display:flex;gap:8px;margin-top:20px;">
+                                <div id="igStep1Dot" style="height:4px;border-radius:2px;background:white;flex:2;transition:all 0.4s;"></div>
+                                <div id="igStep2Dot" style="height:4px;border-radius:2px;background:rgba(255,255,255,0.35);flex:1;transition:all 0.4s;"></div>
+                                <div id="igStep3Dot" style="height:4px;border-radius:2px;background:rgba(255,255,255,0.35);flex:1;transition:all 0.4s;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Step 1: Prepare Profile -->
+                        <div id="ig-step-1" style="padding:28px 32px;">
+                            <div style="font-size:13px;font-weight:700;color:#833ab4;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;" data-i18n="igStep1Of2">Step 1 of 2</div>
+                            <div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:6px;" data-i18n="igStep1Title">Prepare Profile</div>
+                            <div style="font-size:14px;color:var(--text-secondary);margin-bottom:22px;line-height:1.5;" data-i18n="igStep1Desc">Before connecting, please ensure these two settings are active in your Instagram app:</div>
+
+                            <div style="background:linear-gradient(135deg,rgba(131,58,180,0.07) 0%,rgba(253,29,29,0.05) 100%);border:1px solid rgba(131,58,180,0.2);border-radius:16px;padding:20px;margin-bottom:16px;">
+                                <div style="display:flex;gap:12px;align-items:flex-start;">
+                                    <div style="width:36px;height:36px;min-width:36px;background:linear-gradient(135deg,#833ab4,#fd1d1d);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;">1️⃣</div>
+                                    <div>
+                                        <div style="font-weight:700;color:var(--text-primary);font-size:15px;margin-bottom:6px;" data-i18n="igAccountType">Account Type</div>
+                                        <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;" data-i18n="igAccountTypeDesc">You must have a <strong style="color:var(--text-primary);">Business Account</strong> or <strong style="color:var(--text-primary);">Creator Account</strong>. Personal accounts are not supported.</div>
+                                        <div style="margin-top:10px;background:var(--bg-secondary);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--text-secondary);line-height:1.7;border:1px solid var(--border-color);">
+                                            <span data-i18n="igAccountTypeHow">📍 <strong>How to switch:</strong><br>
+                                            Instagram Settings → Account type and tools → Switch to professional account</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="background:linear-gradient(135deg,rgba(131,58,180,0.07) 0%,rgba(253,29,29,0.05) 100%);border:1px solid rgba(131,58,180,0.2);border-radius:16px;padding:20px;margin-bottom:24px;">
+                                <div style="display:flex;gap:12px;align-items:flex-start;">
+                                    <div style="width:36px;height:36px;min-width:36px;background:linear-gradient(135deg,#833ab4,#fd1d1d);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;">2️⃣</div>
+                                    <div>
+                                        <div style="font-weight:700;color:var(--text-primary);font-size:15px;margin-bottom:6px;" data-i18n="igMessageAccess">Message Access</div>
+                                        <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;" data-i18n="igMessageAccessDesc">You must allow our services to read your messages.</div>
+                                        <div style="margin-top:10px;background:var(--bg-secondary);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--text-secondary);line-height:1.7;border:1px solid var(--border-color);">
+                                            <span data-i18n="igMessageAccessHow">📍 <strong>Where to enable:</strong><br>
+                                            Settings → Messages and story replies → Message controls → <strong style="color:var(--text-primary);">Allow access to messages</strong> (ON)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="display:flex;gap:12px;">
+                                <button onclick="closeInstagramWizard()" style="flex:1;padding:14px;border:2px solid var(--border-color);background:transparent;color:var(--text-secondary);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--primary-blue)'" onmouseout="this.style.borderColor='var(--border-color)'"> <span data-i18n="igCancel">Cancel</span></button>
+                                <button onclick="igGoToStep(2)" style="flex:2;padding:14px;background:linear-gradient(135deg,#833ab4 0%,#fd1d1d 50%,#fcb045 100%);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 15px rgba(131,58,180,0.3);" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 25px rgba(131,58,180,0.4)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 15px rgba(131,58,180,0.3)'"> <span data-i18n="igContinue">✅ Done, Continue →</span></button>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Connect -->
+                        <div id="ig-step-2" style="display:none;padding:28px 32px;">
+                            <div style="font-size:13px;font-weight:700;color:#833ab4;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;" data-i18n="igStep2Of2">Step 2 of 2</div>
+                            <div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:6px;" data-i18n="igStep2Title">Connect to REPLAI</div>
+                            <div style="font-size:14px;color:var(--text-secondary);margin-bottom:24px;line-height:1.5;" data-i18n="igStep2Desc">Enter your Facebook Page Access Token with Instagram permissions:</div>
+
+                            <div id="ig-login-error" style="display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:14px 16px;margin-bottom:16px;color:#ef4444;font-size:13px;"></div>
+
+                            <div style="margin-bottom:18px;">
+                                <label style="display:block;font-weight:600;font-size:13px;color:var(--text-primary);margin-bottom:8px;" data-i18n="igPageToken">Page Access Token</label>
+                                <div style="position:relative;">
+                                    <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;">🔑</span>
+                                    <input type="text" id="ig-access-token" data-i18n-placeholder="igPageTokenPlaceholder" placeholder="EAA... (from Meta for Developers)" style="width:100%;padding:13px 14px 13px 44px;border:2px solid var(--border-color);border-radius:12px;font-size:14px;background:var(--bg-primary);color:var(--text-primary);transition:all 0.2s;outline:none;font-family:monospace;" onfocus="this.style.borderColor='#833ab4';this.style.boxShadow='0 0 0 3px rgba(131,58,180,0.12)'" onblur="this.style.borderColor='var(--border-color)';this.style.boxShadow=''">
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom:20px;">
+                                <label style="display:block;font-weight:600;font-size:13px;color:var(--text-primary);margin-bottom:8px;" data-i18n="igAccountId">Instagram Business Account ID (optional)</label>
+                                <div style="position:relative;">
+                                    <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;">📸</span>
+                                    <input type="text" id="ig-account-id" data-i18n-placeholder="igAccountIdPlaceholder" placeholder="Auto-detected if empty" style="width:100%;padding:13px 14px 13px 44px;border:2px solid var(--border-color);border-radius:12px;font-size:14px;background:var(--bg-primary);color:var(--text-primary);transition:all 0.2s;outline:none;font-family:monospace;" onfocus="this.style.borderColor='#833ab4';this.style.boxShadow='0 0 0 3px rgba(131,58,180,0.12)'" onblur="this.style.borderColor='var(--border-color)';this.style.boxShadow=''">
+                                </div>
+                            </div>
+
+                            <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:14px 16px;margin-bottom:20px;font-size:12px;color:var(--text-secondary);line-height:1.7;">
+                                <span data-i18n="igTokenHelp">⚠️ <strong style="color:var(--text-primary);">How to get your Page Access Token:</strong><br>
+                                1. Go to <a href="https://developers.facebook.com" target="_blank" style="color:#833ab4;">Meta for Developers</a><br>
+                                2. Create an app → Add "Instagram Graph API" product<br>
+                                3. Link your Facebook Page with Instagram Business<br>
+                                4. Generate a Page Access Token with <code style="background:var(--bg-secondary);padding:2px 6px;border-radius:4px;">instagram_manage_messages</code> permission<br>
+                                5. Paste it above</span>
+                            </div>
+
+                            <div style="display:flex;gap:12px;">
+                                <button onclick="igGoToStep(1)" style="flex:1;padding:14px;border:2px solid var(--border-color);background:transparent;color:var(--text-secondary);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--primary-blue)'" onmouseout="this.style.borderColor='var(--border-color)'"> <span data-i18n="back">← Back</span></button>
+                                <button id="ig-authorize-btn" onclick="connectInstagram()" style="flex:2;padding:14px;background:linear-gradient(135deg,#833ab4 0%,#fd1d1d 50%,#fcb045 100%);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 15px rgba(131,58,180,0.3);" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 25px rgba(131,58,180,0.4)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 15px rgba(131,58,180,0.3)'"> <span data-i18n="igAuthorize">🔗 Connect & Setup Webhook</span></button>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Success -->
+                        <div id="ig-step-3" style="display:none;padding:48px 32px;text-align:center;">
+                            <div style="width:80px;height:80px;background:linear-gradient(135deg,#10b981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 20px;box-shadow:0 8px 30px rgba(16,185,129,0.4);">✅</div>
+                            <div style="font-size:24px;font-weight:700;color:var(--text-primary);margin-bottom:10px;" data-i18n="igSuccess">Connection Established!</div>
+                            <div style="font-size:15px;color:var(--text-secondary);line-height:1.6;margin-bottom:30px;" data-i18n="igSuccessDesc">Your Instagram account is now connected to REPLAI. The bot will start responding to your messages automatically.</div>
+                            <div id="ig-connected-username" style="display:inline-flex;align-items:center;gap:10px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:40px;padding:10px 20px;font-size:14px;font-weight:600;color:#10b981;margin-bottom:28px;"></div>
+                            <br>
+                            <button onclick="closeInstagramWizard()" style="padding:14px 36px;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(16,185,129,0.3);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''"> <span data-i18n="igDone">Done 🎉</span></button>
+                        </div>
                     </div>
-                    <button class="btn btn-success" onclick="connectInstagram()">Save & Connect</button>
                 </div>
 
                 <!-- WhatsApp -->
                 <div class="platform-card" id="whatsapp-card">
                     <div class="platform-info">
-                        <div class="platform-icon">
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                        <div class="platform-icon" style="background:linear-gradient(135deg,rgba(37,211,102,0.15) 0%,rgba(18,140,126,0.15) 100%);">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="stroke:#25D366;">
+                                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                            </svg>
                         </div>
                         <div>
-                            <h3>WhatsApp</h3>
-                            <span class="platform-status disconnected" id="whatsapp-status">Disconnected</span>
+                            <h3 data-i18n="whatsapp">WhatsApp Business</h3>
+                            <span class="platform-status disconnected" id="whatsapp-status" data-i18n="statusDisconnected">Disconnected</span>
                         </div>
                     </div>
-                    <button class="btn" onclick="togglePlatformSetup('whatsapp')">Connect</button>
+                    <button class="btn" id="whatsapp-connect-btn" onclick="openWhatsAppWizard()" style="background:linear-gradient(135deg,#25D366 0%,#128C7E 100%);box-shadow:0 4px 15px rgba(37,211,102,0.35);" data-i18n="connect">Connect</button>
                 </div>
 
-                <div id="whatsapp-setup" class="connection-steps" style="display: none;">
-                    <h4>How to Connect WhatsApp:</h4>
-                    <ol>
-                        <li>Go to <a href="https://developers.facebook.com" target="_blank">Facebook Developers</a></li>
-                        <li>Create WhatsApp Business account</li>
-                        <li>Get your access token and phone number ID</li>
-                        <li>Paste them below:</li>
-                    </ol>
-                    <div class="form-group">
-                        <label>WhatsApp Access Token</label>
-                        <input type="text" id="whatsapp-token" placeholder="Your WhatsApp access token">
+                <!-- WhatsApp QR Wizard Modal -->
+                <div id="whatsapp-wizard-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);backdrop-filter:blur(12px);z-index:10000;align-items:center;justify-content:center;">
+                    <div id="whatsapp-wizard" style="background:var(--bg-primary);border-radius:24px;max-width:580px;width:92%;max-height:92vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,0.4);border:1px solid var(--border-color);animation:fadeIn 0.35s ease;">
+                        <!-- Header -->
+                        <div style="background:linear-gradient(135deg,#25D366 0%,#128C7E 100%);padding:28px 32px;border-radius:24px 24px 0 0;position:relative;">
+                            <button onclick="closeWhatsAppWizard()" style="position:absolute;top:16px;right:20px;background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.35)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">✕</button>
+                            <div style="display:flex;align-items:center;gap:14px;">
+                                <div style="width:50px;height:50px;background:rgba(255,255,255,0.2);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;">💬</div>
+                                <div>
+                                    <div style="color:white;font-size:20px;font-weight:700;letter-spacing:-0.4px;" data-i18n="waWizardTitle">WhatsApp Connection</div>
+                                    <div style="color:rgba(255,255,255,0.8);font-size:13px;margin-top:2px;" data-i18n="waWizardSubtitle">REPLAI · Connection Instructions</div>
+                                </div>
+                            </div>
+                            <!-- Step dots -->
+                            <div style="display:flex;gap:8px;margin-top:20px;">
+                                <div id="waDot1" style="height:4px;border-radius:2px;background:white;flex:2;transition:all 0.4s;"></div>
+                                <div id="waDot2" style="height:4px;border-radius:2px;background:rgba(255,255,255,0.35);flex:1;transition:all 0.4s;"></div>
+                                <div id="waDot3" style="height:4px;border-radius:2px;background:rgba(255,255,255,0.35);flex:1;transition:all 0.4s;"></div>
+                                <div id="waDot4" style="height:4px;border-radius:2px;background:rgba(255,255,255,0.35);flex:1;transition:all 0.4s;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Step 1: QR Code -->
+                        <div id="wa-step-1" style="padding:28px 32px;">
+                            <div style="font-size:13px;font-weight:700;color:#25D366;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;" data-i18n="waStep1Of4">Step 1 of 4</div>
+                            <div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:6px;" data-i18n="waStep1Title">Scan QR Code</div>
+                            <div style="font-size:14px;color:var(--text-secondary);margin-bottom:22px;line-height:1.5;" data-i18n="waStep1Desc">Click the "Connect" button below to generate a QR code, then scan it using the WhatsApp app on your phone.</div>
+
+                            <div style="background:linear-gradient(135deg,rgba(37,211,102,0.07) 0%,rgba(18,140,126,0.05) 100%);border:1px solid rgba(37,211,102,0.2);border-radius:16px;padding:24px;margin-bottom:20px;text-align:center;">
+                                <div id="wa-qr-placeholder" style="width:180px;height:180px;margin:0 auto 16px;background:var(--bg-secondary);border-radius:12px;display:flex;align-items:center;justify-content:center;border:2px dashed rgba(37,211,102,0.4);">
+                                    <div style="text-align:center;">
+                                        <div style="font-size:48px;margin-bottom:8px;">📱</div>
+                                        <div style="font-size:12px;color:var(--text-secondary);" data-i18n="waQRPlaceholder">QR code will appear<br>after clicking connect</div>
+                                    </div>
+                                </div>
+                                <div id="wa-qr-img" style="display:none;width:180px;height:180px;margin:0 auto 16px;background:white;border-radius:12px;padding:8px;">
+                                    <!-- QR image injected by JS -->
+                                </div>
+                                <button id="wa-get-qr-btn" onclick="waGetQR()" style="padding:12px 28px;background:linear-gradient(135deg,#25D366 0%,#128C7E 100%);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(37,211,102,0.3);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''" data-i18n="waConnect">🔗 Connect</button>
+                                <div id="wa-qr-status" style="margin-top:12px;font-size:13px;color:var(--text-secondary);display:none;"></div>
+                            </div>
+
+                            <div style="display:flex;gap:12px;">
+                                <button onclick="closeWhatsAppWizard()" style="flex:1;padding:14px;border:2px solid var(--border-color);background:transparent;color:var(--text-secondary);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border-color)'"> <span data-i18n="igCancel">Cancel</span></button>
+                                <button onclick="waGoToStep(2)" style="flex:2;padding:14px;background:linear-gradient(135deg,#25D366 0%,#128C7E 100%);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(37,211,102,0.3);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''" data-i18n="waNext">Next →</button>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Open Scanner -->
+                        <div id="wa-step-2" style="display:none;padding:28px 32px;">
+                            <div style="font-size:13px;font-weight:700;color:#25D366;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;" data-i18n="waStep2Of4">Step 2 of 4</div>
+                            <div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:6px;" data-i18n="waStep2Title">Open WhatsApp Scanner</div>
+                            <div style="font-size:14px;color:var(--text-secondary);margin-bottom:20px;line-height:1.5;" data-i18n="waStep2Desc">Open WhatsApp on your phone and follow the instructions below:</div>
+
+                            <!-- Android -->
+                            <div style="background:linear-gradient(135deg,rgba(37,211,102,0.07) 0%,rgba(18,140,126,0.05) 100%);border:1px solid rgba(37,211,102,0.2);border-radius:16px;padding:18px;margin-bottom:14px;">
+                                <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
+                                    <div style="font-size:24px;">🤖</div>
+                                    <div style="font-weight:700;color:var(--text-primary);font-size:15px;" data-i18n="waAndroid">Android</div>
+                                </div>
+                                <ol style="margin-left:18px;color:var(--text-secondary);font-size:13px;line-height:1.9;">
+                                    <li data-i18n="waAndroid1">Open <strong style="color:var(--text-primary);">WhatsApp</strong></li>
+                                    <li data-i18n="waAndroid2">Tap the three dots <strong style="color:var(--text-primary);">⋮</strong> in the top right corner</li>
+                                    <li data-i18n="waAndroid3">Select <strong style="color:var(--text-primary);">Linked devices</strong></li>
+                                    <li data-i18n="waAndroid4">Tap <strong style="color:var(--text-primary);">Link a device</strong></li>
+                                </ol>
+                                <div style="margin-top:10px;background:var(--bg-secondary);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--text-secondary);line-height:1.6;border:1px solid var(--border-color);" data-i18n="waAndroidNote">
+                                    📝 If prompted, unlock your phone (fingerprint or PIN).
+                                </div>
+                            </div>
+
+                            <!-- iPhone -->
+                            <div style="background:linear-gradient(135deg,rgba(37,211,102,0.07) 0%,rgba(18,140,126,0.05) 100%);border:1px solid rgba(37,211,102,0.2);border-radius:16px;padding:18px;margin-bottom:22px;">
+                                <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
+                                    <div style="font-size:24px;">🍎</div>
+                                    <div style="font-weight:700;color:var(--text-primary);font-size:15px;" data-i18n="waIphone">iPhone (iOS)</div>
+                                </div>
+                                <ol style="margin-left:18px;color:var(--text-secondary);font-size:13px;line-height:1.9;">
+                                    <li data-i18n="waAndroid1">Open <strong style="color:var(--text-primary);">WhatsApp</strong></li>
+                                    <li data-i18n="waIphone2">Go to <strong style="color:var(--text-primary);">Settings ⚙️</strong> (bottom right)</li>
+                                    <li data-i18n="waAndroid3">Select <strong style="color:var(--text-primary);">Linked devices</strong></li>
+                                    <li data-i18n="waAndroid4">Tap <strong style="color:var(--text-primary);">Link a device</strong></li>
+                                </ol>
+                                <div style="margin-top:10px;background:var(--bg-secondary);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--text-secondary);line-height:1.6;border:1px solid var(--border-color);" data-i18n="waIphoneNote">
+                                    📝 Use Face ID or Touch ID if requested.
+                                </div>
+                            </div>
+
+                            <div style="display:flex;gap:12px;">
+                                <button onclick="waGoToStep(1)" style="flex:1;padding:14px;border:2px solid var(--border-color);background:transparent;color:var(--text-secondary);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border-color)'"> <span data-i18n="back">← Back</span></button>
+                                <button onclick="waGoToStep(3)" style="flex:2;padding:14px;background:linear-gradient(135deg,#25D366 0%,#128C7E 100%);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(37,211,102,0.3);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''" data-i18n="waOpened">✅ Opened, Continue →</button>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Scan QR -->
+                        <div id="wa-step-3" style="display:none;padding:28px 32px;">
+                            <div style="font-size:13px;font-weight:700;color:#25D366;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;" data-i18n="waStep3Of4">Step 3 of 4</div>
+                            <div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:6px;" data-i18n="waStep3Title">Integrate</div>
+                            <div style="font-size:14px;color:var(--text-secondary);margin-bottom:22px;line-height:1.5;" data-i18n="waStep3Desc">Point your phone camera at the QR code displayed on the screen.</div>
+
+                            <div style="background:linear-gradient(135deg,rgba(37,211,102,0.07) 0%,rgba(18,140,126,0.05) 100%);border:1px solid rgba(37,211,102,0.2);border-radius:16px;padding:20px;margin-bottom:20px;">
+                                <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:14px;">
+                                    <div style="width:36px;height:36px;min-width:36px;background:linear-gradient(135deg,#25D366,#128C7E);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;">📷</div>
+                                    <div>
+                                        <div style="font-weight:700;color:var(--text-primary);font-size:15px;margin-bottom:4px;" data-i18n="waStep1Title">Scan QR Code</div>
+                                        <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;" data-i18n="waScanDesc">Aim the camera at the QR code — it will connect automatically.</div>
+                                    </div>
+                                </div>
+                                <div style="display:flex;gap:14px;align-items:flex-start;">
+                                    <div style="width:36px;height:36px;min-width:36px;background:linear-gradient(135deg,#25D366,#128C7E);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;">✅</div>
+                                    <div>
+                                        <div style="font-weight:700;color:var(--text-primary);font-size:15px;margin-bottom:4px;" data-i18n="waAgentTitle">Agent Connected</div>
+                                        <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;" data-i18n="waAgentDesc">After successful scan, you will see a confirmation. Click Continue.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="display:flex;gap:12px;">
+                                <button onclick="waGoToStep(2)" style="flex:1;padding:14px;border:2px solid var(--border-color);background:transparent;color:var(--text-secondary);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border-color)'"> <span data-i18n="back">← Back</span></button>
+                                <button onclick="waGoToStep(4)" style="flex:2;padding:14px;background:linear-gradient(135deg,#25D366 0%,#128C7E 100%);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(37,211,102,0.3);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''" data-i18n="continue">Continue →</button>
+                            </div>
+                        </div>
+
+                        <!-- Step 4: Settings -->
+                        <div id="wa-step-4" style="display:none;padding:28px 32px;">
+                            <div style="font-size:13px;font-weight:700;color:#25D366;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;" data-i18n="waStep4Of4">Step 4 of 4</div>
+                            <div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:6px;" data-i18n="waStep4Title">Configuration</div>
+                            <div style="font-size:14px;color:var(--text-secondary);margin-bottom:22px;line-height:1.5;" data-i18n="waStep4Desc">Panel for your connected number. Set AI-Agent behavior parameters.</div>
+
+                            <div style="background:linear-gradient(135deg,rgba(37,211,102,0.07) 0%,rgba(18,140,126,0.05) 100%);border:1px solid rgba(37,211,102,0.2);border-radius:16px;padding:20px;margin-bottom:16px;">
+                                <!-- AI Agent toggle -->
+                                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border-color);">
+                                    <div>
+                                        <div style="font-weight:700;color:var(--text-primary);font-size:14px;" data-i18n="waAgentActive">🤖 AI-Agent active</div>
+                                        <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;" data-i18n="waAgentActiveDesc">The agent will answer incoming messages</div>
+                                    </div>
+                                    <label style="position:relative;display:inline-block;width:48px;height:26px;cursor:pointer;">
+                                        <input type="checkbox" id="wa-agent-toggle" checked style="opacity:0;width:0;height:0;">
+                                        <span id="wa-agent-slider" style="position:absolute;top:0;left:0;right:0;bottom:0;background:#25D366;border-radius:26px;transition:0.3s;" onclick="waToggleSwitch('wa-agent-toggle','wa-agent-slider')">
+                                            <span style="position:absolute;content:'';height:20px;width:20px;left:3px;bottom:3px;background:white;border-radius:50%;transition:0.3s;transform:translateX(22px);display:block;"></span>
+                                        </span>
+                                    </label>
+                                </div>
+                                <!-- Group reply toggle -->
+                                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;">
+                                    <div>
+                                        <div style="font-weight:700;color:var(--text-primary);font-size:14px;" data-i18n="waGroupReply">💬 Reply in Groups</div>
+                                        <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;" data-i18n="waGroupReplyDesc">AI-Agent replies to messages in group chats</div>
+                                    </div>
+                                    <label style="position:relative;display:inline-block;width:48px;height:26px;cursor:pointer;">
+                                        <input type="checkbox" id="wa-group-toggle" style="opacity:0;width:0;height:0;">
+                                        <span id="wa-group-slider" style="position:absolute;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:26px;transition:0.3s;" onclick="waToggleSwitch('wa-group-toggle','wa-group-slider')">
+                                            <span style="position:absolute;content:'';height:20px;width:20px;left:3px;bottom:3px;background:white;border-radius:50%;transition:0.3s;transform:translateX(0px);display:block;"></span>
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div style="background:rgba(37,211,102,0.1);border:1px solid rgba(37,211,102,0.3);border-radius:12px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:var(--text-secondary);line-height:1.6;" data-i18n="waAllSet">
+                                ✅ <strong style="color:var(--text-primary);">All set!</strong> Your AI Agent is successfully connected to WhatsApp Business. Configure the settings above and click "Finish".
+                            </div>
+
+                            <div style="display:flex;gap:12px;">
+                                <button onclick="waGoToStep(3)" style="flex:1;padding:14px;border:2px solid var(--border-color);background:transparent;color:var(--text-secondary);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border-color)'"> <span data-i18n="back">← Back</span></button>
+                                <button onclick="waFinish()" style="flex:2;padding:14px;background:linear-gradient(135deg,#25D366 0%,#128C7E 100%);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(37,211,102,0.3);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''" data-i18n="waFinish">🎉 Finish</button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Phone Number ID</label>
-                        <input type="text" id="whatsapp-phone" placeholder="Your phone number ID">
-                    </div>
-                    <button class="btn btn-success" onclick="connectWhatsApp()">Save & Connect</button>
                 </div>
 
                 <!-- TikTok -->
@@ -1193,27 +1603,27 @@
                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>
                         </div>
                         <div>
-                            <h3>TikTok</h3>
-                            <span class="platform-status disconnected" id="tiktok-status">Disconnected</span>
+                            <h3 data-i18n="tiktok">TikTok</h3>
+                            <span class="platform-status disconnected" id="tiktok-status" data-i18n="statusDisconnected">Disconnected</span>
                         </div>
                     </div>
-                    <button class="btn" onclick="togglePlatformSetup('tiktok')">Connect</button>
+                    <button class="btn" onclick="togglePlatformSetup('tiktok')" data-i18n="connect">Connect</button>
                 </div>
 
                 <div id="tiktok-setup" class="connection-steps" style="display: none;">
-                    <h4>How to Connect TikTok:</h4>
+                    <h4 data-i18n="tiktokSetupTitle">How to Connect TikTok:</h4>
                     <ol>
-                        <li>Go to <a href="https://developers.tiktok.com" target="_blank">TikTok Developers</a></li>
-                        <li>Create a new app</li>
-                        <li>Enable Direct Messages API</li>
-                        <li>Get your access token</li>
-                        <li>Paste it below:</li>
+                        <li data-i18n="tiktokStep1">Go to <a href="https://developers.tiktok.com" target="_blank">TikTok Developers</a></li>
+                        <li data-i18n="tiktokStep2">Create a new app</li>
+                        <li data-i18n="tiktokStep3">Enable Direct Messages API</li>
+                        <li data-i18n="tiktokStep4">Get your access token</li>
+                        <li data-i18n="tiktokStep5">Paste it below:</li>
                     </ol>
                     <div class="form-group">
-                        <label>TikTok Access Token</label>
-                        <input type="text" id="tiktok-token" placeholder="Your TikTok access token">
+                        <label data-i18n="tiktokTokenLabel">TikTok Access Token</label>
+                        <input type="text" id="tiktok-token" data-i18n-placeholder="tiktokTokenPlaceholder" placeholder="Your TikTok access token">
                     </div>
-                    <button class="btn btn-success" onclick="connectTikTok()">Save & Connect</button>
+                    <button class="btn btn-success" onclick="connectTikTok()" data-i18n="tiktokConnectBtn">Save & Connect</button>
                 </div>
             </div>
         </div>
@@ -1221,62 +1631,69 @@
         <!-- Business Info Section -->
         <div id="business-section" class="content-section">
             <div class="card">
-                <h2>Business Information</h2>
-                <p>This information will be used by the AI to answer customer questions</p>
+                <h2 data-i18n="businessTitle">Business Information</h2>
+                <p data-i18n="businessDesc">This information will be used by the AI to answer customer questions</p>
 
                 <div class="form-group">
-                    <label>Business Name</label>
-                    <input type="text" id="business-name" placeholder="e.g., Arzanshop">
+                    <label data-i18n="businessName">Business Name</label>
+                    <input type="text" id="business-name" data-i18n-placeholder="businessNamePlaceholder" placeholder="e.g., Arzanshop">
                 </div>
 
                 <div class="form-group">
-                    <label>Business Description</label>
-                    <textarea id="business-description" placeholder="What does your business do?"></textarea>
+                    <label data-i18n="businessDescription">Business Description</label>
+                    <textarea id="business-description" data-i18n-placeholder="businessDescPlaceholder" placeholder="What does your business do?"></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label>Products/Services (one per line)</label>
-                    <textarea id="business-products" placeholder="T-Shirts - $15&#10;Jeans - $40&#10;Dresses - $30"></textarea>
-                    <div class="help-text">Format: Product Name - Price</div>
+                    <label data-i18n="productsServices">Products/Services (one per line)</label>
+                    <textarea id="business-products" data-i18n-placeholder="productsPlaceholder" placeholder="T-Shirts - $15&#10;Jeans - $40&#10;Dresses - $30"></textarea>
+                    <div class="help-text" data-i18n="formatHelp">Format: Product Name - Price</div>
                 </div>
 
                 <div class="form-group">
-                    <label>Business Hours</label>
-                    <textarea id="business-hours" placeholder="Monday-Friday: 9 AM - 6 PM&#10;Saturday: 10 AM - 2 PM&#10;Sunday: Closed"></textarea>
+                    <label data-i18n="businessHours">Business Hours</label>
+                    <textarea id="business-hours" data-i18n-placeholder="hoursPlaceholder" placeholder="Monday-Friday: 9 AM - 6 PM&#10;Saturday: 10 AM - 2 PM&#10;Sunday: Closed"></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label>Contact Information</label>
-                    <input type="text" id="business-contact" placeholder="Phone, Email, Address">
+                    <label data-i18n="contactInfo">Contact Information</label>
+                    <input type="text" id="business-contact" data-i18n-placeholder="contactPlaceholder" placeholder="Phone, Email, Address">
                 </div>
 
                 <div class="form-group">
-                    <label>FAQs (one per line, format: Q: question | A: answer)</label>
-                    <textarea id="business-faqs" placeholder="Q: Do you ship internationally? | A: Yes, worldwide shipping available"></textarea>
+                    <label data-i18n="faqs">FAQs (one per line, format: Q: question | A: answer)</label>
+                    <textarea id="business-faqs" data-i18n-placeholder="faqsPlaceholder" placeholder="Q: Do you ship internationally? | A: Yes, worldwide shipping available"></textarea>
                 </div>
 
-                <button class="btn" onclick="saveBusinessInfo()">Save Business Info</button>
+                <button class="btn" onclick="saveBusinessInfo()" data-i18n="saveBusinessInfo">Save Business Info</button>
             </div>
         </div>
 
         <!-- AI Settings Section -->
         <div id="ai-settings-section" class="content-section">
             <div class="card">
-                <h2>AI Configuration</h2>
+                <h2 data-i18n="aiTitle">AI Configuration</h2>
 
                 <div class="form-group">
-                    <label>Admin Panel Language</label>
+                    <label data-i18n="adminPanelLanguage">Admin Panel Language</label>
                     <select id="language-selector" onchange="changeLanguage()">
-                        <option value="en">🇬🇧 English</option>
+                        <option value="en" selected>🇬🇧 English</option>
                         <option value="ru">🇷🇺 Русский</option>
                         <option value="ky">🇰🇬 Кыргызча</option>
                     </select>
                 </div>
+                <script>
+                    document.addEventListener('DOMContentLoaded', () => {
+                        const savedLang = localStorage.getItem('replai-language') || 'en';
+                        document.getElementById('language-selector').value = savedLang;
+                        changeLanguage();
+                    });
+                </script>
 
                 <div class="form-group">
-                    <label>AI Provider</label>
+                    <label data-i18n="aiProvider">AI Provider</label>
                     <select id="ai-provider">
-                        <option value="groq">Groq (FREE - Recommended)</option>
+                        <option value="groq" data-i18n="aiProviderGroq">Groq (FREE - Recommended)</option>
                         <option value="huggingface">Hugging Face</option>
                         <option value="openrouter">OpenRouter</option>
                         <option value="together">Together AI</option>
@@ -1284,40 +1701,40 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Response Style</label>
+                    <label data-i18n="responseStyle">Response Style</label>
                     <select id="response-style">
-                        <option value="friendly">Friendly & Casual</option>
-                        <option value="professional">Professional</option>
-                        <option value="concise">Short & Concise</option>
+                        <option value="friendly" data-i18n="friendlyCasual">Friendly & Casual</option>
+                        <option value="professional" data-i18n="professional">Professional</option>
+                        <option value="concise" data-i18n="shortConcise">Short & Concise</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label>Response Language</label>
+                    <label data-i18n="responseLanguage">Response Language</label>
                     <select id="response-language">
-                        <option value="auto">Auto-detect (Recommended)</option>
-                        <option value="en">English</option>
-                        <option value="es">Spanish</option>
-                        <option value="fr">French</option>
-                        <option value="de">German</option>
+                        <option value="auto" data-i18n="autoDetect">Auto-detect (Recommended)</option>
+                        <option value="en" data-i18n="english">English</option>
+                        <option value="es" data-i18n="spanish">Spanish</option>
+                        <option value="fr" data-i18n="french">French</option>
+                        <option value="de" data-i18n="german">German</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label>Max Response Length</label>
+                    <label data-i18n="maxResponseLength">Max Response Length</label>
                     <select id="max-length">
-                        <option value="short">Short (1-2 sentences)</option>
-                        <option value="medium" selected>Medium (2-3 sentences)</option>
-                        <option value="long">Long (3-5 sentences)</option>
+                        <option value="short" data-i18n="shortLength">Short (1-2 sentences)</option>
+                        <option value="medium" selected data-i18n="mediumLength">Medium (2-3 sentences)</option>
+                        <option value="long" data-i18n="longLength">Long (3-5 sentences)</option>
                     </select>
                 </div>
 
-                <button class="btn" onclick="saveAISettings()">Save AI Settings</button>
+                <button class="btn" onclick="saveAISettings()" data-i18n="saveAISettings">Save AI Settings</button>
 
                 <div style="margin-top: 30px; padding-top: 30px; border-top: 2px solid var(--border-color);">
-                    <h3 style="margin-bottom: 10px; color: var(--text-primary);">Onboarding</h3>
-                    <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 15px;">Reset the welcome wizard to show it again on next page load</p>
-                    <button class="btn btn-secondary" onclick="resetOnboarding()">🔄 Reset Onboarding</button>
+                    <h3 style="margin-bottom: 10px; color: var(--text-primary);" data-i18n="onboardingSection">Onboarding</h3>
+                    <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 15px;" data-i18n="onboardingDesc">Reset the welcome wizard to show it again on next page load</p>
+                    <button class="btn btn-secondary" onclick="resetOnboarding()" data-i18n="resetOnboarding">🔄 Reset Onboarding</button>
                 </div>
             </div>
         </div>
@@ -1325,9 +1742,9 @@
         <!-- Chat Logs Section -->
         <div id="chat-logs-section" class="content-section">
             <div class="card">
-                <h2>Recent Conversations</h2>
+                <h2 data-i18n="logsTitle">Recent Conversations</h2>
                 <div class="chat-log" id="chat-log">
-                    <p style="text-align: center; color: #999;">No messages yet. Connect your platforms to start receiving messages!</p>
+                    <p style="text-align: center; color: #999;" data-i18n="logsDesc">No messages yet. Connect your platforms to start receiving messages!</p>
                 </div>
             </div>
         </div>
@@ -1382,8 +1799,10 @@
 
             if (completed === 'true') {
                 overlay.style.display = 'none';
+                document.body.classList.remove('onboarding-active');
             } else {
                 overlay.style.display = 'flex';
+                document.body.classList.add('onboarding-active');
             }
         }
 
@@ -1415,15 +1834,16 @@
             localStorage.setItem('replai-onboarding-completed', 'true');
             const overlay = document.getElementById('onboarding');
             overlay.style.animation = 'fadeOut 0.5s forwards';
+            document.body.classList.remove('onboarding-active');
             setTimeout(() => {
                 overlay.style.display = 'none';
             }, 500);
         }
 
         function resetOnboarding() {
-            if (confirm('Are you sure you want to reset the onboarding wizard?\n\nThe welcome wizard will appear again when you refresh the page.')) {
+            if (confirm(tr('resetOnboardingConfirm'))) {
                 localStorage.removeItem('replai-onboarding-completed');
-                alert('Onboarding reset! Refresh the page to see the welcome wizard again.');
+                alert(tr('onboardingResetDone'));
             }
         }
 
@@ -1448,7 +1868,7 @@
                         labels: ['12AM', '1AM', '2AM', '3AM', '4AM', '5AM', '6AM', '7AM', '8AM', '9AM', '10AM', '11AM',
                                  '12PM', '1PM', '2PM', '3PM', '4PM', '5PM', '6PM', '7PM', '8PM', '9PM', '10PM', '11PM'],
                         datasets: [{
-                            label: 'Messages',
+                            label: tr('chartMessages'),
                             data: [2, 1, 0, 0, 1, 3, 8, 15, 22, 28, 25, 20, 18, 24, 30, 35, 32, 28, 25, 20, 15, 10, 8, 5],
                             backgroundColor: 'rgba(0, 97, 255, 0.6)',
                             borderColor: '#0061ff',
@@ -1490,7 +1910,7 @@
                 platformChart = new Chart(platformCtx, {
                     type: 'doughnut',
                     data: {
-                        labels: ['Instagram', 'Telegram', 'WhatsApp'],
+                        labels: [tr('chartInstagram'), tr('chartTelegram'), tr('chartWhatsApp')],
                         datasets: [{
                             data: [45, 30, 25],
                             backgroundColor: ['#E4405F', '#0088cc', '#25D366'],
@@ -1525,7 +1945,7 @@
                 for (let i = 6; i >= 0; i--) {
                     const date = new Date(today);
                     date.setDate(date.getDate() - i);
-                    last7Days.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                    last7Days.push(date.toLocaleDateString(localStorage.getItem('replai-language') === 'ru' ? 'ru-RU' : localStorage.getItem('replai-language') === 'ky' ? 'ky-KG' : 'en-US', { month: 'short', day: 'numeric' }));
                 }
 
                 dailyTrendChart = new Chart(dailyTrendCtx, {
@@ -1533,7 +1953,7 @@
                     data: {
                         labels: last7Days,
                         datasets: [{
-                            label: 'Messages',
+                            label: tr('chartMessages'),
                             data: [45, 52, 48, 65, 70, 68, 75],
                             borderColor: '#0061ff',
                             backgroundColor: 'rgba(0, 97, 255, 0.1)',
@@ -1607,16 +2027,42 @@
                 menuBusiness: "Business Info",
                 menuAI: "AI Settings",
                 menuLogs: "Chat Logs",
-                // Connect Platforms
                 platformsTitle: "Connect Your Platforms",
-                platformsDesc: "Connect Instagram, Telegram, and WhatsApp to start receiving messages",
+                platformsDesc: "Connect your social media accounts to enable AI responses",
                 telegram: "Telegram",
                 instagram: "Instagram",
-                whatsapp: "WhatsApp",
+                whatsapp: "WhatsApp Business",
+                tiktok: "TikTok",
                 connected: "Connected",
                 disconnected: "Disconnected",
+                statusConnected: "Connected",
+                statusDisconnected: "Disconnected",
                 connect: "Connect",
-                // Business Info
+                manage: "Manage",
+                settingsSaved: "Settings saved successfully!",
+                messageAnalytics: "Message Analytics",
+                analyticsDesc: "Insights into your customer messages and engagement",
+                peakHours: "Peak Hours",
+                platformDistribution: "Platform Distribution",
+                dailyTrend: "Daily Message Trend (Last 7 Days)",
+                telegramSetupTitle: "How to Connect Telegram:",
+                telegramStep1: "Open Telegram and search for <strong>@BotFather</strong>",
+                telegramStep2: "Send <code>/newbot</code> command",
+                telegramStep3: "Follow the prompts to create your bot",
+                telegramStep4: "Copy the bot token",
+                telegramStep5: "Paste it below:",
+                telegramTokenLabel: "Telegram Bot Token",
+                telegramTokenPlaceholder: "123456789:ABCdef...",
+                telegramConnectBtn: "Save & Connect",
+                tiktokSetupTitle: "How to Connect TikTok:",
+                tiktokStep1: "Go to <a href=\"https://developers.tiktok.com\" target=\"_blank\">TikTok Developers</a>",
+                tiktokStep2: "Create a new app",
+                tiktokStep3: "Enable Direct Messages API",
+                tiktokStep4: "Get your access token",
+                tiktokStep5: "Paste it below:",
+                tiktokTokenLabel: "TikTok Access Token",
+                tiktokTokenPlaceholder: "Your TikTok access token",
+                tiktokConnectBtn: "Save & Connect",
                 businessTitle: "Business Information",
                 businessDesc: "This information will be used by the AI to answer customer questions",
                 businessName: "Business Name",
@@ -1632,12 +2078,12 @@
                 contactPlaceholder: "Phone, Email, Address",
                 faqs: "FAQs (one per line, format: Q: question | A: answer)",
                 faqsPlaceholder: "Q: Do you ship internationally? | A: Yes, worldwide shipping available",
+                saveBusinessInfo: "Save Business Info",
                 saveButton: "Save Settings",
-                // AI Settings
                 aiTitle: "AI Configuration",
-                aiDesc: "Configure how your AI assistant responds to customers",
                 adminPanelLanguage: "Admin Panel Language",
                 aiProvider: "AI Provider",
+                aiProviderGroq: "Groq (FREE - Recommended)",
                 responseStyle: "Response Style",
                 friendlyCasual: "Friendly & Casual",
                 professional: "Professional",
@@ -1653,22 +2099,135 @@
                 mediumLength: "Medium (2-3 sentences)",
                 longLength: "Long (3-5 sentences)",
                 saveAISettings: "Save AI Settings",
-                aiTone: "AI Response Tone",
-                friendly: "Friendly",
-                casual: "Casual",
-                aiLanguage: "AI Response Language",
-                russian: "Russian",
-                kyrgyz: "Kyrgyz",
-                responseLength: "Response Length",
-                short: "Short",
-                medium: "Medium",
-                detailed: "Detailed",
-                // Chat Logs
-                logsTitle: "Chat Logs",
-                logsDesc: "View all conversations with customers",
-                noChatLogs: "No chat logs yet. Messages will appear here once customers start chatting.",
+                onboardingSection: "Onboarding",
+                onboardingDesc: "Reset the welcome wizard to show it again on next page load",
+                resetOnboarding: "Reset Onboarding",
+                resetOnboardingConfirm: "Are you sure you want to reset the onboarding wizard?\n\nThe welcome wizard will appear again when you refresh the page.",
+                onboardingResetDone: "Onboarding reset! Refresh the page to see the welcome wizard again.",
+                logsTitle: "Recent Conversations",
+                logsDesc: "No messages yet. Connect your platforms to start receiving messages!",
                 platform: "Platform",
-                time: "Time"
+                time: "Time",
+                noChatLogs: "No chat logs yet. Messages will appear here once customers start chatting.",
+                onboardingWelcome: "Welcome to REPLAI",
+                onboardingSubtitle: "AI-Powered Messaging for Your Startup",
+                onboardingText: "Built by entrepreneurs, for entrepreneurs. Automate customer conversations on Instagram, Telegram, and WhatsApp — all powered by free AI.",
+                getStarted: "Get Started →",
+                onboardingFeatures: "What You Can Do",
+                onboardingFeaturesSub: "Powerful features, zero cost",
+                featureAI: "AI Responses",
+                featureAIDesc: "Instant replies 24/7 using free Groq AI",
+                featureAnalytics: "Analytics",
+                featureAnalyticsDesc: "Track messages, peak hours, trends",
+                featureMultiLang: "Multi-Language",
+                featureMultiLangDesc: "English, Russian, Kyrgyz support",
+                featureThemes: "Themes",
+                featureThemesDesc: "Light, Dark, Auto modes",
+                back: "← Back",
+                continue: "Continue →",
+                onboardingReady: "Ready to Launch",
+                onboardingReadySub: "3 steps to go live",
+                step1Title: "1️⃣ Add Your Business Info",
+                step1Desc: "Go to Business Info → Add products, prices, FAQs",
+                step2Title: "2️⃣ Connect Platforms",
+                step2Desc: "Go to Connect Platforms → Add Instagram, Telegram, or WhatsApp",
+                step3Title: "3️⃣ Test & Launch",
+                step3Desc: "Send a test message and watch AI respond!",
+                startBuilding: "Start Building 🚀",
+                igWizardTitle: "Instagram Connection",
+                igWizardSubtitle: "REPLAI · Connection Instructions",
+                igStep1Of2: "Step 1 of 2",
+                igStep1Title: "Prepare Profile",
+                igStep1Desc: "Before connecting, please ensure these two settings are active in your Instagram app:",
+                igAccountType: "Account Type",
+                igAccountTypeDesc: "You must have a <strong>Business Account</strong> or <strong>Creator Account</strong>. Personal accounts are not supported.",
+                igAccountTypeHow: "📍 <strong>How to switch:</strong><br>Instagram Settings → Account type and tools → Switch to professional account",
+                igMessageAccess: "Message Access",
+                igMessageAccessDesc: "You must allow our services to read your messages.",
+                igMessageAccessHow: "📍 <strong>Where to enable:</strong><br>Settings → Messages and story replies → Message controls → <strong>Allow access to messages</strong> (ON)",
+                igCancel: "Cancel",
+                igContinue: "✅ Done, Continue →",
+                igStep2Of2: "Step 2 of 2",
+                igStep2Title: "Connect to REPLAI",
+                igStep2Desc: "Enter your Facebook Page Access Token with Instagram permissions:",
+                igPageToken: "Page Access Token",
+                igPageTokenPlaceholder: "EAA... (from Meta for Developers)",
+                igAccountId: "Instagram Business Account ID (optional)",
+                igAccountIdPlaceholder: "Auto-detected if empty",
+                igTokenHelp: "⚠️ <strong>How to get your Page Access Token:</strong><br>1. Go to <a href=\"https://developers.facebook.com\" target=\"_blank\">Meta for Developers</a><br>2. Create an app → Add \"Instagram Graph API\" product<br>3. Link your Facebook Page with Instagram Business<br>4. Generate a Page Access Token with <code>instagram_manage_messages</code> permission<br>5. Paste it above",
+                igAuthorize: "🔗 Connect & Setup Webhook",
+                igSuccess: "Connection Established!",
+                igSuccessDesc: "Your Instagram account is now connected to REPLAI. The bot will start responding to your messages automatically.",
+                igDone: "Done 🎉",
+                igErrorToken: "⚠️ Enter your Page Access Token",
+                igConnecting: "⏳ Connecting...",
+                igConnectError: "❌ Connection error. Check your token.",
+                igNetworkError: "❌ Network error: ",
+                waWizardTitle: "WhatsApp Connection",
+                waWizardSubtitle: "REPLAI · Connection Instructions",
+                waStep1Of4: "Step 1 of 4",
+                waStep1Title: "Scan QR Code",
+                waStep1Desc: "Click the \"Connect\" button below to generate a QR code, then scan it using the WhatsApp app on your phone.",
+                waQRPlaceholder: "QR code will appear<br>after clicking connect",
+                waConnect: "🔗 Connect",
+                waNext: "Next →",
+                waCancel: "Cancel",
+                waStep2Of4: "Step 2 of 4",
+                waStep2Title: "Open WhatsApp Scanner",
+                waStep2Desc: "Open WhatsApp on your phone and follow the instructions below:",
+                waAndroid: "Android",
+                waAndroid1: "Open <strong>WhatsApp</strong>",
+                waAndroid2: "Tap the three dots <strong>⋮</strong> in the top right corner",
+                waAndroid3: "Select <strong>Linked devices</strong>",
+                waAndroid4: "Tap <strong>Link a device</strong>",
+                waAndroidNote: "📝 If prompted, unlock your phone (fingerprint or PIN).",
+                waIphone: "iPhone (iOS)",
+                waIphone1: "Open <strong>WhatsApp</strong>",
+                waIphone2: "Go to <strong>Settings ⚙️</strong> (bottom right)",
+                waIphone3: "Select <strong>Linked devices</strong>",
+                waIphone4: "Tap <strong>Link a device</strong>",
+                waIphoneNote: "📝 Use Face ID or Touch ID if requested.",
+                waOpened: "✅ Opened, Continue →",
+                waStep3Of4: "Step 3 of 4",
+                waStep3Title: "Integrate",
+                waStep3Desc: "Point your phone camera at the QR code displayed on the screen.",
+                waScanTitle: "Scan QR Code",
+                waScanDesc: "Aim the camera at the QR code — it will connect automatically.",
+                waAgentTitle: "Agent Connected",
+                waAgentDesc: "After successful scan, you will see a confirmation. Click Continue.",
+                waStep4Of4: "Step 4 of 4",
+                waStep4Title: "Configuration",
+                waStep4Desc: "Panel for your connected number. Set AI-Agent behavior parameters.",
+                waAgentActive: "🤖 AI-Agent active",
+                waAgentActiveDesc: "The agent will answer incoming messages",
+                waGroupReply: "💬 Reply in Groups",
+                waGroupReplyDesc: "AI-Agent replies to messages in group chats",
+                waAllSet: "✅ <strong>All set!</strong> Your AI Agent is successfully connected to WhatsApp Business. Configure the settings above and click \"Finish\".",
+                waFinish: "🎉 Finish",
+                waQRGenerating: "⏳ Generating QR...",
+                waQRRequesting: "Requesting QR code from server...",
+                waQRScan: "📷 Scan the QR code in WhatsApp app",
+                waQRRefresh: "🔄 Refresh QR",
+                waQRFailed: "❌ QR code not received. Try again.",
+                waQRConnect: "🔗 Connect",
+                waServerError: "⚠️ Server error. Use demo mode.",
+                waQRUpdate: "🔄 Refresh",
+                waServerOffline: "⚠️ Server unavailable — demo mode",
+                waQRReady: "QR-CODE READY",
+                enterToken: "Please enter your {platform} token",
+                failedConnect: "Failed to connect {platform}. Please check your credentials.",
+                errorConnecting: "Error connecting {platform}: ",
+                theme: "Theme",
+                lightMode: "Light Mode",
+                darkMode: "Dark Mode",
+                autoMode: "Auto",
+                chartMessages: "Messages",
+                chartInstagram: "Instagram",
+                chartTelegram: "Telegram",
+                chartWhatsApp: "WhatsApp",
+                saveBusinessFailed: "Failed to save business info",
+                saveAIFailed: "Failed to save AI settings",
+                errorSaving: "Error saving: "
             },
             ru: {
                 dashboard: "Панель REPLAI",
@@ -1677,21 +2236,47 @@
                 todayMessages: "Сообщений Сегодня",
                 connectedPlatforms: "Подключенные Платформы",
                 monthlyCost: "Месячная Стоимость",
-                menuDashboard: "📊 Панель",
-                menuPlatforms: "🔗 Подключить Платформы",
-                menuBusiness: "🏪 Информация о Бизнесе",
-                menuAI: "⚙️ Настройки ИИ",
-                menuLogs: "💬 Журнал Чатов",
-                // Connect Platforms
+                menuDashboard: "Панель",
+                menuPlatforms: "Подключить Платформы",
+                menuBusiness: "Информация о Бизнесе",
+                menuAI: "Настройки ИИ",
+                menuLogs: "Журнал Чатов",
                 platformsTitle: "Подключите Ваши Платформы",
-                platformsDesc: "Подключите Instagram, Telegram и WhatsApp для получения сообщений",
+                platformsDesc: "Подключите аккаунты социальных сетей для включения ИИ-ответов",
                 telegram: "Telegram",
                 instagram: "Instagram",
-                whatsapp: "WhatsApp",
+                whatsapp: "WhatsApp Business",
+                tiktok: "TikTok",
                 connected: "Подключено",
                 disconnected: "Отключено",
+                statusConnected: "Подключено",
+                statusDisconnected: "Отключено",
                 connect: "Подключить",
-                // Business Info
+                manage: "Управление",
+                settingsSaved: "Настройки успешно сохранены!",
+                messageAnalytics: "Аналитика Сообщений",
+                analyticsDesc: "Информация о сообщениях клиентов и вовлеченности",
+                peakHours: "Часы Активности",
+                platformDistribution: "Распределение по Платформам",
+                dailyTrend: "Ежедневная Динамика (Последние 7 Дней)",
+                telegramSetupTitle: "Как подключить Telegram:",
+                telegramStep1: "Откройте Telegram и найдите <strong>@BotFather</strong>",
+                telegramStep2: "Отправьте команду <code>/newbot</code>",
+                telegramStep3: "Следуйте инструкциям для создания бота",
+                telegramStep4: "Скопируйте токен бота",
+                telegramStep5: "Вставьте его ниже:",
+                telegramTokenLabel: "Токен Бота Telegram",
+                telegramTokenPlaceholder: "123456789:ABCdef...",
+                telegramConnectBtn: "Сохранить и Подключить",
+                tiktokSetupTitle: "Как подключить TikTok:",
+                tiktokStep1: "Перейдите на <a href=\"https://developers.tiktok.com\" target=\"_blank\">TikTok Developers</a>",
+                tiktokStep2: "Создайте новое приложение",
+                tiktokStep3: "Включите API прямых сообщений",
+                tiktokStep4: "Получите токен доступа",
+                tiktokStep5: "Вставьте его ниже:",
+                tiktokTokenLabel: "Токен Доступа TikTok",
+                tiktokTokenPlaceholder: "Ваш токен доступа TikTok",
+                tiktokConnectBtn: "Сохранить и Подключить",
                 businessTitle: "Информация о Бизнесе",
                 businessDesc: "Эта информация будет использоваться ИИ для ответов на вопросы клиентов",
                 businessName: "Название Бизнеса",
@@ -1707,12 +2292,12 @@
                 contactPlaceholder: "Телефон, Email, Адрес",
                 faqs: "Часто Задаваемые Вопросы (по одному на строку, формат: В: вопрос | О: ответ)",
                 faqsPlaceholder: "В: Доставляете ли вы по всей стране? | О: Да, доставка по всему Кыргызстану",
+                saveBusinessInfo: "Сохранить Информацию",
                 saveButton: "Сохранить Настройки",
-                // AI Settings
                 aiTitle: "Настройки ИИ",
-                aiDesc: "Настройте, как ваш ИИ-ассистент отвечает клиентам",
                 adminPanelLanguage: "Язык Панели Администратора",
                 aiProvider: "Провайдер ИИ",
+                aiProviderGroq: "Groq (БЕСПЛАТНО - Рекомендуется)",
                 responseStyle: "Стиль Ответов",
                 friendlyCasual: "Дружелюбный и Неформальный",
                 professional: "Профессиональный",
@@ -1728,22 +2313,135 @@
                 mediumLength: "Средний (2-3 предложения)",
                 longLength: "Длинный (3-5 предложений)",
                 saveAISettings: "Сохранить Настройки ИИ",
-                aiTone: "Тон Ответов ИИ",
-                friendly: "Дружелюбный",
-                casual: "Неформальный",
-                aiLanguage: "Язык Ответов ИИ",
-                russian: "Русский",
-                kyrgyz: "Кыргызский",
-                responseLength: "Длина Ответов",
-                short: "Короткие",
-                medium: "Средние",
-                detailed: "Подробные",
-                // Chat Logs
-                logsTitle: "Журнал Чатов",
-                logsDesc: "Просмотр всех разговоров с клиентами",
-                noChatLogs: "Пока нет чатов. Сообщения появятся здесь, когда клиенты начнут писать.",
+                onboardingSection: "Онбординг",
+                onboardingDesc: "Сбросить приветственный мастер, чтобы показать его снова при следующей загрузке",
+                resetOnboarding: "Сбросить Онбординг",
+                resetOnboardingConfirm: "Вы уверены, что хотите сбросить мастер онбординга?\n\nПриветственный мастер появится снова при обновлении страницы.",
+                onboardingResetDone: "Онбординг сброшен! Обновите страницу, чтобы увидеть приветственный мастер.",
+                logsTitle: "Последние Разговоры",
+                logsDesc: "Сообщений пока нет. Подключите платформы, чтобы начать получать сообщения!",
                 platform: "Платформа",
-                time: "Время"
+                time: "Время",
+                noChatLogs: "Журналов чатов пока нет. Сообщения появятся здесь, когда клиенты начнут писать.",
+                onboardingWelcome: "Добро пожаловать в REPLAI",
+                onboardingSubtitle: "ИИ-мессенджер для вашего стартапа",
+                onboardingText: "Создано предпринимателями для предпринимателей. Автоматизируйте общение с клиентами в Instagram, Telegram и WhatsApp — всё на базе бесплатного ИИ.",
+                getStarted: "Начать →",
+                onboardingFeatures: "Что Вы Можете Делать",
+                onboardingFeaturesSub: "Мощные функции, нулевая стоимость",
+                featureAI: "ИИ-Ответы",
+                featureAIDesc: "Мгновенные ответы 24/7 с помощью бесплатного Groq AI",
+                featureAnalytics: "Аналитика",
+                featureAnalyticsDesc: "Отслеживайте сообщения, часы активности, тенденции",
+                featureMultiLang: "Мультиязычность",
+                featureMultiLangDesc: "Поддержка английского, русского, кыргызского",
+                featureThemes: "Темы",
+                featureThemesDesc: "Светлая, тёмная, автоматическая",
+                back: "← Назад",
+                continue: "Продолжить →",
+                onboardingReady: "Готово к Запуску",
+                onboardingReadySub: "3 шага для запуска",
+                step1Title: "1️⃣ Добавьте Информацию о Бизнесе",
+                step1Desc: "Перейдите в Информация о Бизнесе → Добавьте товары, цены, FAQ",
+                step2Title: "2️⃣ Подключите Платформы",
+                step2Desc: "Перейдите в Подключить Платформы → Добавьте Instagram, Telegram или WhatsApp",
+                step3Title: "3️⃣ Тестирование и Запуск",
+                step3Desc: "Отправьте тестовое сообщение и посмотрите, как ИИ ответит!",
+                startBuilding: "Начать Создание 🚀",
+                igWizardTitle: "Подключение Instagram",
+                igWizardSubtitle: "REPLAI · Инструкция по подключению",
+                igStep1Of2: "Шаг 1 из 2",
+                igStep1Title: "Подготовка Профиля",
+                igStep1Desc: "Перед подключением убедитесь, что эти две настройки активны в вашем приложении Instagram:",
+                igAccountType: "Тип Аккаунта",
+                igAccountTypeDesc: "У вас должен быть <strong>Бизнес-аккаунт</strong> или <strong>Аккаунт автора</strong>. Личные аккаунты не поддерживаются.",
+                igAccountTypeHow: "📍 <strong>Как переключить:</strong><br>Настройки Instagram → Тип аккаунта и инструменты → Переключиться на профессиональный аккаунт",
+                igMessageAccess: "Доступ к Сообщениям",
+                igMessageAccessDesc: "Вы должны разрешить нашим сервисам читать ваши сообщения.",
+                igMessageAccessHow: "📍 <strong>Где включить:</strong><br>Настройки → Сообщения и ответы на истории → Управление сообщениями → <strong>Разрешить доступ к сообщениям</strong> (ВКЛ)",
+                igCancel: "Отмена",
+                igContinue: "✅ Готово, Продолжить →",
+                igStep2Of2: "Шаг 2 из 2",
+                igStep2Title: "Подключение к REPLAI",
+                igStep2Desc: "Введите токен доступа вашей страницы Facebook с разрешениями Instagram:",
+                igPageToken: "Токен Доступа Страницы",
+                igPageTokenPlaceholder: "EAA... (из Meta for Developers)",
+                igAccountId: "ID Бизнес-аккаунта Instagram (необязательно)",
+                igAccountIdPlaceholder: "Определяется автоматически, если пусто",
+                igTokenHelp: "⚠️ <strong>Как получить токен доступа страницы:</strong><br>1. Перейдите на <a href=\"https://developers.facebook.com\" target=\"_blank\">Meta for Developers</a><br>2. Создайте приложение → Добавьте продукт \"Instagram Graph API\"<br>3. Свяжите вашу страницу Facebook с Instagram Business<br>4. Сгенерируйте токен доступа страницы с разрешением <code>instagram_manage_messages</code><br>5. Вставьте его выше",
+                igAuthorize: "🔗 Подключить и Настроить Вебхук",
+                igSuccess: "Подключение Установлено!",
+                igSuccessDesc: "Ваш аккаунт Instagram теперь подключен к REPLAI. Бот начнёт автоматически отвечать на ваши сообщения.",
+                igDone: "Готово 🎉",
+                igErrorToken: "⚠️ Введите токен доступа страницы",
+                igConnecting: "⏳ Подключение...",
+                igConnectError: "❌ Ошибка подключения. Проверьте токен.",
+                igNetworkError: "❌ Ошибка сети: ",
+                waWizardTitle: "Подключение WhatsApp",
+                waWizardSubtitle: "REPLAI · Инструкция по подключению",
+                waStep1Of4: "Шаг 1 из 4",
+                waStep1Title: "Сканирование QR-кода",
+                waStep1Desc: "Нажмите кнопку «Подключить» ниже, чтобы сгенерировать QR-код, затем отсканируйте его через приложение WhatsApp на телефоне.",
+                waQRPlaceholder: "QR-код появится<br>после нажатия «Подключить»",
+                waConnect: "🔗 Подключить",
+                waNext: "Далее →",
+                waCancel: "Отмена",
+                waStep2Of4: "Шаг 2 из 4",
+                waStep2Title: "Откройте Сканер WhatsApp",
+                waStep2Desc: "Откройте WhatsApp на телефоне и следуйте инструкциям ниже:",
+                waAndroid: "Android",
+                waAndroid1: "Откройте <strong>WhatsApp</strong>",
+                waAndroid2: "Нажмите на три точки <strong>⋮</strong> в правом верхнем углу",
+                waAndroid3: "Выберите <strong>Связанные устройства</strong>",
+                waAndroid4: "Нажмите <strong>Привязка устройства</strong>",
+                waAndroidNote: "📝 Если потребуется, разблокируйте телефон (отпечаток или PIN-код).",
+                waIphone: "iPhone (iOS)",
+                waIphone1: "Откройте <strong>WhatsApp</strong>",
+                waIphone2: "Перейдите в <strong>Настройки ⚙️</strong> (внизу справа)",
+                waIphone3: "Выберите <strong>Связанные устройства</strong>",
+                waIphone4: "Нажмите <strong>Привязка устройства</strong>",
+                waIphoneNote: "📝 Используйте Face ID или Touch ID, если потребуется.",
+                waOpened: "✅ Открыл, Продолжить →",
+                waStep3Of4: "Шаг 3 из 4",
+                waStep3Title: "Интеграция",
+                waStep3Desc: "Наведите камеру телефона на QR-код, отображаемый на экране.",
+                waScanTitle: "Сканировать QR-код",
+                waScanDesc: "Наведите камеру на QR-код — подключение произойдёт автоматически.",
+                waAgentTitle: "Агент Подключён",
+                waAgentDesc: "После успешного сканирования вы увидите подтверждение. Нажмите Продолжить.",
+                waStep4Of4: "Шаг 4 из 4",
+                waStep4Title: "Настройка",
+                waStep4Desc: "Панель для вашего подключённого номера. Настройте параметры поведения ИИ-агента.",
+                waAgentActive: "🤖 ИИ-Агент активен",
+                waAgentActiveDesc: "Агент будет отвечать на входящие сообщения",
+                waGroupReply: "💬 Ответы в Группах",
+                waGroupReplyDesc: "ИИ-агент отвечает на сообщения в групповых чатах",
+                waAllSet: "✅ <strong>Всё готово!</strong> Ваш ИИ-агент успешно подключен к WhatsApp Business. Настройте параметры выше и нажмите «Завершить».",
+                waFinish: "🎉 Завершить",
+                waQRGenerating: "⏳ Генерация QR...",
+                waQRRequesting: "Запрашиваем QR-код от сервера...",
+                waQRScan: "📷 Отсканируйте QR-код в приложении WhatsApp",
+                waQRRefresh: "🔄 Обновить QR",
+                waQRFailed: "❌ QR-код не получен. Попробуйте снова.",
+                waQRConnect: "🔗 Подключить",
+                waServerError: "⚠️ Ошибка сервера. Используйте демо-режим.",
+                waQRUpdate: "🔄 Обновить",
+                waServerOffline: "⚠️ Сервер недоступен — демо-режим",
+                waQRReady: "QR-КОД ГОТОВ",
+                enterToken: "Пожалуйста, введите токен {platform}",
+                failedConnect: "Не удалось подключить {platform}. Проверьте данные.",
+                errorConnecting: "Ошибка подключения {platform}: ",
+                theme: "Тема",
+                lightMode: "Светлая Тема",
+                darkMode: "Тёмная Тема",
+                autoMode: "Авто",
+                chartMessages: "Сообщения",
+                chartInstagram: "Instagram",
+                chartTelegram: "Telegram",
+                chartWhatsApp: "WhatsApp",
+                saveBusinessFailed: "Не удалось сохранить информацию о бизнесе",
+                saveAIFailed: "Не удалось сохранить настройки ИИ",
+                errorSaving: "Ошибка сохранения: "
             },
             ky: {
                 dashboard: "REPLAI Панели",
@@ -1752,21 +2450,47 @@
                 todayMessages: "Бүгүнкү Билдирүүлөр",
                 connectedPlatforms: "Туташкан Платформалар",
                 monthlyCost: "Айлык Наркы",
-                menuDashboard: "📊 Панель",
-                menuPlatforms: "🔗 Платформаларды Туташтыруу",
-                menuBusiness: "🏪 Бизнес Маалыматы",
-                menuAI: "⚙️ AI Тууралоолор",
-                menuLogs: "💬 Чат Журналы",
-                // Connect Platforms
+                menuDashboard: "Панель",
+                menuPlatforms: "Платформаларды Туташтыруу",
+                menuBusiness: "Бизнес Маалыматы",
+                menuAI: "AI Тууралоолор",
+                menuLogs: "Чат Журналы",
                 platformsTitle: "Платформаларыңызды Туташтырыңыз",
-                platformsDesc: "Билдирүүлөрдү алуу үчүн Instagram, Telegram жана WhatsApp туташтырыңыз",
+                platformsDesc: "AI жоопторду иштетүү үчүн социалдык тармак аккаунттарыңызды туташтырыңыз",
                 telegram: "Telegram",
                 instagram: "Instagram",
-                whatsapp: "WhatsApp",
+                whatsapp: "WhatsApp Business",
+                tiktok: "TikTok",
                 connected: "Туташты",
                 disconnected: "Ажыратылды",
+                statusConnected: "Туташты",
+                statusDisconnected: "Ажыратылды",
                 connect: "Туташтыруу",
-                // Business Info
+                manage: "Башкаруу",
+                settingsSaved: "Тууралоолор ийгиликтүү сакталды!",
+                messageAnalytics: "Билдирүүлөр Аналитикасы",
+                analyticsDesc: "Кардарлардын билдирүүлөрү жана катышуу боюнча маалымат",
+                peakHours: "Активдүү Сааттар",
+                platformDistribution: "Платформалар боюнча Бөлүштүрүү",
+                dailyTrend: "Күнүмдүк Динамика (Акыркы 7 Күн)",
+                telegramSetupTitle: "Telegram'ды кантип туташтыруу керек:",
+                telegramStep1: "Telegram'ды ачып, <strong>@BotFather</strong> издеңиз",
+                telegramStep2: "<code>/newbot</code> командасын жөнөтүңүз",
+                telegramStep3: "Бот түзүү үчүн көрсөтмөлөрдү аткарыңыз",
+                telegramStep4: "Бот токенін көчүрүңүз",
+                telegramStep5: "Төмөнгө чаптаңыз:",
+                telegramTokenLabel: "Telegram Бот Токени",
+                telegramTokenPlaceholder: "123456789:ABCdef...",
+                telegramConnectBtn: "Сактоо жана Туташтыруу",
+                tiktokSetupTitle: "TikTok'ту кантип туташтыруу керек:",
+                tiktokStep1: "<a href=\"https://developers.tiktok.com\" target=\"_blank\">TikTok Developers</a> сайтына өтүңүз",
+                tiktokStep2: "Жаңы тиркеме түзүңүз",
+                tiktokStep3: "Түз билдирүүлөр API'син иштетиңиз",
+                tiktokStep4: "Кирүү токенін алыңыз",
+                tiktokStep5: "Төмөнгө чаптаңыз:",
+                tiktokTokenLabel: "TikTok Кирүү Токени",
+                tiktokTokenPlaceholder: "Сиздин TikTok кирүү токениңиз",
+                tiktokConnectBtn: "Сактоо жана Туташтыруу",
                 businessTitle: "Бизнес Маалыматы",
                 businessDesc: "Бул маалымат AI тарабынан кардарлардын суроолоруна жооп берүү үчүн колдонулат",
                 businessName: "Бизнестин Аталышы",
@@ -1782,12 +2506,12 @@
                 contactPlaceholder: "Телефон, Email, Дарек",
                 faqs: "Көп Берилүүчү Суроолор (ар бир сапта бирден, формат: С: суроо | Ж: жооп)",
                 faqsPlaceholder: "С: Бүткүл өлкө боюнча жеткирүү барбы? | Ж: Ооба, Кыргызстан боюнча жеткирүү бар",
+                saveBusinessInfo: "Маалыматты Сактоо",
                 saveButton: "Тууралоолорду Сактоо",
-                // AI Settings
                 aiTitle: "AI Тууралоолору",
-                aiDesc: "AI ассистентиңиз кардарларга кандай жооп берерин тууралаңыз",
                 adminPanelLanguage: "Администратор Панелинин Тили",
                 aiProvider: "AI Провайдери",
+                aiProviderGroq: "Groq (АКЫСЫЗ - Сунушталат)",
                 responseStyle: "Жооптордун Стили",
                 friendlyCasual: "Достук жана Эркин",
                 professional: "Кесиптик",
@@ -1803,135 +2527,203 @@
                 mediumLength: "Орточо (2-3 сүйлөм)",
                 longLength: "Узун (3-5 сүйлөм)",
                 saveAISettings: "AI Тууралоолорун Сактоо",
-                aiTone: "AI Жоопторунун Тону",
-                friendly: "Достук",
-                casual: "Эркин",
-                aiLanguage: "AI Жоопторунун Тили",
-                russian: "Орусча",
-                kyrgyz: "Кыргызча",
-                responseLength: "Жоопторунун Узундугу",
-                short: "Кыска",
-                medium: "Орточо",
-                detailed: "Толук",
-                // Chat Logs
-                logsTitle: "Чат Журналы",
-                logsDesc: "Кардарлар менен бардык сүйлөшүүлөрдү көрүү",
-                noChatLogs: "Азырынча чаттар жок. Кардарлар жазып баштаганда билдирүүлөр бул жерде пайда болот.",
+                onboardingSection: "Онбординг",
+                onboardingDesc: "Коштоо мастерин кайра көрсөтүү үчүн баштапкы абалга келтириңиз",
+                resetOnboarding: "Онбордингди Баштапкы Абалга",
+                resetOnboardingConfirm: "Онбординг мастерин чын эле баштапкы абалга келтиргиси келеби?\n\nКоштоо мастери баракты жаңылаганда кайра пайда болот.",
+                onboardingResetDone: "Онбординг баштапкы абалга келтирилди! Коштоо мастерин көрүү үчүн баракты жаңылаңыз.",
+                logsTitle: "Акыркы Сүйлөшүүлөр",
+                logsDesc: "Билдирүүлөр али жок. Билдирүүлөрдү ала баштоо үчүн платформаларды туташтырыңыз!",
                 platform: "Платформа",
-                time: "Убакыт"
+                time: "Убакыт",
+                noChatLogs: "Чат журналдары али жок. Кардарлар жаза баштаганда билдирүүлөр бул жерде пайда болот.",
+                onboardingWelcome: "REPLAI'га Кош Келиңиз",
+                onboardingSubtitle: "Сиздин стартап үчүн AI менен иштеген мессенджер",
+                onboardingText: "Ишкерлер тарабынан, ишкерлер үчүн түзүлгөн. Instagram, Telegram жана WhatsApp'тагы кардарлар менен баарлашууну автоматташтырыңыз — баары акысыз AI менен иштейт.",
+                getStarted: "Баштоо →",
+                onboardingFeatures: "Эмне Кыла Аласыз",
+                onboardingFeaturesSub: "Күчтүү функциялар, нөл баа",
+                featureAI: "AI Жооптор",
+                featureAIDesc: "Акысыз Groq AI менен 24/7 тез жооптор",
+                featureAnalytics: "Аналитика",
+                featureAnalyticsDesc: "Билдирүүлөрдү, активдүү сааттарды, тенденцияларды көзөмөлдөңүз",
+                featureMultiLang: "Көп Тилдүүлүк",
+                featureMultiLangDesc: "Англис, орус, кыргыз тилдерин колдоо",
+                featureThemes: "Темалар",
+                featureThemesDesc: "Ачык, караңгы, автоматтык режимдер",
+                back: "← Артка",
+                continue: "Улантуу →",
+                onboardingReady: "Ишке кирүүгө Даяр",
+                onboardingReadySub: "Ишке кирүү үчүн 3 кадам",
+                step1Title: "1️⃣ Бизнес Маалыматын Кошуңуз",
+                step1Desc: "Бизнес Маалыматы → Товарлар, баалар, FAQ кошуңуз",
+                step2Title: "2️⃣ Платформаларды Туташтырыңыз",
+                step2Desc: "Платформаларды Туташтыруу → Instagram, Telegram же WhatsApp кошуңуз",
+                step3Title: "3️⃣ Тестирлөө жана Ишке киргизүү",
+                step3Desc: "Тест билдирүүсүн жөнөтүп, AI кантип жооп берерин көрүңүз!",
+                startBuilding: "Түзүүнү Баштоо 🚀",
+                igWizardTitle: "Instagram'ды Туташтыруу",
+                igWizardSubtitle: "REPLAI · Туташтыруу боюнча нускама",
+                igStep1Of2: "1-кадам, 2дан",
+                igStep1Title: "Профилди Даярдоо",
+                igStep1Desc: "Туташтыруудан мурун, Instagram тиркемеңизде бул эки тууралоо активдүү экенин текшериңиз:",
+                igAccountType: "Аккаунт Тиб",
+                igAccountTypeDesc: "Сизде <strong>Бизнес аккаунт</strong> же <strong>Автор аккаунту</strong> болушу керек. Жеке аккаунттар колдоого алынбайт.",
+                igAccountTypeHow: "📍 <strong>Кантип өзгөртүү:</strong><br>Instagram Тууралоолор → Аккаунт тиби жана куралдар → Профессионал аккаунтка өтүү",
+                igMessageAccess: "Билдирүүлөргө Кирүү",
+                igMessageAccessDesc: "Биздин сервисдерге билдирүүлөрүңүздү окууга уруксат беришиңиз керек.",
+                igMessageAccessHow: "📍 <strong>Кайдан иштетүү:</strong><br>Тууралоолор → Билдирүүлөр жана история жооптору → Билдирүүлөрдү башкаруу → <strong>Билдирүүлөргө кирүүгө уруксат</strong> (КҮЙҮК)",
+                igCancel: "Жокко чыгаруу",
+                igContinue: "✅ Даяр, Улантуу →",
+                igStep2Of2: "2-кадам, 2ден",
+                igStep2Title: "REPLAI'га Туташтыруу",
+                igStep2Desc: "Instagram уруксаттары менен Facebook баракчаңыздын кирүү токенін киргизиңиз:",
+                igPageToken: "Баракча Кирүү Токени",
+                igPageTokenPlaceholder: "EAA... (Meta for Developers'дан)",
+                igAccountId: "Instagram Бизнес Аккаунт ID (милдеттүү эмес)",
+                igAccountIdPlaceholder: "Бош болсо автоматтык түрдө аныкталат",
+                igTokenHelp: "⚠️ <strong>Баракча кирүү токенін кантип алуу:</strong><br>1. <a href=\"https://developers.facebook.com\" target=\"_blank\">Meta for Developers</a> сайтына өтүңүз<br>2. Тиркеме түзүңүз → \"Instagram Graph API\" продуктусун кошуңуз<br>3. Facebook баракчаңызды Instagram Business менен байланыштырыңыз<br>4. <code>instagram_manage_messages</code> уруксаты менен баракча кирүү токенін түзүңүз<br>5. Жогоруга чаптаңыз",
+                igAuthorize: "🔗 Туташтыруу жана Webhook Тууралоо",
+                igSuccess: "Туташуу Орнотулду!",
+                igSuccessDesc: "Сиздин Instagram аккаунтуңуз эми REPLAI'га туташты. Бот билдирүүлөрүңүзгө автоматтык түрдө жооп бере баштайт.",
+                igDone: "Даяр 🎉",
+                igErrorToken: "⚠️ Баракча кирүү токенін киргизиңиз",
+                igConnecting: "⏳ Туташтырылууда...",
+                igConnectError: "❌ Туташуу катасы. Токенди текшериңиз.",
+                igNetworkError: "❌ Тармак катасы: ",
+                waWizardTitle: "WhatsApp'ты Туташтыруу",
+                waWizardSubtitle: "REPLAI · Туташтыруу боюнча нускама",
+                waStep1Of4: "1-кадам, 4төн",
+                waStep1Title: "QR-кодду Скандоо",
+                waStep1Desc: "QR-кодду түзүү үчүн төмөнкү «Туташтыруу» баскычын басыңыз, андан кийин телефонуңуздагы WhatsApp тиркемеси менен скандоо.",
+                waQRPlaceholder: "QR-код пайда болот<br>«Туташтыруу» баскычын баскандан кийин",
+                waConnect: "🔗 Туташтыруу",
+                waNext: "Кийинки →",
+                waCancel: "Жокко чыгаруу",
+                waStep2Of4: "2-кадам, 4төн",
+                waStep2Title: "WhatsApp Сканерин Ачыңыз",
+                waStep2Desc: "Телефонуңузда WhatsApp'ты ачып, төмөнкү көрсөтмөлөрдү аткарыңыз:",
+                waAndroid: "Android",
+                waAndroid1: "<strong>WhatsApp</strong>'ты ачыңыз",
+                waAndroid2: "Жогорку оң бурчтагы үч чекитти <strong>⋮</strong> басыңыз",
+                waAndroid3: "<strong>Байланышкан түзмөктөр</strong> тандаңыз",
+                waAndroid4: "<strong>Түзмөктү байланыштыруу</strong> басыңыз",
+                waAndroidNote: "📝 Суранса, телефонуңузду кулпулаңыз (манжа изи же PIN-код).",
+                waIphone: "iPhone (iOS)",
+                waIphone1: "<strong>WhatsApp</strong>'ты ачыңыз",
+                waIphone2: "<strong>Тууралоолор ⚙️</strong> (оң жагында ылдый) өтүңүз",
+                waIphone3: "<strong>Байланышкан түзмөктөр</strong> тандаңыз",
+                waIphone4: "<strong>Түзмөктү байланыштыруу</strong> басыңыз",
+                waIphoneNote: "📝 Суранса, Face ID же Touch ID колдонуңуз.",
+                waOpened: "✅ Ачтым, Улантуу →",
+                waStep3Of4: "3-кадам, 4төн",
+                waStep3Title: "Интеграция",
+                waStep3Desc: "Телефон камераңызды экранда көрсөтүлгөн QR-кодго багыттаңыз.",
+                waScanTitle: "QR-кодду Скандоо",
+                waScanDesc: "Камераны QR-кодго багыттаңыз — туташуу автоматтык түрдө болот.",
+                waAgentTitle: "Агент Туташты",
+                waAgentDesc: "Ийгиликтүү скандоодон кийин ырастоону көрөсүз. Улантуу баскычын басыңыз.",
+                waStep4Of4: "4-кадам, 4төн",
+                waStep4Title: "Тууралоо",
+                waStep4Desc: "Туташкан номериңиз үчүн панель. AI-аракет параметрлерин орнотуңуз.",
+                waAgentActive: "🤖 AI-Агент активдүү",
+                waAgentActiveDesc: "Агент кирүүчү билдирүүлөргө жооп берет",
+                waGroupReply: "💬 Группаларда Жооп берүү",
+                waGroupReplyDesc: "AI-агент группалык чаттардагы билдирүүлөргө жооп берет",
+                waAllSet: "✅ <strong>Баары даяр!</strong> AI-агентиңиз WhatsApp Business'ке ийгиликтүү туташты. Жогорудагы параметрлерди тууралап, «Бүтүрүү» басыңыз.",
+                waFinish: "🎉 Бүтүрүү",
+                waQRGenerating: "⏳ QR түзүлүүдө...",
+                waQRRequesting: "Серверден QR-код суралып жатат...",
+                waQRScan: "📷 WhatsApp тиркемесинде QR-кодду скандоо",
+                waQRRefresh: "🔄 QR'ду жаңылоо",
+                waQRFailed: "❌ QR-код алынган жок. Кайра аракет кылыңыз.",
+                waQRConnect: "🔗 Туташтыруу",
+                waServerError: "⚠️ Сервер катасы. Демо режимин колдонуңуз.",
+                waQRUpdate: "🔄 Жаңылоо",
+                waServerOffline: "⚠️ Сервер жеткиликтүү эмес — демо режими",
+                waQRReady: "QR-КОД ДАЯР",
+                enterToken: "Сураныч, {platform} токениңизди киргизиңиз",
+                failedConnect: "{platform}'ты туташтыруу ишке ашкан жок. Маалыматты текшериңиз.",
+                errorConnecting: "{platform}'ты туташтыруу катасы: ",
+                theme: "Тема",
+                lightMode: "Ачык Тема",
+                darkMode: "Караңгы Тема",
+                autoMode: "Авто",
+                chartMessages: "Билдирүүлөр",
+                chartInstagram: "Instagram",
+                chartTelegram: "Telegram",
+                chartWhatsApp: "WhatsApp",
+                saveBusinessFailed: "Бизнес маалыматын сактоо ишке ашкан жок",
+                saveAIFailed: "AI тууралоолорун сактоо ишке ашкан жок",
+                errorSaving: "Сактоо катасы: "
             }
         };
 
-        // Change language
+        function getCurrentTranslations() {
+            const selector = document.getElementById('language-selector');
+            const lang = selector?.value || localStorage.getItem('replai-language') || 'en';
+            return translations[lang] || translations.en;
+        }
+
+        function tr(key, vars = {}) {
+            let value = getCurrentTranslations()[key] || translations.en[key] || key;
+            Object.entries(vars).forEach(([k, v]) => {
+                value = value.replaceAll(`{${k}}`, v);
+            });
+            return value;
+        }
+
+        function setStatusText(el, key) {
+            if (!el) return;
+            el.dataset.i18n = key;
+            el.textContent = tr(key);
+        }
+
+        function reinitializeCharts() {
+            if (peakHoursChart) peakHoursChart.destroy();
+            if (platformChart) platformChart.destroy();
+            if (dailyTrendChart) dailyTrendChart.destroy();
+            peakHoursChart = platformChart = dailyTrendChart = null;
+            initializeCharts();
+        }
+
         function changeLanguage() {
-            const lang = document.getElementById('language-selector').value;
+            const selector = document.getElementById('language-selector');
+            const lang = selector?.value || 'en';
             localStorage.setItem('replai-language', lang);
+            document.documentElement.lang = lang;
+            const t = translations[lang] || translations.en;
 
-            const t = translations[lang];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (!t[key]) return;
+                if (t[key].includes('<')) el.innerHTML = t[key];
+                else el.textContent = t[key];
+            });
 
-            // Update header
-            document.querySelector('.header h1').textContent = t.dashboard;
-            document.querySelector('.status-badge').innerHTML = '🟢 ' + t.systemOnline;
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (t[key]) el.setAttribute('placeholder', t[key]);
+            });
 
-            // Update menu items
-            const menuItems = document.querySelectorAll('.menu-item');
-            menuItems[0].innerHTML = t.menuDashboard;
-            menuItems[1].innerHTML = t.menuPlatforms;
-            menuItems[2].innerHTML = t.menuBusiness;
-            menuItems[3].innerHTML = t.menuAI;
-            menuItems[4].innerHTML = t.menuLogs;
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                const key = el.getAttribute('data-i18n-title');
+                if (t[key]) el.setAttribute('title', t[key]);
+            });
 
-            // Update stat labels
-            const statLabels = document.querySelectorAll('.stat-label');
-            statLabels[0].textContent = t.totalMessages;
-            statLabels[1].textContent = t.todayMessages;
-            statLabels[2].textContent = t.connectedPlatforms;
-            statLabels[3].textContent = t.monthlyCost;
+            document.querySelectorAll('.platform-status').forEach(el => {
+                if (el.classList.contains('connected')) setStatusText(el, 'statusConnected');
+                else setStatusText(el, 'statusDisconnected');
+            });
 
-            // Update Connect Platforms section
-            const platformsSection = document.getElementById('platforms-section');
-            if (platformsSection) {
-                platformsSection.querySelector('h2').textContent = t.platformsTitle;
-                platformsSection.querySelector('p').textContent = t.platformsDesc;
-            }
+            document.querySelectorAll('[id$="-connect-btn"]').forEach(btn => {
+                if (btn.closest('.platform-card')?.classList.contains('connected')) {
+                    btn.textContent = t.manage;
+                    btn.dataset.i18n = 'manage';
+                }
+            });
 
-            // Update Business Info section
-            const businessSection = document.getElementById('business-section');
-            if (businessSection) {
-                const labels = businessSection.querySelectorAll('label');
-                businessSection.querySelector('h2').textContent = t.businessTitle;
-                businessSection.querySelector('p').textContent = t.businessDesc;
-                labels[0].textContent = t.businessName;
-                labels[1].textContent = t.businessDescription;
-                labels[2].textContent = t.productsServices;
-                labels[3].textContent = t.businessHours;
-                labels[4].textContent = t.contactInfo;
-                labels[5].textContent = t.faqs;
-
-                const inputs = businessSection.querySelectorAll('input, textarea');
-                inputs[0].placeholder = t.businessNamePlaceholder;
-                inputs[1].placeholder = t.businessDescPlaceholder;
-                inputs[2].placeholder = t.productsPlaceholder;
-                inputs[3].placeholder = t.hoursPlaceholder;
-                inputs[4].placeholder = t.contactPlaceholder;
-                inputs[5].placeholder = t.faqsPlaceholder;
-
-                businessSection.querySelector('.help-text').textContent = t.formatHelp;
-                businessSection.querySelector('.btn-primary').textContent = t.saveButton;
-            }
-
-            // Update AI Settings section
-            const aiSection = document.getElementById('ai-settings-section');
-            if (aiSection) {
-                const labels = aiSection.querySelectorAll('label');
-                aiSection.querySelector('h2').textContent = t.aiTitle;
-                const descP = aiSection.querySelector('p');
-                if (descP) descP.textContent = t.aiDesc;
-
-                labels[0].textContent = t.adminPanelLanguage;
-                labels[1].textContent = t.aiProvider;
-                labels[2].textContent = t.responseStyle;
-                labels[3].textContent = t.responseLanguage;
-                labels[4].textContent = t.maxResponseLength;
-
-                // Update AI Provider dropdown
-                const providerSelect = document.getElementById('ai-provider');
-                providerSelect.options[0].text = 'Groq (' + (lang === 'ru' ? 'БЕСПЛАТНО - Рекомендуется' : lang === 'ky' ? 'АКЫСЫЗ - Сунушталат' : 'FREE - Recommended') + ')';
-                providerSelect.options[1].text = 'Hugging Face';
-                providerSelect.options[2].text = 'OpenRouter';
-                providerSelect.options[3].text = 'Together AI';
-
-                // Update Response Style dropdown
-                const styleSelect = document.getElementById('response-style');
-                styleSelect.options[0].text = t.friendlyCasual;
-                styleSelect.options[1].text = t.professional;
-                styleSelect.options[2].text = t.shortConcise;
-
-                // Update Response Language dropdown
-                const langSelect = document.getElementById('response-language');
-                langSelect.options[0].text = t.autoDetect;
-                langSelect.options[1].text = t.english;
-                langSelect.options[2].text = t.spanish;
-                langSelect.options[3].text = t.french;
-                langSelect.options[4].text = t.german;
-
-                // Update Max Length dropdown
-                const lengthSelect = document.getElementById('max-length');
-                lengthSelect.options[0].text = t.shortLength;
-                lengthSelect.options[1].text = t.mediumLength;
-                lengthSelect.options[2].text = t.longLength;
-
-                // Update button
-                const saveBtn = aiSection.querySelector('.btn');
-                if (saveBtn) saveBtn.textContent = t.saveAISettings;
-            }
-
-            // Update Chat Logs section
-            const logsSection = document.getElementById('chat-logs-section');
-            if (logsSection) {
-                logsSection.querySelector('h2').textContent = t.logsTitle;
-                logsSection.querySelector('p').textContent = t.logsDesc;
-            }
+            if (window.Chart) reinitializeCharts();
         }
 
         // Load saved language on page load
@@ -1963,12 +2755,123 @@
             const setup = document.getElementById(platform + '-setup');
             setup.style.display = setup.style.display === 'none' ? 'block' : 'none';
         }
+        // WhatsApp Wizard Functions
+        function openWhatsAppWizard() {
+            const overlay = document.getElementById('whatsapp-wizard-overlay');
+            overlay.style.display = 'flex';
+            waGoToStep(1);
+        }
+
+        function closeWhatsAppWizard() {
+            document.getElementById('whatsapp-wizard-overlay').style.display = 'none';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('whatsapp-wizard-overlay').addEventListener('click', function(e) {
+                if (e.target === this) closeWhatsAppWizard();
+            });
+        });
+
+        function waGoToStep(step) {
+            [1,2,3,4].forEach(s => {
+                const el = document.getElementById('wa-step-' + s);
+                if (el) el.style.display = (s === step) ? 'block' : 'none';
+            });
+            const dots = ['waDot1','waDot2','waDot3','waDot4'].map(id => document.getElementById(id));
+            dots.forEach((dot, i) => {
+                if (!dot) return;
+                dot.style.background = i < step ? 'white' : 'rgba(255,255,255,0.35)';
+                dot.style.flex = i === step - 1 ? '2' : '1';
+            });
+        }
+
+        async function waGetQR() {
+            const btn = document.getElementById('wa-get-qr-btn');
+            const status = document.getElementById('wa-qr-status');
+            const placeholder = document.getElementById('wa-qr-placeholder');
+            const qrImg = document.getElementById('wa-qr-img');
+            btn.textContent = tr('waQRGenerating');
+            btn.disabled = true;
+            status.style.display = 'block';
+            status.textContent = tr('waQRRequesting');
+            try {
+                const res = await fetch('/api/admin/connect/whatsapp/qr');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.qr) {
+                        qrImg.innerHTML = `<img src="${data.qr}" style="width:100%;height:100%;object-fit:contain;border-radius:8px;" alt="QR Code">`;
+                        placeholder.style.display = 'none';
+                        qrImg.style.display = 'block';
+                        status.textContent = tr('waQRScan');
+                        btn.textContent = tr('waQRRefresh');
+                        btn.disabled = false;
+                    } else {
+                        status.textContent = tr('waQRFailed');
+                        btn.textContent = tr('waQRConnect');
+                        btn.disabled = false;
+                    }
+                } else {
+                    status.textContent = tr('waServerError');
+                    // Demo fallback: show a placeholder QR pattern
+                    qrImg.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;"><div style="font-size:32px;">📱</div><div style="font-size:11px;color:#25D366;font-weight:600;">QR DEMO</div></div>`;
+                    placeholder.style.display = 'none';
+                    qrImg.style.display = 'block';
+                    btn.textContent = tr('waQRUpdate');
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                status.textContent = tr('waServerOffline');
+                qrImg.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;background:linear-gradient(135deg,rgba(37,211,102,0.1),rgba(18,140,126,0.1));border-radius:8px;"><div style="font-size:36px;">📱</div><div style="font-size:11px;color:#25D366;font-weight:700;">${tr('waQRReady')}</div></div>`;
+                placeholder.style.display = 'none';
+                qrImg.style.display = 'block';
+                btn.textContent = '🔄 Обновить';
+                btn.disabled = false;
+            }
+        }
+
+        function waToggleSwitch(checkboxId, sliderId) {
+            const cb = document.getElementById(checkboxId);
+            const slider = document.getElementById(sliderId);
+            const knob = slider.querySelector('span');
+            cb.checked = !cb.checked;
+            if (cb.checked) {
+                slider.style.background = '#25D366';
+                knob.style.transform = 'translateX(22px)';
+            } else {
+                slider.style.background = '#ccc';
+                knob.style.transform = 'translateX(0px)';
+            }
+        }
+
+        function waFinish() {
+            const agentOn = document.getElementById('wa-agent-toggle').checked;
+            const groupOn = document.getElementById('wa-group-toggle').checked;
+            // Update card UI
+            const status = document.getElementById('whatsapp-status');
+            setStatusText(status, 'statusConnected');
+            status.className = 'platform-status connected';
+            document.getElementById('whatsapp-card').classList.add('connected');
+            const btn = document.getElementById('whatsapp-connect-btn');
+            btn.textContent = tr('manage');
+            btn.dataset.i18n = 'manage';
+            closeWhatsAppWizard();
+            showSuccess();
+            updateStats();
+            // Persist settings
+            try {
+                fetch('/api/admin/connect/whatsapp/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ agentActive: agentOn, groupReply: groupOn })
+                }).catch(() => {});
+            } catch(e) {}
+        }
 
         // Connect Telegram
         async function connectTelegram() {
             const token = document.getElementById('telegram-token').value;
             if (!token) {
-                alert('Please enter your Telegram bot token');
+                alert(tr('enterToken', { platform: 'Telegram bot' }));
                 return;
             }
 
@@ -1980,87 +2883,114 @@
                 });
 
                 if (response.ok) {
-                    document.getElementById('telegram-status').textContent = 'Connected';
+                    setStatusText(document.getElementById('telegram-status'), 'statusConnected');
                     document.getElementById('telegram-status').className = 'platform-status connected';
                     document.getElementById('telegram-card').classList.add('connected');
                     document.getElementById('telegram-setup').style.display = 'none';
                     showSuccess();
                     updateStats();
                 } else {
-                    alert('Failed to connect Telegram. Please check your token.');
+                    alert(tr('failedConnect', { platform: 'Telegram' }));
                 }
             } catch (error) {
-                alert('Error connecting Telegram: ' + error.message);
+                alert(tr('errorConnecting', { platform: 'Telegram' }) + error.message);
             }
         }
 
-        // Connect Instagram
+        // Instagram Wizard helpers
+        function openInstagramWizard() {
+            const overlay = document.getElementById('instagram-wizard-overlay');
+            overlay.style.display = 'flex';
+            igGoToStep(1);
+        }
+
+        function closeInstagramWizard() {
+            document.getElementById('instagram-wizard-overlay').style.display = 'none';
+        }
+
+        // Close on overlay click
+        document.getElementById('instagram-wizard-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeInstagramWizard();
+        });
+
+        function igGoToStep(step) {
+            [1,2,3].forEach(s => {
+                const el = document.getElementById('ig-step-' + s);
+                if (el) el.style.display = (s === step) ? 'block' : 'none';
+            });
+            // Update progress dots
+            const dots = [document.getElementById('igStep1Dot'), document.getElementById('igStep2Dot'), document.getElementById('igStep3Dot')];
+            dots.forEach((dot, i) => {
+                if (!dot) return;
+                if (i < step) {
+                    dot.style.background = 'white';
+                    dot.style.flex = (i === step - 1) ? '2' : '1';
+                } else {
+                    dot.style.background = 'rgba(255,255,255,0.35)';
+                    dot.style.flex = '1';
+                }
+            });
+        }
+
+        // Connect Instagram via Page Access Token
         async function connectInstagram() {
-            const token = document.getElementById('instagram-token').value;
-            if (!token) {
-                alert('Please enter your Instagram access token');
+            const accessToken = document.getElementById('ig-access-token').value.trim();
+            const accountId = document.getElementById('ig-account-id').value.trim();
+            const errBox = document.getElementById('ig-login-error');
+            const btn = document.getElementById('ig-authorize-btn');
+
+            errBox.style.display = 'none';
+
+            if (!accessToken) {
+                errBox.textContent = tr('igErrorToken');
+                errBox.style.display = 'block';
                 return;
             }
+
+            btn.textContent = tr('igConnecting');
+            btn.disabled = true;
 
             try {
                 const response = await fetch('/api/admin/connect/instagram', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token })
+                    body: JSON.stringify({ accessToken, accountId })
                 });
 
-                if (response.ok) {
-                    document.getElementById('instagram-status').textContent = 'Connected';
+                const result = await response.json().catch(() => ({}));
+
+                if (response.ok || result.success) {
+                    setStatusText(document.getElementById('instagram-status'), 'statusConnected');
                     document.getElementById('instagram-status').className = 'platform-status connected';
                     document.getElementById('instagram-card').classList.add('connected');
-                    document.getElementById('instagram-setup').style.display = 'none';
+                    document.getElementById('instagram-connect-btn').textContent = tr('manage');
+                    document.getElementById('instagram-connect-btn').dataset.i18n = 'manage';
+                    const connUsr = document.getElementById('ig-connected-username');
+                    connUsr.textContent = '📸 ' + (result.accountName || 'Instagram Business');
+                    igGoToStep(3);
                     showSuccess();
                     updateStats();
                 } else {
-                    alert('Failed to connect Instagram. Please check your token.');
+                    const msg = result.error || tr('igConnectError').replace('❌ ', '');
+                    errBox.textContent = '❌ ' + msg;
+                    errBox.style.display = 'block';
+                    btn.textContent = tr('igAuthorize');
+                    btn.disabled = false;
                 }
             } catch (error) {
-                alert('Error connecting Instagram: ' + error.message);
+                errBox.textContent = tr('igNetworkError') + error.message;
+                errBox.style.display = 'block';
+                btn.textContent = tr('igAuthorize');
+                btn.disabled = false;
             }
         }
 
-        // Connect WhatsApp
-        async function connectWhatsApp() {
-            const token = document.getElementById('whatsapp-token').value;
-            const phone = document.getElementById('whatsapp-phone').value;
-
-            if (!token || !phone) {
-                alert('Please enter both WhatsApp token and phone number ID');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/admin/connect/whatsapp', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token, phone })
-                });
-
-                if (response.ok) {
-                    document.getElementById('whatsapp-status').textContent = 'Connected';
-                    document.getElementById('whatsapp-status').className = 'platform-status connected';
-                    document.getElementById('whatsapp-card').classList.add('connected');
-                    document.getElementById('whatsapp-setup').style.display = 'none';
-                    showSuccess();
-                    updateStats();
-                } else {
-                    alert('Failed to connect WhatsApp. Please check your credentials.');
-                }
-            } catch (error) {
-                alert('Error connecting WhatsApp: ' + error.message);
-            }
-        }
 
         async function connectTikTok() {
             const token = document.getElementById('tiktok-token').value;
 
             if (!token) {
-                alert('Please enter your TikTok access token');
+                alert(tr('enterToken', { platform: 'TikTok' }));
                 return;
             }
 
@@ -2072,17 +3002,17 @@
                 });
 
                 if (response.ok) {
-                    document.getElementById('tiktok-status').textContent = 'Connected';
+                    setStatusText(document.getElementById('tiktok-status'), 'statusConnected');
                     document.getElementById('tiktok-status').className = 'platform-status connected';
                     document.getElementById('tiktok-card').classList.add('connected');
                     document.getElementById('tiktok-setup').style.display = 'none';
                     showSuccess();
                     updateStats();
                 } else {
-                    alert('Failed to connect TikTok. Please check your credentials.');
+                    alert(tr('failedConnect', { platform: 'TikTok' }));
                 }
             } catch (error) {
-                alert('Error connecting TikTok: ' + error.message);
+                alert(tr('errorConnecting', { platform: 'TikTok' }) + error.message);
             }
         }
 
@@ -2107,10 +3037,10 @@
                 if (response.ok) {
                     showSuccess();
                 } else {
-                    alert('Failed to save business info');
+                    alert(tr('saveBusinessFailed'));
                 }
             } catch (error) {
-                alert('Error saving: ' + error.message);
+                alert(tr('errorSaving') + error.message);
             }
         }
 
@@ -2120,6 +3050,7 @@
                 provider: document.getElementById('ai-provider').value,
                 style: document.getElementById('response-style').value,
                 language: document.getElementById('response-language').value,
+                adminLanguage: localStorage.getItem('replai-language') || document.getElementById('language-selector')?.value || 'en',
                 maxLength: document.getElementById('max-length').value
             };
 
@@ -2133,10 +3064,10 @@
                 if (response.ok) {
                     showSuccess();
                 } else {
-                    alert('Failed to save AI settings');
+                    alert(tr('saveAIFailed'));
                 }
             } catch (error) {
-                alert('Error saving: ' + error.message);
+                alert(tr('errorSaving') + error.message);
             }
         }
 
@@ -2172,17 +3103,17 @@
                 const status = await statusResponse.json();
 
                 if (status.telegram) {
-                    document.getElementById('telegram-status').textContent = 'Connected';
+                    setStatusText(document.getElementById('telegram-status'), 'statusConnected');
                     document.getElementById('telegram-status').className = 'platform-status connected';
                     document.getElementById('telegram-card').classList.add('connected');
                 }
                 if (status.instagram) {
-                    document.getElementById('instagram-status').textContent = 'Connected';
+                    setStatusText(document.getElementById('instagram-status'), 'statusConnected');
                     document.getElementById('instagram-status').className = 'platform-status connected';
                     document.getElementById('instagram-card').classList.add('connected');
                 }
                 if (status.whatsapp) {
-                    document.getElementById('whatsapp-status').textContent = 'Connected';
+                    setStatusText(document.getElementById('whatsapp-status'), 'statusConnected');
                     document.getElementById('whatsapp-status').className = 'platform-status connected';
                     document.getElementById('whatsapp-card').classList.add('connected');
                 }
@@ -2190,6 +3121,40 @@
                 updateStats();
             } catch (error) {
                 console.error('Error loading settings:', error);
+            }
+        });
+
+        // Mobile Menu Functions
+        function toggleMobileMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+
+            sidebar.classList.toggle('mobile-open');
+            overlay.classList.toggle('active');
+        }
+
+        function closeMobileMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+
+            sidebar.classList.remove('mobile-open');
+            overlay.classList.remove('active');
+        }
+
+        // Close mobile menu when clicking menu items
+        const menuItems = document.querySelectorAll('.menu-item');
+        menuItems.forEach(item => {
+            item.addEventListener('click', function() {
+                if (window.innerWidth <= 768) {
+                    closeMobileMenu();
+                }
+            });
+        });
+
+        // Close mobile menu on window resize if screen becomes larger
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                closeMobileMenu();
             }
         });
     </script>

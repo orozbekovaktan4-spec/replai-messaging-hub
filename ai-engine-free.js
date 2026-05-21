@@ -4,46 +4,84 @@ import fs from 'fs';
 // Load business information
 const businessInfo = JSON.parse(fs.readFileSync('./business-info.json', 'utf8'));
 
+function readSavedLanguage() {
+  try {
+    if (fs.existsSync('./ai-settings.json')) {
+      const settings = JSON.parse(fs.readFileSync('./ai-settings.json', 'utf8'));
+      return settings.language || settings.adminLanguage || settings.panelLanguage || 'auto';
+    }
+  } catch (error) {
+    console.warn('[AI] Could not read ai-settings.json:', error.message);
+  }
+  return process.env.REPLAI_LANGUAGE || 'auto';
+}
+
+const languageNames = {
+  en: 'English',
+  ru: 'Russian',
+  ky: 'Kyrgyz',
+  auto: 'the same language as the customer'
+};
+
+const fallbackMessages = {
+  en: `Sorry, I'm having trouble right now. Please contact us directly at ${businessInfo.business.contact.phone} or ${businessInfo.business.contact.email}`,
+  ru: `Извините, сейчас у меня возникли трудности. Пожалуйста, свяжитесь с нами напрямую: ${businessInfo.business.contact.phone} или ${businessInfo.business.contact.email}`,
+  ky: `Кечиресиз, азыр жооп берүүдө кыйынчылык болуп жатат. Сураныч, биз менен түз байланышыңыз: ${businessInfo.business.contact.phone} же ${businessInfo.business.contact.email}`
+};
+
 // Store conversation history per user (in-memory for MVP)
 const conversationHistory = new Map();
 
 // Create system prompt with business context
-function createSystemPrompt() {
+function createSystemPrompt(language = readSavedLanguage()) {
   const { business } = businessInfo;
+  const responseLanguage = languageNames[language] || languageNames.auto;
 
-  return `You are a helpful customer service assistant for ${business.name}.
+  return `You are an AI customer service assistant for ${business.name}. ${business.description}
 
-Your role is to answer customer questions about:
+YOUR ROLE:
+You help customers by providing accurate information about our business, products, services, hours, and pricing. You are professional, helpful, and efficient.
 
-BUSINESS HOURS:
-${Object.entries(business.hours).map(([day, hours]) => `- ${day.charAt(0).toUpperCase() + day.slice(1)}: ${hours}`).join('\n')}
+BUSINESS INFORMATION:
 
-SERVICES & PRICING:
-${business.services.map(s => `- ${s.name}: ${s.description} - ${s.price}`).join('\n')}
+📍 ${business.name}
+${business.description}
 
-CONTACT INFORMATION:
-- Phone: ${business.contact.phone}
-- Email: ${business.contact.email}
-- Address: ${business.contact.address}
-- Website: ${business.contact.website}
+⏰ BUSINESS HOURS:
+${Object.entries(business.hours).map(([day, hours]) => `${day.charAt(0).toUpperCase() + day.slice(1)}: ${hours}`).join('\n')}
 
-FREQUENTLY ASKED QUESTIONS:
+💼 SERVICES & PRICING:
+${business.services.map(s => `• ${s.name} - ${s.description}\n  Price: ${s.price}`).join('\n')}
+
+📞 CONTACT INFORMATION:
+Phone: ${business.contact.phone}
+Email: ${business.contact.email}
+Address: ${business.contact.address}
+Website: ${business.contact.website}
+
+❓ FREQUENTLY ASKED QUESTIONS:
 ${business.faqs.map(faq => `Q: ${faq.question}\nA: ${faq.answer}`).join('\n\n')}
 
-IMPORTANT GUIDELINES:
-- Keep responses SHORT (2-3 sentences maximum)
-- Be friendly, professional, and helpful
-- Only provide information from the details above
-- If you don't know something, direct them to contact us at ${business.contact.phone} or ${business.contact.email}
-- Never make up prices or information
-- Respond in the same language as the customer's question`;
+RESPONSE GUIDELINES:
+1. ALWAYS greet new customers professionally: "Hello! Welcome to ${business.name}. How can I help you today?"
+2. Keep responses SHORT and DIRECT (2-3 sentences maximum)
+3. Use bullet points for lists (hours, services, prices)
+4. ONLY provide information from the business details above
+5. If asked about something not in your knowledge, say: "For that specific information, please contact us at ${business.contact.phone} or ${business.contact.email}"
+6. NEVER make up prices, hours, or services
+7. Be warm but professional - you represent a business
+8. End responses with a helpful question or call-to-action when appropriate
+9. Always respond in ${responseLanguage}. If set to same language, detect the customer's language and match it.
+10. For booking/ordering requests, direct them to contact us directly
+
+TONE: Professional, helpful, efficient, and friendly - like a well-trained customer service representative.`;
 }
 
 // Option 1: Groq API (FREE, very fast, Llama models)
-async function getGroqResponse(userMessage, history) {
+async function getGroqResponse(userMessage, history, language) {
   try {
     const messages = [
-      { role: 'system', content: createSystemPrompt() },
+      { role: 'system', content: createSystemPrompt(language) },
       ...history
     ];
 
@@ -56,8 +94,9 @@ async function getGroqResponse(userMessage, history) {
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile', // Free, very fast
         messages: messages,
-        max_tokens: 300,
-        temperature: 0.7
+        max_tokens: 200, // Shorter responses
+        temperature: 0.3, // More focused and consistent
+        top_p: 0.9
       })
     });
 
@@ -70,9 +109,9 @@ async function getGroqResponse(userMessage, history) {
 }
 
 // Option 2: Hugging Face Inference API (FREE)
-async function getHuggingFaceResponse(userMessage, history) {
+async function getHuggingFaceResponse(userMessage, history, language) {
   try {
-    const prompt = createSystemPrompt() + '\n\n' +
+    const prompt = createSystemPrompt(language) + '\n\n' +
                    history.map(h => `${h.role}: ${h.content}`).join('\n') +
                    `\nuser: ${userMessage}\nassistant:`;
 
@@ -101,10 +140,10 @@ async function getHuggingFaceResponse(userMessage, history) {
 }
 
 // Option 3: OpenRouter (FREE tier, access to many models)
-async function getOpenRouterResponse(userMessage, history) {
+async function getOpenRouterResponse(userMessage, history, language) {
   try {
     const messages = [
-      { role: 'system', content: createSystemPrompt() },
+      { role: 'system', content: createSystemPrompt(language) },
       ...history
     ];
 
@@ -132,10 +171,10 @@ async function getOpenRouterResponse(userMessage, history) {
 }
 
 // Option 4: Together AI (FREE credits on signup)
-async function getTogetherResponse(userMessage, history) {
+async function getTogetherResponse(userMessage, history, language) {
   try {
     const messages = [
-      { role: 'system', content: createSystemPrompt() },
+      { role: 'system', content: createSystemPrompt(language) },
       ...history
     ];
 
@@ -162,7 +201,7 @@ async function getTogetherResponse(userMessage, history) {
 }
 
 // Main function - choose your provider
-export async function getAIResponse(userId, userMessage) {
+export async function getAIResponse(userId, userMessage, language = readSavedLanguage()) {
   try {
     // Get or create conversation history for this user
     if (!conversationHistory.has(userId)) {
@@ -188,16 +227,16 @@ export async function getAIResponse(userId, userMessage) {
 
     switch (provider) {
       case 'groq':
-        assistantMessage = await getGroqResponse(userMessage, history);
+        assistantMessage = await getGroqResponse(userMessage, history, language);
         break;
       case 'huggingface':
-        assistantMessage = await getHuggingFaceResponse(userMessage, history);
+        assistantMessage = await getHuggingFaceResponse(userMessage, history, language);
         break;
       case 'openrouter':
-        assistantMessage = await getOpenRouterResponse(userMessage, history);
+        assistantMessage = await getOpenRouterResponse(userMessage, history, language);
         break;
       case 'together':
-        assistantMessage = await getTogetherResponse(userMessage, history);
+        assistantMessage = await getTogetherResponse(userMessage, history, language);
         break;
       default:
         throw new Error(`Unknown AI provider: ${provider}`);
@@ -215,7 +254,7 @@ export async function getAIResponse(userId, userMessage) {
 
   } catch (error) {
     console.error('[AI] Error:', error.message);
-    return `Sorry, I'm having trouble right now. Please contact us directly at ${businessInfo.business.contact.phone} or ${businessInfo.business.contact.email}`;
+    return fallbackMessages[language] || fallbackMessages.en;
   }
 }
 
