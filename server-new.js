@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { IgApiClient } from 'instagram-private-api';
 import { getAIResponse } from './ai-engine-free.js';
 
 // Load environment variables
@@ -136,9 +137,8 @@ const platformConnections = {
     token: process.env.TELEGRAM_BOT_TOKEN || null
   },
   instagram: {
-    connected: Boolean(process.env.INSTAGRAM_ACCESS_TOKEN),
-    token: process.env.INSTAGRAM_ACCESS_TOKEN || null,
-    accountId: process.env.INSTAGRAM_ACCOUNT_ID || null
+    connected: false,
+    username: process.env.INSTAGRAM_USERNAME || null
   },
   whatsapp: {
     connected: Boolean(process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_ID),
@@ -150,6 +150,114 @@ const platformConnections = {
     token: process.env.TIKTOK_ACCESS_TOKEN || null
   }
 };
+
+
+
+// --- INSTAGRAM PRIVATE API SINGLETON ---
+const IG_SESSION_FILE = path.join(__dirname, 'ig-session.json');
+const ig = new IgApiClient();
+let instagramLastMessageId = null;
+let instagramPolling = false;
+let instagramLoginAttempts = [];
+const instagramThreadUsers = new Map();
+
+function saveInstagramSession() {
+  const session = ig.state.serialize();
+  delete session.constants;
+  fs.writeFileSync(IG_SESSION_FILE, JSON.stringify(session, null, 2), 'utf8');
+  upsertEnvValues({ INSTAGRAM_SESSION: Buffer.from(JSON.stringify(session)).toString('base64') });
+}
+
+async function restoreInstagramSession() {
+  const username = process.env.INSTAGRAM_USERNAME;
+  try {
+    if (username) ig.state.generateDevice(username);
+    let session = null;
+    if (fs.existsSync(IG_SESSION_FILE)) {
+      session = JSON.parse(fs.readFileSync(IG_SESSION_FILE, 'utf8'));
+    } else if (process.env.INSTAGRAM_SESSION) {
+      session = JSON.parse(Buffer.from(process.env.INSTAGRAM_SESSION, 'base64').toString('utf8'));
+    }
+    if (session) {
+      await ig.state.deserialize(session);
+      platformConnections.instagram = { connected: true, username };
+      console.log(`✓ [Instagram] Restored private API session${username ? ` for @${username}` : ''}`);
+      return true;
+    }
+  } catch (error) {
+    console.warn('[Instagram] Could not restore saved session:', error.message);
+  }
+  return false;
+}
+
+async function reconnectInstagramWithCredentials() {
+  const username = process.env.INSTAGRAM_USERNAME;
+  const password = process.env.INSTAGRAM_PASSWORD;
+  if (!username || !password) return false;
+  try {
+    ig.state.generateDevice(username);
+    await ig.account.login(username, password);
+    saveInstagramSession();
+    platformConnections.instagram = { connected: true, username };
+    console.log(`✓ [Instagram] Reconnected private API session for @${username}`);
+    return true;
+  } catch (error) {
+    platformConnections.instagram.connected = false;
+    console.warn('[Instagram] Auto-reconnect failed. If challenge is required, check Instagram email/phone:', error.message);
+    return false;
+  }
+}
+
+function canAttemptInstagramLogin() {
+  const oneHourAgo = Date.now() - 60 * 60 * 1000;
+  instagramLoginAttempts = instagramLoginAttempts.filter(ts => ts > oneHourAgo);
+  if (instagramLoginAttempts.length >= 5) return false;
+  instagramLoginAttempts.push(Date.now());
+  return true;
+}
+
+async function pollInstagramDirectInbox() {
+  if (instagramPolling || !platformConnections.instagram.connected) return { processed: 0 };
+  instagramPolling = true;
+  let processed = 0;
+  try {
+    const inbox = await ig.feed.directInbox().items();
+    const messages = [];
+    for (const thread of inbox || []) {
+      const newest = thread.items?.[0];
+      if (!newest?.item_id || !newest?.text) continue;
+      const senderId = String(newest.user_id || newest.user?.pk || '');
+      const ownId = String(ig.state.cookieUserId || '');
+      if (ownId && senderId === ownId) continue;
+      messages.push({ threadId: thread.thread_id, itemId: newest.item_id, userId: senderId || thread.thread_id, text: newest.text, username: thread.users?.[0]?.username });
+    }
+
+    messages.sort((a, b) => String(a.itemId).localeCompare(String(b.itemId)));
+    for (const msg of messages) {
+      if (instagramLastMessageId && String(msg.itemId) <= String(instagramLastMessageId)) continue;
+      instagramThreadUsers.set(String(msg.userId), msg.threadId);
+      const aiResponse = await getAIResponse(String(msg.userId), msg.text);
+      await sendResponseToPlatform('instagram-unofficial', msg.threadId, aiResponse);
+      chatLogs.unshift({ platform: 'instagram-unofficial', userId: msg.userId, userName: msg.username, userMessage: msg.text, aiResponse, timestamp: new Date().toISOString() });
+      if (chatLogs.length > 100) chatLogs.pop();
+      stats.totalMessages++;
+      stats.todayMessages++;
+      instagramLastMessageId = msg.itemId;
+      processed++;
+    }
+    if (!instagramLastMessageId && messages[0]) instagramLastMessageId = messages[messages.length - 1].itemId;
+    return { processed };
+  } catch (error) {
+    console.error('[Instagram] Poll error:', error.message);
+    if (/login_required|checkpoint|challenge/i.test(error.message)) {
+      platformConnections.instagram.connected = false;
+      await reconnectInstagramWithCredentials();
+    }
+    return { processed, error: error.message };
+  } finally {
+    instagramPolling = false;
+  }
+}
 
 function upsertEnvValues(values) {
   const envPath = path.join(__dirname, '.env');
@@ -503,64 +611,55 @@ app.post('/api/admin/connect/telegram', async (req, res) => {
 
 app.post('/api/admin/connect/instagram', async (req, res) => {
   try {
-    const { accessToken, accountId } = req.body;
-    if (!accessToken) return res.status(400).json({ error: 'Access token is required' });
-
-    // Step 1: Validate token and get Facebook Page info
-    const pageResponse = await fetch(`https://graph.facebook.com/v18.0/me?fields=id,name,instagram_business_account&access_token=${accessToken}`);
-    const pageData = await pageResponse.json();
-
-    if (!pageData.id) {
-      return res.status(400).json({ error: 'Invalid token. Could not retrieve page info: ' + (pageData.error?.message || 'Unknown error') });
+    if (!canAttemptInstagramLogin()) {
+      return res.status(429).json({ error: 'Too many login attempts. Instagram may block accounts after repeated logins. Try again in one hour.' });
     }
 
-    // Step 2: Get Instagram Business Account ID
-    let igAccountId = accountId;
-    let igAccountName = 'Instagram Business';
+    const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ error: 'Username and password are required' });
 
-    if (pageData.instagram_business_account) {
-      igAccountId = pageData.instagram_business_account.id;
+    ig.state.generateDevice(username);
+    await ig.account.login(username, password);
+    saveInstagramSession();
 
-      // Get Instagram account username
-      const igResponse = await fetch(`https://graph.facebook.com/v18.0/${igAccountId}?fields=username&access_token=${accessToken}`);
-      const igData = await igResponse.json();
-      if (igData.username) {
-        igAccountName = '@' + igData.username;
-      }
-    }
-
-    if (!igAccountId) {
-      return res.status(400).json({ error: 'No Instagram Business Account linked to this Facebook Page. Please link your Instagram account to the page first.' });
-    }
-
-    // Step 3: Save to .env
     upsertEnvValues({
-      INSTAGRAM_ACCESS_TOKEN: accessToken,
-      INSTAGRAM_ACCOUNT_ID: igAccountId
+      INSTAGRAM_USERNAME: username,
+      INSTAGRAM_PASSWORD: password
     });
 
-    // Step 4: Update in-memory connection
-    platformConnections.instagram = { connected: true, token: accessToken, accountId: igAccountId };
-
-    // Step 5: Subscribe to webhooks
-    try {
-      const subscribeUrl = `https://graph.facebook.com/v18.0/${igAccountId}/subscribed_apps`;
-      await fetch(subscribeUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ access_token: accessToken })
-      });
-      console.log(`✓ [Instagram] Subscribed to webhooks for account ${igAccountId}`);
-    } catch (subErr) {
-      console.warn('[Instagram] Webhook subscription failed (you may need to set it up manually):', subErr.message);
-    }
-
-    console.log(`✓ [Instagram] Connected: ${igAccountName} (${igAccountId})`);
-    res.json({ success: true, message: 'Instagram connected', accountId: igAccountId, accountName: igAccountName });
+    platformConnections.instagram = { connected: true, username };
+    console.log(`✓ [Instagram] Private API connected as @${username}`);
+    res.json({ success: true, username });
   } catch (error) {
-    console.error('[Instagram] Connection error:', error.message);
-    res.status(500).json({ error: error.message });
+    platformConnections.instagram.connected = false;
+    console.error('[Instagram] Login error:', error.message);
+    const challenge = /challenge|checkpoint|security code|two.?factor/i.test(error.message);
+    res.status(401).json({
+      error: challenge
+        ? 'Instagram requires a security check. Check the account email/phone or Instagram app, then try again.'
+        : 'Invalid credentials or login blocked'
+    });
   }
+});
+
+app.get('/api/admin/instagram/status', async (req, res) => {
+  try {
+    if (platformConnections.instagram.connected) {
+      return res.json({ connected: true, username: platformConnections.instagram.username });
+    }
+    const restored = await restoreInstagramSession();
+    if (!restored && process.env.INSTAGRAM_USERNAME && process.env.INSTAGRAM_PASSWORD) {
+      await reconnectInstagramWithCredentials();
+    }
+    res.json({ connected: platformConnections.instagram.connected, username: platformConnections.instagram.username });
+  } catch (error) {
+    res.json({ connected: false, error: error.message });
+  }
+});
+
+app.post('/api/instagram/poll', async (req, res) => {
+  const result = await pollInstagramDirectInbox();
+  res.json({ success: !result.error, ...result });
 });
 
 app.post('/api/admin/connect/whatsapp', async (req, res) => {
@@ -643,25 +742,13 @@ app.get('/api/telegram/webhook-info', async (req, res) => {
 });
 
 app.get('/api/instagram/account-info', async (req, res) => {
-  try {
-    const token = platformConnections.instagram.token || process.env.INSTAGRAM_ACCESS_TOKEN;
-    const accountId = platformConnections.instagram.accountId || process.env.INSTAGRAM_ACCOUNT_ID;
-
-    if (!token) return res.status(400).json({ error: 'INSTAGRAM_ACCESS_TOKEN is not configured' });
-    if (!accountId) return res.status(400).json({ error: 'INSTAGRAM_ACCOUNT_ID is not configured' });
-
-    // Get account info
-    const igResponse = await fetch(`https://graph.facebook.com/v18.0/${accountId}?fields=username,name,profile_picture_url&access_token=${token}`);
-    const igData = await igResponse.json();
-
-    if (!igData.id) {
-      return res.status(502).json({ error: 'Failed to get account info: ' + (igData.error?.message || 'Unknown error') });
+  res.json({
+    success: platformConnections.instagram.connected,
+    account: {
+      username: platformConnections.instagram.username,
+      method: 'instagram-private-api'
     }
-
-    res.json({ success: true, account: igData });
-  } catch (error) {
-    res.status(500).json({ error: 'Error getting Instagram account info' });
-  }
+  });
 });
 
 app.post('/api/telegram/set-webhook', async (req, res) => {
@@ -700,17 +787,9 @@ async function sendResponseToPlatform(platform, userId, message) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chat_id: userId, text: message })
       });
-    } else if (platform === 'instagram' && platformConnections.instagram.connected) {
-      const igUrl = `https://graph.facebook.com/v18.0/${platformConnections.instagram.accountId || 'me'}/messages`;
-      await fetch(igUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipient: { id: userId },
-          message: { text: message },
-          access_token: platformConnections.instagram.token
-        })
-      });
+    } else if ((platform === 'instagram-unofficial' || platform === 'instagram') && platformConnections.instagram.connected) {
+      const threadId = instagramThreadUsers.get(String(userId)) || userId;
+      await ig.entity.directThread(threadId).broadcastText(message);
     } else if (platform === 'whatsapp' && platformConnections.whatsapp.connected) {
       const whatsappUrl = `https://graph.facebook.com/v18.0/${platformConnections.whatsapp.phone}/messages`;
       await fetch(whatsappUrl, {
@@ -902,6 +981,11 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// Restore Instagram private API session and start DM polling
+await restoreInstagramSession();
+if (!platformConnections.instagram.connected) await reconnectInstagramWithCredentials();
+setInterval(() => { pollInstagramDirectInbox().catch(error => console.error('[Instagram] Scheduled poll error:', error.message)); }, 30000);
 
 // Start listening engine
 const server = app.listen(PORT, '0.0.0.0', () => {

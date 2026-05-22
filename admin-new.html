@@ -1315,89 +1315,20 @@
                     <button class="btn" id="instagram-connect-btn" onclick="openInstagramWizard()" style="background: linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%); box-shadow: 0 4px 15px rgba(131,58,180,0.35);" data-i18n="connect">Connect</button>
                 </div>
 
-                <!-- Instagram Connection Wizard Modal -->
+                <!-- Instagram Login Modal -->
                 <div id="instagram-wizard-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); backdrop-filter:blur(12px); z-index:10000; align-items:center; justify-content:center;">
-                    <div id="instagram-wizard" style="background:var(--bg-primary); border-radius:24px; max-width:560px; width:92%; max-height:90vh; overflow-y:auto; box-shadow:0 30px 80px rgba(0,0,0,0.4); border:1px solid var(--border-color); animation: fadeIn 0.35s ease;">
+                    <div id="instagram-wizard" style="background:var(--bg-primary); border-radius:24px; max-width:480px; width:92%; box-shadow:0 30px 80px rgba(0,0,0,0.4); border:1px solid var(--border-color); animation: fadeIn 0.35s ease;">
                         <div style="background:linear-gradient(135deg,#833ab4 0%,#fd1d1d 50%,#fcb045 100%); padding:28px 32px; border-radius:24px 24px 0 0; position:relative;">
-                            <button onclick="closeInstagramWizard()" style="position:absolute;top:16px;right:20px;background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.35)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">✕</button>
-                            <div style="display:flex;align-items:center;gap:14px;">
-                                <div style="width:50px;height:50px;background:rgba(255,255,255,0.2);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;">📸</div>
-                                <div>
-                                    <div style="color:white;font-size:20px;font-weight:700;letter-spacing:-0.4px;" data-i18n="igWizardTitle">Instagram Connection</div>
-                                    <div style="color:rgba(255,255,255,0.8);font-size:13px;margin-top:2px;" data-i18n="igWizardSubtitle">REPLAI · Connection Instructions</div>
-                                </div>
-                            </div>
-                            <div style="display:flex;gap:8px;margin-top:20px;">
-                                <div id="igStep1Dot" style="height:4px;border-radius:2px;background:white;flex:2;transition:all 0.4s;"></div>
-                                <div id="igStep2Dot" style="height:4px;border-radius:2px;background:rgba(255,255,255,0.35);flex:1;transition:all 0.4s;"></div>
-                                <div id="igStep3Dot" style="height:4px;border-radius:2px;background:rgba(255,255,255,0.35);flex:0;transition:all 0.4s;"></div>
-                            </div>
+                            <button onclick="closeInstagramWizard()" style="position:absolute;top:16px;right:20px;background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;">✕</button>
+                            <div style="display:flex;align-items:center;gap:14px;"><div style="width:50px;height:50px;background:rgba(255,255,255,0.2);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;">📸</div><div><div style="color:white;font-size:20px;font-weight:700;" data-i18n="igWizardTitle">Instagram Login</div><div style="color:rgba(255,255,255,0.8);font-size:13px;margin-top:2px;" data-i18n="igWizardSubtitle">Username and password connection</div></div></div>
                         </div>
-
-                        <div id="ig-step-1" style="padding:28px 32px;">
-                            <div style="font-size:13px;font-weight:700;color:#833ab4;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;" data-i18n="igStep1Of2">Step 1 of 2</div>
-                            <div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:6px;" data-i18n="igStep1Title">Preparing your profile</div>
-                            <div style="font-size:14px;color:var(--text-secondary);margin-bottom:22px;line-height:1.5;" data-i18n="igStep1Desc">Before clicking the connect button on your computer, make sure two things are set up on your phone:</div>
-
-                            <div style="background:linear-gradient(135deg,rgba(131,58,180,0.07) 0%,rgba(253,29,29,0.05) 100%);border:1px solid rgba(131,58,180,0.2);border-radius:16px;padding:20px;margin-bottom:16px;">
-                                <div style="display:flex;gap:12px;align-items:flex-start;">
-                                    <div style="width:36px;height:36px;min-width:36px;background:linear-gradient(135deg,#833ab4,#fd1d1d);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;">1️⃣</div>
-                                    <div>
-                                        <div style="font-weight:700;color:var(--text-primary);font-size:15px;margin-bottom:6px;" data-i18n="igAccountType">Account Type</div>
-                                        <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;" data-i18n="igAccountTypeDesc">You must have a <strong>Business Account</strong> or <strong>Creator Account</strong>. Personal accounts are not supported.</div>
-                                        <div style="margin-top:10px;background:var(--bg-secondary);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--text-secondary);line-height:1.7;border:1px solid var(--border-color);" data-i18n="igAccountTypeHow">📍 <strong>How to switch:</strong><br>Instagram Settings → Account type and tools → Switch to professional account</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div style="background:linear-gradient(135deg,rgba(131,58,180,0.07) 0%,rgba(253,29,29,0.05) 100%);border:1px solid rgba(131,58,180,0.2);border-radius:16px;padding:20px;margin-bottom:24px;">
-                                <div style="display:flex;gap:12px;align-items:flex-start;">
-                                    <div style="width:36px;height:36px;min-width:36px;background:linear-gradient(135deg,#833ab4,#fd1d1d);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;">2️⃣</div>
-                                    <div>
-                                        <div style="font-weight:700;color:var(--text-primary);font-size:15px;margin-bottom:6px;" data-i18n="igMessageAccess">Message Access</div>
-                                        <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;" data-i18n="igMessageAccessDesc">You must allow services to read your messages.</div>
-                                        <div style="margin-top:10px;background:var(--bg-secondary);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--text-secondary);line-height:1.7;border:1px solid var(--border-color);" data-i18n="igMessageAccessHow">📍 <strong>Where to enable:</strong><br>Settings → Messages and story replies → Message controls → <strong>Allow access to messages</strong> (ON)</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div style="display:flex;gap:12px;">
-                                <button onclick="closeInstagramWizard()" style="flex:1;padding:14px;border:2px solid var(--border-color);background:transparent;color:var(--text-secondary);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--primary-blue)'" onmouseout="this.style.borderColor='var(--border-color)'" data-i18n="igCancel">Cancel</button>
-                                <button onclick="igGoToStep(2)" style="flex:2;padding:14px;background:linear-gradient(135deg,#833ab4 0%,#fd1d1d 50%,#fcb045 100%);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 15px rgba(131,58,180,0.3);" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 25px rgba(131,58,180,0.4)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 15px rgba(131,58,180,0.3)'" data-i18n="igContinue">✅ Done, Continue →</button>
-                            </div>
-                        </div>
-
-                        <div id="ig-step-2" style="display:none;padding:28px 32px;">
-                            <div style="font-size:13px;font-weight:700;color:#833ab4;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;" data-i18n="igStep2Of2">Step 2 of 2</div>
-                            <div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:6px;" data-i18n="igStep2Title">Connecting to REPLAI</div>
-                            <div style="font-size:14px;color:var(--text-secondary);margin-bottom:24px;line-height:1.5;" data-i18n="igStep2Desc">Enter your Facebook Page Access Token with Instagram permissions:</div>
+                        <div style="padding:28px 32px;">
+                            <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:14px 16px;margin-bottom:18px;font-size:13px;color:var(--text-secondary);line-height:1.6;" data-i18n="igUnofficialWarning">⚠️ Unofficial method — Instagram may block accounts. Use at your own risk.</div>
                             <div id="ig-login-error" style="display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:14px 16px;margin-bottom:16px;color:#ef4444;font-size:13px;"></div>
-
-                            <div style="margin-bottom:18px;">
-                                <label style="display:block;font-weight:600;font-size:13px;color:var(--text-primary);margin-bottom:8px;" data-i18n="igPageToken">Page Access Token</label>
-                                <div style="position:relative;"><span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;">🔑</span><input type="text" id="ig-access-token" data-i18n-placeholder="igPageTokenPlaceholder" placeholder="EAA... (from Meta for Developers)" style="width:100%;padding:13px 14px 13px 44px;border:2px solid var(--border-color);border-radius:12px;font-size:14px;background:var(--bg-primary);color:var(--text-primary);transition:all 0.2s;outline:none;font-family:monospace;" onfocus="this.style.borderColor='#833ab4';this.style.boxShadow='0 0 0 3px rgba(131,58,180,0.12)'" onblur="this.style.borderColor='var(--border-color)';this.style.boxShadow=''"></div>
-                            </div>
-                            <div style="margin-bottom:20px;">
-                                <label style="display:block;font-weight:600;font-size:13px;color:var(--text-primary);margin-bottom:8px;" data-i18n="igAccountId">Instagram Business Account ID (optional)</label>
-                                <div style="position:relative;"><span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;">📸</span><input type="text" id="ig-account-id" data-i18n-placeholder="igAccountIdPlaceholder" placeholder="Auto-detected if empty" style="width:100%;padding:13px 14px 13px 44px;border:2px solid var(--border-color);border-radius:12px;font-size:14px;background:var(--bg-primary);color:var(--text-primary);transition:all 0.2s;outline:none;font-family:monospace;" onfocus="this.style.borderColor='#833ab4';this.style.boxShadow='0 0 0 3px rgba(131,58,180,0.12)'" onblur="this.style.borderColor='var(--border-color)';this.style.boxShadow=''"></div>
-                            </div>
-                            <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:12px;color:var(--text-secondary);line-height:1.7;" data-i18n="igTokenHelp">⚠️ <strong>How to get your Page Access Token:</strong><br>1. Go to <a href="https://developers.facebook.com" target="_blank">Meta for Developers</a><br>2. Create an app → Add "Instagram Graph API" product<br>3. Link your Facebook Page with Instagram Business<br>4. Generate a Page Access Token with <code>instagram_manage_messages</code> permission<br>5. Paste it above</div>
-                            <div id="ig-troubleshooting" style="display:none;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.22);border-radius:12px;padding:14px 16px;margin-bottom:20px;font-size:12px;color:var(--text-secondary);line-height:1.8;">
-                                <div style="font-weight:700;color:var(--text-primary);margin-bottom:6px;" data-i18n="igTroubleshooting">If the connection fails, check:</div>
-                                <ul style="margin-left:18px;"><li data-i18n="igTroubleshootingBrowser">You are using an official, up-to-date browser</li><li data-i18n="igTroubleshootingVPN">You have disabled your VPN or anonymizer</li><li data-i18n="igTroubleshootingAccount">Your account has been switched to Professional status (Business or Creator)</li></ul>
-                            </div>
-                            <div style="display:flex;gap:12px;">
-                                <button onclick="igGoToStep(1)" style="flex:1;padding:14px;border:2px solid var(--border-color);background:transparent;color:var(--text-secondary);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--primary-blue)'" onmouseout="this.style.borderColor='var(--border-color)'" data-i18n="back">← Back</button>
-                                <button id="ig-authorize-btn" onclick="connectInstagram()" style="flex:2;padding:14px;background:linear-gradient(135deg,#833ab4 0%,#fd1d1d 50%,#fcb045 100%);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 15px rgba(131,58,180,0.3);" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 25px rgba(131,58,180,0.4)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 15px rgba(131,58,180,0.3)'" data-i18n="igAuthorize">🔗 Connect & Setup Webhook</button>
-                            </div>
-                        </div>
-
-                        <div id="ig-step-3" style="display:none;padding:48px 32px;text-align:center;">
-                            <div style="width:80px;height:80px;background:linear-gradient(135deg,#10b981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 20px;box-shadow:0 8px 30px rgba(16,185,129,0.4);">✅</div>
-                            <div style="font-size:24px;font-weight:700;color:var(--text-primary);margin-bottom:10px;" data-i18n="igSuccess">Connection Established!</div>
-                            <div style="font-size:15px;color:var(--text-secondary);line-height:1.6;margin-bottom:30px;" data-i18n="igSuccessDesc">Your Instagram account is now connected to REPLAI. The bot will start responding to your messages automatically.</div>
-                            <div id="ig-connected-username" style="display:inline-flex;align-items:center;gap:10px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:40px;padding:10px 20px;font-size:14px;font-weight:600;color:#10b981;margin-bottom:28px;"></div><br>
-                            <button onclick="closeInstagramWizard()" style="padding:14px 36px;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(16,185,129,0.3);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''" data-i18n="igDone">Done 🎉</button>
+                            <div id="ig-login-success" style="display:none;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:12px;padding:14px 16px;margin-bottom:16px;color:#10b981;font-size:13px;"></div>
+                            <div class="form-group"><label data-i18n="igUsername">📱 Instagram Username</label><input type="text" id="ig-username" data-i18n-placeholder="igUsernamePlaceholder" placeholder="your_username" autocomplete="username"></div>
+                            <div class="form-group"><label data-i18n="igPassword">🔑 Password</label><input type="password" id="ig-password" data-i18n-placeholder="igPasswordPlaceholder" placeholder="Instagram password" autocomplete="current-password"></div>
+                            <button class="btn" id="ig-authorize-btn" onclick="connectInstagram()" style="width:100%;background:linear-gradient(135deg,#833ab4 0%,#fd1d1d 50%,#fcb045 100%);" data-i18n="igLoginConnect">🔗 Login & Connect</button>
                         </div>
                     </div>
                 </div>
@@ -1880,6 +1811,7 @@
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(initializeCharts, 100);
             loadBookings();
+            loadInstagramStatus();
         });
 
         // Reinitialize charts when theme changes
@@ -2028,7 +1960,16 @@
                 step3Desc: "Send a test message and watch AI respond!",
                 startBuilding: "Start Building 🚀",
                 igWizardTitle: "Instagram Connection",
-                igWizardSubtitle: "REPLAI · Connection Instructions",
+                igWizardSubtitle: "Username and password connection",
+                igUnofficialWarning: "⚠️ Unofficial method — Instagram may block accounts. Use at your own risk.",
+                igUsername: "📱 Instagram Username",
+                igUsernamePlaceholder: "your_username",
+                igPassword: "🔑 Password",
+                igPasswordPlaceholder: "Instagram password",
+                igLoginConnect: "🔗 Login & Connect",
+                igLoggingIn: "Logging in...",
+                igMissingCredentials: "Please enter Instagram username and password.",
+                igLoginFailed: "Login failed. Check credentials or Instagram may be blocking this login attempt.",
                 igStep1Of2: "Step 1 of 2",
                 igStep1Title: "Preparing your profile",
                 igStep1Desc: "Before clicking the connect button on your computer, make sure two things are set up on your phone:",
@@ -2042,17 +1983,17 @@
                 igContinue: "✅ Done, Continue →",
                 igStep2Of2: "Step 2 of 2",
                 igStep2Title: "Connecting to REPLAI",
-                igStep2Desc: "Enter your Facebook Page Access Token with Instagram permissions:",
-                igPageToken: "Page Access Token",
-                igPageTokenPlaceholder: "EAA... (from Meta for Developers)",
-                igAccountId: "Instagram Business Account ID (optional)",
-                igAccountIdPlaceholder: "Auto-detected if empty",
-                igTokenHelp: "⚠️ <strong>How to get your Page Access Token:</strong><br>1. Go to <a href=\"https://developers.facebook.com\" target=\"_blank\">Meta for Developers</a><br>2. Create an app → Add \"Instagram Graph API\" product<br>3. Link your Facebook Page with Instagram Business<br>4. Generate a Page Access Token with <code>instagram_manage_messages</code> permission<br>5. Paste it above",
+                igStep2Desc: "Enter your Instagram username and password:",
+                igPageToken: "Instagram Username",
+                igPageTokenPlaceholder: "your_username",
+                igAccountId: "Password",
+                igAccountIdPlaceholder: "Instagram password",
+                igTokenHelp: "⚠️ Unofficial method — Instagram may block accounts. Use at your own risk.",
                 igAuthorize: "🔗 Connect & Setup Webhook",
                 igSuccess: "Connection Established!",
                 igSuccessDesc: "Your Instagram account is now connected to REPLAI. The bot will start responding to your messages automatically.",
                 igDone: "Done 🎉",
-                igErrorToken: "⚠️ Enter your Page Access Token",
+                igErrorToken: "⚠️ Enter your Instagram Username",
                 igConnecting: "⏳ Connecting...",
                 igConnectError: "❌ Connection error. Check your token.",
                 igTroubleshooting: "If the connection fails, check:",
@@ -2273,11 +2214,11 @@
                 igStep2Of2: "Шаг 2 из 2",
                 igStep2Title: "Подключение к REPLAI",
                 igStep2Desc: "Введите токен доступа вашей страницы Facebook с разрешениями Instagram:",
-                igPageToken: "Токен Доступа Страницы",
-                igPageTokenPlaceholder: "EAA... (из Meta for Developers)",
-                igAccountId: "ID Бизнес-аккаунта Instagram (необязательно)",
-                igAccountIdPlaceholder: "Определяется автоматически, если пусто",
-                igTokenHelp: "⚠️ <strong>Как получить токен доступа страницы:</strong><br>1. Перейдите на <a href=\"https://developers.facebook.com\" target=\"_blank\">Meta for Developers</a><br>2. Создайте приложение → Добавьте продукт \"Instagram Graph API\"<br>3. Свяжите вашу страницу Facebook с Instagram Business<br>4. Сгенерируйте токен доступа страницы с разрешением <code>instagram_manage_messages</code><br>5. Вставьте его выше",
+                igPageToken: "Имя пользователя Instagram",
+                igPageTokenPlaceholder: "your_username",
+                igAccountId: "Пароль",
+                igAccountIdPlaceholder: "Пароль Instagram",
+                igTokenHelp: "⚠️ Unofficial method — Instagram may block accounts. Use at your own risk.",
                 igAuthorize: "🔗 Подключить и Настроить Вебхук",
                 igSuccess: "Подключение Установлено!",
                 igSuccessDesc: "Ваш аккаунт Instagram теперь подключен к REPLAI. Бот начнёт автоматически отвечать на ваши сообщения.",
@@ -2503,11 +2444,11 @@
                 igStep2Of2: "2-кадам, 2ден",
                 igStep2Title: "REPLAI'га туташтыруу",
                 igStep2Desc: "Instagram уруксаттары менен Facebook баракчаңыздын кирүү токенін киргизиңиз:",
-                igPageToken: "Баракча Кирүү Токени",
-                igPageTokenPlaceholder: "EAA... (Meta for Developers'дан)",
-                igAccountId: "Instagram Бизнес Аккаунт ID (милдеттүү эмес)",
-                igAccountIdPlaceholder: "Бош болсо автоматтык түрдө аныкталат",
-                igTokenHelp: "⚠️ <strong>Баракча кирүү токенін кантип алуу:</strong><br>1. <a href=\"https://developers.facebook.com\" target=\"_blank\">Meta for Developers</a> сайтына өтүңүз<br>2. Тиркеме түзүңүз → \"Instagram Graph API\" продуктусун кошуңуз<br>3. Facebook баракчаңызды Instagram Business менен байланыштырыңыз<br>4. <code>instagram_manage_messages</code> уруксаты менен баракча кирүү токенін түзүңүз<br>5. Жогоруга чаптаңыз",
+                igPageToken: "Instagram колдонуучу аты",
+                igPageTokenPlaceholder: "your_username",
+                igAccountId: "Сырсөз",
+                igAccountIdPlaceholder: "Instagram сырсөзү",
+                igTokenHelp: "⚠️ Unofficial method — Instagram may block accounts. Use at your own risk.",
                 igAuthorize: "🔗 Туташтыруу жана Webhook Тууралоо",
                 igSuccess: "Туташуу Орнотулду!",
                 igSuccessDesc: "Сиздин Instagram аккаунтуңуз эми REPLAI'га туташты. Бот билдирүүлөрүңүзгө автоматтык түрдө жооп бере баштайт.",
@@ -2940,108 +2881,88 @@
             }
         }
 
-        // Instagram Wizard helpers
-        function openInstagramWizard() {
-            const overlay = document.getElementById('instagram-wizard-overlay');
-            overlay.style.display = 'flex';
-            const errorBox = document.getElementById('ig-login-error');
-            const troubleshooting = document.getElementById('ig-troubleshooting');
-            if (errorBox) errorBox.style.display = 'none';
-            if (troubleshooting) troubleshooting.style.display = 'none';
-            const btn = document.getElementById('ig-authorize-btn');
-            if (btn) {
-                btn.disabled = false;
-                btn.textContent = tr('igAuthorize');
+        function setPlatformConnected(platform, label = null) {
+            const status = document.getElementById(platform + '-status');
+            const card = document.getElementById(platform + '-card');
+            const btn = document.getElementById(platform + '-connect-btn');
+            if (status) {
+                status.className = 'platform-status connected';
+                status.textContent = label || tr('statusConnected');
+                status.dataset.i18n = label ? '' : 'statusConnected';
             }
-            igGoToStep(1);
+            if (card) card.classList.add('connected');
+            if (btn) {
+                btn.textContent = tr('manage');
+                btn.dataset.i18n = 'manage';
+            }
+        }
+
+        // Instagram username/password private API helpers
+        function openInstagramWizard() {
+            document.getElementById('instagram-wizard-overlay').style.display = 'flex';
+            document.getElementById('ig-login-error').style.display = 'none';
+            document.getElementById('ig-login-success').style.display = 'none';
         }
 
         function closeInstagramWizard() {
             document.getElementById('instagram-wizard-overlay').style.display = 'none';
         }
 
-        // Close on overlay click
         document.getElementById('instagram-wizard-overlay').addEventListener('click', function(e) {
             if (e.target === this) closeInstagramWizard();
         });
 
-        function igGoToStep(step) {
-            [1,2,3].forEach(s => {
-                const el = document.getElementById('ig-step-' + s);
-                if (el) el.style.display = (s === step) ? 'block' : 'none';
-            });
-            // Update progress dots
-            const dots = [document.getElementById('igStep1Dot'), document.getElementById('igStep2Dot'), document.getElementById('igStep3Dot')];
-            dots.forEach((dot, i) => {
-                if (!dot) return;
-                if (i < step) {
-                    dot.style.background = 'white';
-                    dot.style.flex = (i === step - 1) ? '2' : '1';
-                } else {
-                    dot.style.background = 'rgba(255,255,255,0.35)';
-                    dot.style.flex = '1';
-                }
-            });
+        async function loadInstagramStatus() {
+            try {
+                const res = await fetch('/api/admin/instagram/status');
+                const data = await res.json();
+                if (data.connected) setPlatformConnected('instagram', data.username ? `@${data.username}` : 'Instagram');
+            } catch (error) {
+                console.warn('Could not load Instagram status', error);
+            }
         }
 
-        // Connect Instagram via Page Access Token
         async function connectInstagram() {
-            const accessToken = document.getElementById('ig-access-token').value.trim();
-            const accountId = document.getElementById('ig-account-id').value.trim();
+            const username = document.getElementById('ig-username').value.trim();
+            const password = document.getElementById('ig-password').value;
             const errBox = document.getElementById('ig-login-error');
+            const successBox = document.getElementById('ig-login-success');
             const btn = document.getElementById('ig-authorize-btn');
-
-            const troubleshooting = document.getElementById('ig-troubleshooting');
-
             errBox.style.display = 'none';
-            if (troubleshooting) troubleshooting.style.display = 'none';
-
-            if (!accessToken) {
-                errBox.textContent = tr('igErrorToken');
+            successBox.style.display = 'none';
+            if (!username || !password) {
+                errBox.textContent = tr('igMissingCredentials');
                 errBox.style.display = 'block';
                 return;
             }
-
-            btn.textContent = tr('igConnecting');
+            btn.textContent = tr('igLoggingIn');
             btn.disabled = true;
-
             try {
                 const response = await fetch('/api/admin/connect/instagram', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ accessToken, accountId })
+                    body: JSON.stringify({ username, password })
                 });
-
                 const result = await response.json().catch(() => ({}));
-
-                if (response.ok || result.success) {
-                    setStatusText(document.getElementById('instagram-status'), 'statusConnected');
-                    document.getElementById('instagram-status').className = 'platform-status connected';
-                    document.getElementById('instagram-card').classList.add('connected');
-                    document.getElementById('instagram-connect-btn').textContent = tr('manage');
-                    document.getElementById('instagram-connect-btn').dataset.i18n = 'manage';
-                    const connUsr = document.getElementById('ig-connected-username');
-                    connUsr.textContent = '📸 ' + (result.accountName || 'Instagram Business');
-                    igGoToStep(3);
-                    showSuccess();
-                    updateStats();
-                } else {
-                    const msg = result.error || tr('igConnectError').replace('❌ ', '');
-                    errBox.textContent = '❌ ' + msg;
-                    errBox.style.display = 'block';
-                    if (troubleshooting) troubleshooting.style.display = 'block';
-                    btn.textContent = tr('igAuthorize');
-                    btn.disabled = false;
-                }
+                if (!response.ok || !result.success) throw new Error(result.error || tr('igLoginFailed'));
+                successBox.textContent = `✅ @${result.username} connected`;
+                successBox.style.display = 'block';
+                setPlatformConnected('instagram', `@${result.username}`);
+                showSuccess();
+                updateStats();
+                setTimeout(closeInstagramWizard, 900);
             } catch (error) {
-                errBox.textContent = tr('igNetworkError') + error.message;
+                errBox.textContent = error.message || tr('igLoginFailed');
                 errBox.style.display = 'block';
-                if (troubleshooting) troubleshooting.style.display = 'block';
-                btn.textContent = tr('igAuthorize');
+            } finally {
+                btn.textContent = tr('igLoginConnect');
                 btn.disabled = false;
             }
         }
 
+        setInterval(() => {
+            fetch('/api/instagram/poll', { method: 'POST' }).catch(() => {});
+        }, 30000);
 
         async function connectTikTok() {
             const token = document.getElementById('tiktok-token').value;
