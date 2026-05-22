@@ -43,6 +43,93 @@ const stats = {
   todayMessages: 0
 };
 
+
+
+// --- BOOKING STORAGE HELPERS ---
+const BOOKINGS_FILE = path.join(__dirname, 'bookings.json');
+
+function ensureBookingsFile() {
+  if (!fs.existsSync(BOOKINGS_FILE)) {
+    fs.writeFileSync(BOOKINGS_FILE, JSON.stringify({ bookings: [] }, null, 2), 'utf8');
+  }
+}
+
+function readBookingsStore() {
+  ensureBookingsFile();
+  try {
+    const parsed = JSON.parse(fs.readFileSync(BOOKINGS_FILE, 'utf8'));
+    return { bookings: Array.isArray(parsed.bookings) ? parsed.bookings : [] };
+  } catch (error) {
+    console.error('[Bookings] Error reading bookings.json:', error.message);
+    return { bookings: [] };
+  }
+}
+
+function writeBookingsStore(store) {
+  fs.writeFileSync(BOOKINGS_FILE, JSON.stringify({ bookings: store.bookings || [] }, null, 2), 'utf8');
+}
+
+function generateBookingId() {
+  return `b_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function parseTimeToMinutes(time) {
+  const match = String(time || '').match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function minutesToTime(minutes) {
+  const hours = Math.floor(minutes / 60).toString().padStart(2, '0');
+  const mins = (minutes % 60).toString().padStart(2, '0');
+  return `${hours}:${mins}`;
+}
+
+function getBusinessData() {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(__dirname, 'business-info.json'), 'utf8'));
+  } catch (error) {
+    console.error('[Bookings] Error reading business-info.json:', error.message);
+    return { business: { hours: {}, services: [], serviceDuration: 30 } };
+  }
+}
+
+function getDayKey(dateString) {
+  const date = new Date(`${dateString}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return null;
+  return ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][date.getDay()];
+}
+
+function getAvailableSlotsFor(date, service) {
+  const businessData = getBusinessData();
+  const business = businessData.business || {};
+  const dayKey = getDayKey(date);
+  const hoursValue = dayKey ? business.hours?.[dayKey] : null;
+  if (!hoursValue || /closed/i.test(hoursValue)) return [];
+
+  const normalized = String(hoursValue).replace(/\s/g, '');
+  const [startRaw, endRaw] = normalized.split('-');
+  const start = parseTimeToMinutes(startRaw);
+  const end = parseTimeToMinutes(endRaw);
+  if (start === null || end === null || end <= start) return [];
+
+  const serviceRecord = Array.isArray(business.services)
+    ? business.services.find(s => String(s.name || '').toLowerCase() === String(service || '').toLowerCase())
+    : null;
+  const duration = Number(serviceRecord?.duration || business.serviceDuration || 30);
+  const interval = 30;
+  const taken = new Set(readBookingsStore().bookings
+    .filter(b => b.date === date && b.status !== 'cancelled')
+    .map(b => b.time));
+
+  const slots = [];
+  for (let minutes = start; minutes + duration <= end; minutes += interval) {
+    const slot = minutesToTime(minutes);
+    if (!taken.has(slot)) slots.push(slot);
+  }
+  return slots;
+}
+
 const platformConnections = {
   telegram: {
     connected: Boolean(process.env.TELEGRAM_BOT_TOKEN),
@@ -244,6 +331,127 @@ app.post('/api/admin/ai-settings', (req, res) => {
   } catch (error) {
     console.error('[Admin] Error saving AI settings:', error.message);
     res.status(500).json({ error: 'Error saving AI settings' });
+  }
+});
+
+
+
+// --- ADMIN BOOKING APIS ---
+app.post('/api/admin/bookings', (req, res) => {
+  try {
+    const { customerName, customerPhone, service, date, time, notes = '', platform = 'admin', userId = '' } = req.body;
+    if (!customerName || !customerPhone || !service || !date || !time) {
+      return res.status(400).json({ error: 'customerName, customerPhone, service, date, and time are required' });
+    }
+
+    const availableSlots = getAvailableSlotsFor(date, service);
+    if (!availableSlots.includes(time)) {
+      return res.status(409).json({ error: 'Time slot is not available' });
+    }
+
+    const store = readBookingsStore();
+    const booking = {
+      id: generateBookingId(),
+      customerName,
+      customerPhone,
+      service,
+      date,
+      time,
+      notes,
+      platform,
+      userId: String(userId || ''),
+      status: 'confirmed',
+      createdAt: new Date().toISOString()
+    };
+    store.bookings.unshift(booking);
+    writeBookingsStore(store);
+
+    chatLogs.unshift({
+      platform,
+      userId,
+      userName: customerName,
+      userMessage: `Booking created: ${service} on ${date} at ${time}`,
+      aiResponse: `Confirmed booking for ${customerName}.`,
+      timestamp: new Date().toISOString(),
+      type: 'booking'
+    });
+    if (chatLogs.length > 100) chatLogs.pop();
+
+    res.json({ success: true, booking });
+  } catch (error) {
+    console.error('[Bookings] Create error:', error.message);
+    res.status(500).json({ error: 'Error creating booking' });
+  }
+});
+
+app.get('/api/admin/bookings/available', (req, res) => {
+  try {
+    const { date, service } = req.query;
+    if (!date) return res.status(400).json({ error: 'date is required' });
+    res.json({ slots: getAvailableSlotsFor(date, service) });
+  } catch (error) {
+    console.error('[Bookings] Availability error:', error.message);
+    res.status(500).json({ error: 'Error getting available slots' });
+  }
+});
+
+app.get('/api/admin/bookings', (req, res) => {
+  try {
+    const { date } = req.query;
+    let bookings = readBookingsStore().bookings;
+    if (date) bookings = bookings.filter(b => b.date === date);
+    res.json({ bookings });
+  } catch (error) {
+    console.error('[Bookings] List error:', error.message);
+    res.status(500).json({ error: 'Error reading bookings' });
+  }
+});
+
+app.get('/api/admin/bookings/:id', (req, res) => {
+  try {
+    const booking = readBookingsStore().bookings.find(b => b.id === req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    res.json({ booking });
+  } catch (error) {
+    res.status(500).json({ error: 'Error reading booking' });
+  }
+});
+
+
+app.patch('/api/admin/bookings/:id', (req, res) => {
+  try {
+    const allowedStatuses = new Set(['pending', 'confirmed', 'completed', 'cancelled']);
+    const { status, notes } = req.body;
+    const store = readBookingsStore();
+    const booking = store.bookings.find(b => b.id === req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (status) {
+      if (!allowedStatuses.has(status)) return res.status(400).json({ error: 'Invalid status' });
+      booking.status = status;
+      if (status === 'cancelled') booking.cancelledAt = new Date().toISOString();
+    }
+    if (typeof notes === 'string') booking.notes = notes;
+    booking.updatedAt = new Date().toISOString();
+    writeBookingsStore(store);
+    res.json({ success: true, booking });
+  } catch (error) {
+    console.error('[Bookings] Update error:', error.message);
+    res.status(500).json({ error: 'Error updating booking' });
+  }
+});
+
+app.delete('/api/admin/bookings/:id', (req, res) => {
+  try {
+    const store = readBookingsStore();
+    const booking = store.bookings.find(b => b.id === req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    booking.status = 'cancelled';
+    booking.cancelledAt = new Date().toISOString();
+    writeBookingsStore(store);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Bookings] Cancel error:', error.message);
+    res.status(500).json({ error: 'Error cancelling booking' });
   }
 });
 

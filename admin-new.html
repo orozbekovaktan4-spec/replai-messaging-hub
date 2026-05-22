@@ -1025,6 +1025,18 @@
                 padding: 70px 16px 16px 16px;
             }
         }
+
+        .booking-calendar { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; margin-top: 16px; }
+        .booking-day { border: 1px solid var(--border-color); border-radius: 12px; padding: 12px 8px; min-height: 70px; background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; transition: all 0.2s; }
+        .booking-day:hover, .booking-day.active { border-color: #667eea; box-shadow: 0 4px 14px rgba(102,126,234,0.18); transform: translateY(-1px); }
+        .booking-day.muted { opacity: 0.45; }
+        .booking-day-count { display: inline-block; margin-top: 8px; padding: 2px 8px; border-radius: 999px; background: #667eea; color: white; font-size: 12px; }
+        .booking-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        .booking-table th, .booking-table td { padding: 12px; border-bottom: 1px solid var(--border-color); text-align: left; color: var(--text-primary); }
+        .booking-table th { color: var(--text-secondary); font-size: 13px; font-weight: 600; }
+        .booking-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .booking-status { padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); }
+
     </style>
 </head>
 <body>
@@ -1155,6 +1167,11 @@
         <div class="menu-item" onclick="showSection('ai-settings')">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m0 6l4.2 4.2M23 12h-6m-6 0H1m18.2 5.2l-4.2-4.2m0-6l4.2-4.2"></path></svg>
             <span data-i18n="menuAI">AI Settings</span>
+        </div>
+
+        <div class="menu-item" onclick="showSection('bookings')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            <span data-i18n="menuBookings">Bookings</span>
         </div>
         <div class="menu-item" onclick="showSection('chat-logs')">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
@@ -1558,6 +1575,50 @@
             </div>
         </div>
 
+
+        <!-- Bookings Section -->
+        <div id="bookings-section" class="content-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="bookings-today-count">0</div>
+                    <div class="stat-label" data-i18n="todaysBookings">Today's Bookings</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="bookings-week-count">0</div>
+                    <div class="stat-label" data-i18n="weekBookings">This Week</div>
+                </div>
+            </div>
+            <div class="card">
+                <h2 data-i18n="bookingTitle">Booking Management</h2>
+                <div class="booking-actions" style="justify-content: space-between; margin-top: 16px;">
+                    <button class="btn btn-secondary" onclick="changeBookingMonth(-1)">‹</button>
+                    <h3 id="booking-month-label" style="color: var(--text-primary);"></h3>
+                    <button class="btn btn-secondary" onclick="changeBookingMonth(1)">›</button>
+                </div>
+                <div class="booking-calendar" id="booking-calendar"></div>
+            </div>
+            <div class="card">
+                <h2><span data-i18n="bookingsForDate">Bookings for</span> <span id="selected-booking-date"></span></h2>
+                <div style="overflow-x:auto;">
+                    <table class="booking-table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="time">Time</th>
+                                <th data-i18n="bookingCustomer">Customer</th>
+                                <th data-i18n="bookingService">Service</th>
+                                <th data-i18n="bookingPhone">Phone</th>
+                                <th data-i18n="bookingStatus">Status</th>
+                                <th data-i18n="bookingActions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookings-table-body">
+                            <tr><td colspan="6" style="text-align:center;color:var(--text-secondary);" data-i18n="noBookings">No bookings for this date.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- Chat Logs Section -->
         <div id="chat-logs-section" class="content-section">
             <div class="card">
@@ -1818,6 +1879,7 @@
         // Initialize charts when DOM is ready
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(initializeCharts, 100);
+            loadBookings();
         });
 
         // Reinitialize charts when theme changes
@@ -1846,6 +1908,18 @@
                 menuBusiness: "Business Info",
                 menuAI: "AI Settings",
                 menuLogs: "Chat Logs",
+                menuBookings: "Bookings",
+                bookingTitle: "Booking Management",
+                todaysBookings: "Today's Bookings",
+                weekBookings: "This Week",
+                bookingsForDate: "Bookings for",
+                bookingCustomer: "Customer",
+                bookingService: "Service",
+                bookingPhone: "Phone",
+                bookingStatus: "Status",
+                bookingActions: "Actions",
+                noBookings: "No bookings for this date.",
+                cancelBooking: "Cancel",
                 platformsTitle: "Connect Your Platforms",
                 platformsDesc: "Connect your social media accounts to enable AI responses",
                 telegram: "Telegram",
@@ -2064,6 +2138,18 @@
                 menuBusiness: "Информация о Бизнесе",
                 menuAI: "Настройки ИИ",
                 menuLogs: "Журнал Чатов",
+                menuBookings: "Бронирования",
+                bookingTitle: "Управление бронированием",
+                todaysBookings: "Бронирования сегодня",
+                weekBookings: "На этой неделе",
+                bookingsForDate: "Бронирования на",
+                bookingCustomer: "Клиент",
+                bookingService: "Услуга",
+                bookingPhone: "Телефон",
+                bookingStatus: "Статус",
+                bookingActions: "Действия",
+                noBookings: "На эту дату бронирований нет.",
+                cancelBooking: "Отменить",
                 platformsTitle: "Подключите Ваши Платформы",
                 platformsDesc: "Подключите аккаунты социальных сетей для включения ИИ-ответов",
                 telegram: "Telegram",
@@ -2282,6 +2368,18 @@
                 menuBusiness: "Бизнес Маалыматы",
                 menuAI: "AI Тууралоолор",
                 menuLogs: "Чат Журналы",
+                menuBookings: "Брондор",
+                bookingTitle: "Брондорду башкаруу",
+                todaysBookings: "Бүгүнкү брондор",
+                weekBookings: "Бул жума",
+                bookingsForDate: "Бул күндөгү брондор",
+                bookingCustomer: "Кардар",
+                bookingService: "Кызмат",
+                bookingPhone: "Телефон",
+                bookingStatus: "Статус",
+                bookingActions: "Аракеттер",
+                noBookings: "Бул күнгө брон жок.",
+                cancelBooking: "Жокко чыгаруу",
                 platformsTitle: "Платформаларыңызды Туташтырыңыз",
                 platformsDesc: "AI жоопторду иштетүү үчүн социалдык тармак аккаунттарыңызды туташтырыңыз",
                 telegram: "Telegram",
@@ -2578,7 +2676,121 @@
 
             // Show selected section
             document.getElementById(section + '-section').classList.add('active');
-            event.target.classList.add('active');
+            const menuItem = event?.target?.closest?.('.menu-item');
+            if (menuItem) menuItem.classList.add('active');
+            if (section === 'bookings') {
+                loadBookings();
+                clearInterval(bookingRefreshTimer);
+                bookingRefreshTimer = setInterval(loadBookings, 30000);
+            } else if (bookingRefreshTimer) {
+                clearInterval(bookingRefreshTimer);
+                bookingRefreshTimer = null;
+            }
+        }
+
+
+        // Booking Management
+        let bookingSelectedDate = new Date().toISOString().slice(0, 10);
+        let bookingCalendarDate = new Date();
+        let bookingRefreshTimer = null;
+        let allBookingsCache = [];
+
+        function formatDateISO(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        async function loadBookings() {
+            try {
+                const res = await fetch('/api/admin/bookings');
+                const data = await res.json();
+                allBookingsCache = data.bookings || [];
+                renderBookingSummary();
+                renderBookingCalendar();
+                renderBookingsTable();
+            } catch (error) {
+                console.error('Failed to load bookings', error);
+            }
+        }
+
+        function renderBookingSummary() {
+            const today = new Date();
+            const todayIso = formatDateISO(today);
+            const weekEnd = new Date(today);
+            weekEnd.setDate(today.getDate() + 7);
+            const active = allBookingsCache.filter(b => b.status !== 'cancelled');
+            document.getElementById('bookings-today-count').textContent = active.filter(b => b.date === todayIso).length;
+            document.getElementById('bookings-week-count').textContent = active.filter(b => b.date >= todayIso && b.date <= formatDateISO(weekEnd)).length;
+        }
+
+        function renderBookingCalendar() {
+            const calendar = document.getElementById('booking-calendar');
+            if (!calendar) return;
+            const year = bookingCalendarDate.getFullYear();
+            const month = bookingCalendarDate.getMonth();
+            document.getElementById('booking-month-label').textContent = bookingCalendarDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+            const first = new Date(year, month, 1);
+            const start = new Date(first);
+            start.setDate(first.getDate() - first.getDay());
+            calendar.innerHTML = '';
+            for (let i = 0; i < 42; i++) {
+                const day = new Date(start);
+                day.setDate(start.getDate() + i);
+                const iso = formatDateISO(day);
+                const count = allBookingsCache.filter(b => b.date === iso && b.status !== 'cancelled').length;
+                const cell = document.createElement('button');
+                cell.type = 'button';
+                cell.className = `booking-day ${day.getMonth() !== month ? 'muted' : ''} ${iso === bookingSelectedDate ? 'active' : ''}`;
+                cell.innerHTML = `<strong>${day.getDate()}</strong>${count ? `<br><span class="booking-day-count">${count}</span>` : ''}`;
+                cell.onclick = () => { bookingSelectedDate = iso; renderBookingCalendar(); renderBookingsTable(); };
+                calendar.appendChild(cell);
+            }
+        }
+
+        function renderBookingsTable() {
+            const body = document.getElementById('bookings-table-body');
+            const label = document.getElementById('selected-booking-date');
+            if (!body || !label) return;
+            label.textContent = bookingSelectedDate;
+            const bookings = allBookingsCache.filter(b => b.date === bookingSelectedDate).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+            if (!bookings.length) {
+                body.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-secondary);">${tr('noBookings')}</td></tr>`;
+                return;
+            }
+            body.innerHTML = bookings.map(b => `
+                <tr>
+                    <td>${b.time || ''}</td>
+                    <td>${b.customerName || ''}</td>
+                    <td>${b.service || ''}</td>
+                    <td>${b.customerPhone || ''}</td>
+                    <td><select class="booking-status" onchange="updateBookingStatus('${b.id}', this.value)">
+                        ${['confirmed','pending','completed','cancelled'].map(status => `<option value="${status}" ${b.status === status ? 'selected' : ''}>${status}</option>`).join('')}
+                    </select></td>
+                    <td><button class="btn btn-secondary" onclick="cancelBooking('${b.id}')">${tr('cancelBooking')}</button></td>
+                </tr>`).join('');
+        }
+
+        function changeBookingMonth(delta) {
+            bookingCalendarDate.setMonth(bookingCalendarDate.getMonth() + delta);
+            renderBookingCalendar();
+        }
+
+        async function cancelBooking(id) {
+            await fetch(`/api/admin/bookings/${id}`, { method: 'DELETE' });
+            showSuccess();
+            loadBookings();
+        }
+
+        async function updateBookingStatus(id, status) {
+            await fetch(`/api/admin/bookings/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
+            });
+            showSuccess();
+            loadBookings();
         }
 
         // Toggle platform setup

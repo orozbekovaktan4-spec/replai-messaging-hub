@@ -3,6 +3,41 @@ import fs from 'fs';
 
 // Load business information
 const businessInfo = JSON.parse(fs.readFileSync('./business-info.json', 'utf8'));
+const BOOKINGS_PATH = './bookings.json';
+
+
+
+function readBookingsStore() {
+  try {
+    if (!fs.existsSync(BOOKINGS_PATH)) {
+      fs.writeFileSync(BOOKINGS_PATH, JSON.stringify({ bookings: [] }, null, 2), 'utf8');
+    }
+    const parsed = JSON.parse(fs.readFileSync(BOOKINGS_PATH, 'utf8'));
+    return { bookings: Array.isArray(parsed.bookings) ? parsed.bookings : [] };
+  } catch (error) {
+    console.warn('[AI] Could not read bookings.json:', error.message);
+    return { bookings: [] };
+  }
+}
+
+export function getUserBookings(userId) {
+  return readBookingsStore().bookings
+    .filter(booking => String(booking.userId || '') === String(userId || '') && booking.status !== 'cancelled')
+    .sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
+}
+
+function createBookingContext(userId) {
+  const userBookings = getUserBookings(userId);
+  const allBookings = readBookingsStore().bookings.filter(b => b.status !== 'cancelled');
+  const upcomingForUser = userBookings.length
+    ? userBookings.map(b => `• ${b.service} on ${b.date} at ${b.time} (${b.status})`).join('\n')
+    : 'No active bookings found for this customer.';
+  const reservedSlots = allBookings.length
+    ? allBookings.map(b => `• ${b.date} ${b.time} - ${b.service}`).join('\n')
+    : 'No reserved slots yet.';
+
+  return `BOOKING CONTEXT:\nCustomer active bookings:\n${upcomingForUser}\n\nReserved slots that must not be double-booked:\n${reservedSlots}`;
+}
 
 function readSavedLanguage() {
   try {
@@ -33,9 +68,10 @@ const fallbackMessages = {
 const conversationHistory = new Map();
 
 // Create system prompt with business context
-function createSystemPrompt(language = readSavedLanguage()) {
+function createSystemPrompt(language = readSavedLanguage(), userId = null) {
   const { business } = businessInfo;
   const responseLanguage = languageNames[language] || languageNames.auto;
+  const bookingContext = createBookingContext(userId);
 
   return `You are an AI customer service assistant for ${business.name}. ${business.description}
 
@@ -62,6 +98,16 @@ Website: ${business.contact.website}
 ❓ FREQUENTLY ASKED QUESTIONS:
 ${business.faqs.map(faq => `Q: ${faq.question}\nA: ${faq.answer}`).join('\n\n')}
 
+${bookingContext}
+
+BOOKING INSTRUCTIONS:
+- When a customer wants to book, ask for the service, date, time, customer name, and phone number.
+- After collecting details, confirm with: "I'll book you for [service] on [date] at [time]. Shall I proceed?"
+- On confirmation, create the reservation through the booking system/API.
+- Never double-book a time slot. Check reserved slots and suggest another available time if needed.
+- If a customer asks about their bookings, use the Customer active bookings listed above.
+- For cancellations, offer to cancel only after the customer confirms.
+
 RESPONSE GUIDELINES:
 1. ALWAYS greet new customers professionally: "Hello! Welcome to ${business.name}. How can I help you today?"
 2. Keep responses SHORT and DIRECT (2-3 sentences maximum)
@@ -72,16 +118,16 @@ RESPONSE GUIDELINES:
 7. Be warm but professional - you represent a business
 8. End responses with a helpful question or call-to-action when appropriate
 9. Always respond in ${responseLanguage}. If set to same language, detect the customer's language and match it.
-10. For booking/ordering requests, direct them to contact us directly
+10. For booking requests, collect the required details and follow BOOKING INSTRUCTIONS instead of redirecting them
 
 TONE: Professional, helpful, efficient, and friendly - like a well-trained customer service representative.`;
 }
 
 // Option 1: Groq API (FREE, very fast, Llama models)
-async function getGroqResponse(userMessage, history, language) {
+async function getGroqResponse(userMessage, history, language, userId) {
   try {
     const messages = [
-      { role: 'system', content: createSystemPrompt(language) },
+      { role: 'system', content: createSystemPrompt(language, userId) },
       ...history
     ];
 
@@ -109,9 +155,9 @@ async function getGroqResponse(userMessage, history, language) {
 }
 
 // Option 2: Hugging Face Inference API (FREE)
-async function getHuggingFaceResponse(userMessage, history, language) {
+async function getHuggingFaceResponse(userMessage, history, language, userId) {
   try {
-    const prompt = createSystemPrompt(language) + '\n\n' +
+    const prompt = createSystemPrompt(language, userId) + '\n\n' +
                    history.map(h => `${h.role}: ${h.content}`).join('\n') +
                    `\nuser: ${userMessage}\nassistant:`;
 
@@ -140,10 +186,10 @@ async function getHuggingFaceResponse(userMessage, history, language) {
 }
 
 // Option 3: OpenRouter (FREE tier, access to many models)
-async function getOpenRouterResponse(userMessage, history, language) {
+async function getOpenRouterResponse(userMessage, history, language, userId) {
   try {
     const messages = [
-      { role: 'system', content: createSystemPrompt(language) },
+      { role: 'system', content: createSystemPrompt(language, userId) },
       ...history
     ];
 
@@ -171,10 +217,10 @@ async function getOpenRouterResponse(userMessage, history, language) {
 }
 
 // Option 4: Together AI (FREE credits on signup)
-async function getTogetherResponse(userMessage, history, language) {
+async function getTogetherResponse(userMessage, history, language, userId) {
   try {
     const messages = [
-      { role: 'system', content: createSystemPrompt(language) },
+      { role: 'system', content: createSystemPrompt(language, userId) },
       ...history
     ];
 
@@ -227,16 +273,16 @@ export async function getAIResponse(userId, userMessage, language = readSavedLan
 
     switch (provider) {
       case 'groq':
-        assistantMessage = await getGroqResponse(userMessage, history, language);
+        assistantMessage = await getGroqResponse(userMessage, history, language, userId);
         break;
       case 'huggingface':
-        assistantMessage = await getHuggingFaceResponse(userMessage, history, language);
+        assistantMessage = await getHuggingFaceResponse(userMessage, history, language, userId);
         break;
       case 'openrouter':
-        assistantMessage = await getOpenRouterResponse(userMessage, history, language);
+        assistantMessage = await getOpenRouterResponse(userMessage, history, language, userId);
         break;
       case 'together':
-        assistantMessage = await getTogetherResponse(userMessage, history, language);
+        assistantMessage = await getTogetherResponse(userMessage, history, language, userId);
         break;
       default:
         throw new Error(`Unknown AI provider: ${provider}`);
