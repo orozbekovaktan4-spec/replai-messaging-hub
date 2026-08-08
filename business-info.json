@@ -1,15 +1,87 @@
 {
   "business": {
-    "name": "REPLAI",
-    "description": "REPLAI is an AI-powered messaging hub that helps businesses automate customer conversations across multiple platforms. We connect your business to WhatsApp, Telegram, Instagram, and more with intelligent AI responses. Our platform provides 24/7 automated customer support, handles inquiries, and helps businesses scale their customer service without hiring additional staff.",
-    "hours": {},
-    "services": [],
+    "name": "Aida Beauty Salon",
+    "description": "Beauty salon offering professional haircuts, hair coloring, nail services, gel polish, and skincare treatments in Bishkek.",
+    "hours": {
+      "monday": "09:00-20:00",
+      "tuesday": "09:00-20:00",
+      "wednesday": "09:00-20:00",
+      "thursday": "09:00-20:00",
+      "friday": "09:00-20:00",
+      "saturday": "09:00-20:00",
+      "sunday": "closed"
+    },
+    "services": [
+      {
+        "name": "Women's haircut",
+        "description": "Professional women's haircut with consultation and styling recommendations.",
+        "price": "800 сом"
+      },
+      {
+        "name": "Men's haircut",
+        "description": "Classic or modern men's haircut with finishing style.",
+        "price": "500 сом"
+      },
+      {
+        "name": "Hair coloring",
+        "description": "Full hair coloring with professional products and color consultation.",
+        "price": "2500 сом"
+      },
+      {
+        "name": "Manicure",
+        "description": "Classic manicure with nail shaping and cuticle care.",
+        "price": "1000 сом"
+      },
+      {
+        "name": "Gel polish",
+        "description": "Long-lasting gel polish application with nail preparation.",
+        "price": "1200 сом"
+      },
+      {
+        "name": "Facial treatment",
+        "description": "Cleansing and moisturizing facial treatment for refreshed skin.",
+        "price": "1800 сом"
+      }
+    ],
     "contact": {
-      "phone": "",
-      "email": "",
-      "address": "",
+      "phone": "+996 555 123456",
+      "email": "aida.salon@example.com",
+      "address": "Bishkek, Chuy Ave 100",
       "website": ""
     },
-    "faqs": []
+    "faqs": [
+      {
+        "question": "Как записаться на услугу?",
+        "answer": "Вы можете написать нам в чат или позвонить по номеру +996 555 123456. Укажите услугу, желаемую дату и время, имя и телефон."
+      },
+      {
+        "question": "Где посмотреть цены?",
+        "answer": "Цены указаны в списке услуг: женская стрижка 800 сом, мужская стрижка 500 сом, окрашивание 2500 сом, маникюр 1000 сом, гель-лак 1200 сом, уход за лицом 1800 сом."
+      },
+      {
+        "question": "Можно ли отменить или перенести запись?",
+        "answer": "Да, пожалуйста сообщите нам минимум за 3 часа до визита, чтобы мы смогли предложить время другому клиенту."
+      },
+      {
+        "question": "Есть ли парковка рядом?",
+        "answer": "Да, рядом с салоном на проспекте Чуй есть городская парковка. Обычно места доступны в первой половине дня."
+      },
+      {
+        "question": "Какие способы оплаты вы принимаете?",
+        "answer": "Мы принимаем наличные, банковские карты и переводы через популярные мобильные кошельки."
+      },
+      {
+        "question": "Сколько длится женская стрижка?",
+        "answer": "Женская стрижка обычно занимает 45-60 минут, в зависимости от длины волос и желаемого результата."
+      },
+      {
+        "question": "Можно прийти без записи?",
+        "answer": "Да, если есть свободный мастер. Но мы рекомендуем записываться заранее, особенно на вечер и субботу."
+      },
+      {
+        "question": "Где находится салон?",
+        "answer": "Мы находимся по адресу: Бишкек, проспект Чуй 100. Ориентир: центр города, удобный вход с проспекта."
+      }
+    ]
   }
 }

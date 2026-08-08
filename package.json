@@ -26,9 +26,7 @@
     "bcryptjs": "^3.0.3",
     "dotenv": "^16.6.1",
     "express": "^4.22.2",
-    "instagram-private-api": "^1.46.1",
     "node-fetch": "^3.3.2",
-    "node-telegram-bot-api": "^0.66.0",
     "twilio": "^6.0.2"
   }
 }

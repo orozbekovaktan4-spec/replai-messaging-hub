@@ -1356,13 +1356,18 @@ app.get('/webhook/:platform', (req, res) => {
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
 
-    const VERIFY_TOKEN = process.env.WEBHOOK_VERIFY_TOKEN || 'replai_secure_token_2026';
+    const VERIFY_TOKEN = process.env.WEBHOOK_VERIFY_TOKEN;
+
+    if (!VERIFY_TOKEN) {
+      console.error(`[${platform}] WEBHOOK_VERIFY_TOKEN is not configured`);
+      return res.sendStatus(500);
+    }
 
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
       console.log(`✓ [${platform}] Webhook verified successfully!`);
       res.status(200).send(challenge);
     } else if (mode === 'subscribe') {
-      console.log(`✗ [${platform}] Webhook verification failed! Token mismatch: received="${token}", expected="${VERIFY_TOKEN}"`);
+      console.log(`✗ [${platform}] Webhook verification failed! Token mismatch.`);
       res.sendStatus(403);
     } else {
       // For platforms that don't use hub.verify_token, just respond OK
@@ -1378,7 +1383,12 @@ app.get('/api/instagram/webhook', (req, res) => {
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
-  const verifyToken = process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN || process.env.WEBHOOK_VERIFY_TOKEN || 'replai_secure_token_2026';
+  const verifyToken = process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN || process.env.WEBHOOK_VERIFY_TOKEN;
+
+  if (!verifyToken) {
+    console.error('[Instagram Webhook] INSTAGRAM_WEBHOOK_VERIFY_TOKEN or WEBHOOK_VERIFY_TOKEN is not configured');
+    return res.sendStatus(500);
+  }
 
   if (mode === 'subscribe' && token === verifyToken) {
     return res.status(200).send(challenge);
