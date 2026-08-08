@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Load Sheet Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+<script>
+// Google Maps API key for accurate mile calculation
+window.GOOGLE_MAPS_API_KEY = 'AIzaSyC3M6K5GHEOxO5RiAnHD6rqvPbMcUdM0SI';
+</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;--surface:#111118;--surface2:#1a1a24;--surface3:#22222f;
+  --border:rgba(255,255,255,0.07);--border-hover:rgba(255,255,255,0.15);
+  --accent:#00e5a0;--accent-dim:rgba(0,229,160,0.1);--accent-glow:rgba(0,229,160,0.22);
+  --text:#f0f0f0;--text-muted:#6b6b80;--text-dim:#9999aa;
+  --danger:#ff4d6d;--warn:#ffb347;--info:#60a5fa;
+  --mono:'JetBrains Mono',monospace;--display:'Syne',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--display);min-height:100vh;overflow-x:hidden}
+.grid-bg{position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,160,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,160,0.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+.wrap{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:40px 24px 80px}
+
+header{margin-bottom:44px}
+.logo{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.logo-icon{width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center}
+h1{font-size:28px;font-weight:800;letter-spacing:-0.5px}
+.subtitle{font-size:12px;color:var(--text-muted);font-family:var(--mono);margin-top:4px}
+
+/* TABS */
+.tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;width:fit-content}
+.tab{padding:8px 20px;border-radius:8px;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--text-muted);transition:all 0.2s;letter-spacing:0.5px}
+.tab.active{background:var(--surface2);color:var(--accent);border:1px solid var(--border-hover)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:26px;margin-bottom:20px;transition:border-color 0.2s}
+.card:hover{border-color:var(--border-hover)}
+.card-label{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:2px;color:var(--accent);text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.card-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.drop-zone{border:1.5px dashed var(--border-hover);border-radius:12px;padding:40px 24px;text-align:center;cursor:pointer;transition:all 0.2s;background:var(--surface2);position:relative}
+.drop-zone:hover,.drop-zone.dragging{border-color:var(--accent);background:var(--accent-dim)}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-title{font-size:15px;font-weight:700;margin-bottom:6px}
+.drop-hint{font-size:12px;color:var(--text-muted);font-family:var(--mono)}
+.file-badge{display:none;margin-top:14px;padding:8px 14px;background:var(--accent-dim);border:1px solid var(--accent-glow);border-radius:8px;font-family:var(--mono);font-size:12px;color:var(--accent)}
+
+.divider{text-align:center;color:var(--text-muted);font-family:var(--mono);font-size:11px;margin:14px 0;position:relative}
+.divider::before,.divider::after{content:'';position:absolute;top:50%;width:calc(50% - 24px);height:1px;background:var(--border)}
+.divider::before{left:0}.divider::after{right:0}
+
+textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;font-family:var(--mono);font-size:12px;color:var(--text);resize:vertical;min-height:130px;outline:none;transition:border-color 0.2s;line-height:1.6}
+textarea:focus{border-color:var(--accent)}
+textarea::placeholder{color:var(--text-muted)}
+
+.btn-primary{width:100%;padding:15px;background:var(--accent);color:#000;border:none;border-radius:12px;font-family:var(--display);font-size:15px;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:10px}
+.btn-primary:hover{opacity:0.9;transform:translateY(-1px)}
+.btn-primary:active{transform:translateY(0)}
+.btn-primary:disabled{opacity:0.35;cursor:not-allowed;transform:none}
+
+.status-bar{display:none;align-items:center;gap:10px;padding:12px 16px;border-radius:10px;font-family:var(--mono);font-size:12px;margin-top:14px}
+.status-bar.show{display:flex}
+.status-bar.loading{background:var(--surface2);color:var(--text-dim);border:1px solid var(--border)}
+.status-bar.success{background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent-glow)}
+.status-bar.error{background:rgba(255,77,109,0.08);color:var(--danger);border:1px solid rgba(255,77,109,0.2)}
+.status-bar.info{background:rgba(96,165,250,0.08);color:var(--info);border:1px solid rgba(96,165,250,0.2)}
+.spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,0.1);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:100;align-items:center;justify-content:center;padding:24px}
+.modal-overlay.show{display:flex;animation:fadeIn 0.2s ease}
+.modal{background:var(--surface);border:1px solid var(--border-hover);border-radius:20px;padding:32px;max-width:560px;width:100%;max-height:85vh;overflow-y:auto}
+.modal-title{font-size:18px;font-weight:800;margin-bottom:6px}
+.modal-sub{font-size:12px;color:var(--text-muted);font-family:var(--mono);margin-bottom:24px}
+.field-group{margin-bottom:18px}
+.field-label{font-size:12px;font-weight:700;color:var(--accent);font-family:var(--mono);margin-bottom:6px;display:block;letter-spacing:0.5px}
+.field-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:13px;color:var(--text);outline:none;transition:border-color 0.2s}
+.field-input:focus{border-color:var(--accent)}
+.field-input::placeholder{color:var(--text-muted)}
+.modal-actions{display:flex;gap:12px;margin-top:24px}
+.btn-confirm{flex:1;padding:12px;background:var(--accent);color:#000;border:none;border-radius:10px;font-family:var(--display);font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.btn-confirm:hover{opacity:0.9}
+.btn-skip{padding:12px 20px;background:transparent;border:1px solid var(--border-hover);border-radius:10px;color:var(--text-dim);font-family:var(--mono);font-size:13px;cursor:pointer;transition:all 0.2s}
+.btn-skip:hover{border-color:var(--text-dim);color:var(--text)}
+
+/* OUTPUT */
+.output-section{display:none}
+.output-section.visible{display:block;animation:fadeIn 0.3s ease}
+.output-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.output-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+.btn-sm{padding:7px 14px;background:transparent;border:1px solid var(--border-hover);border-radius:8px;color:var(--text-dim);font-family:var(--mono);font-size:12px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:6px}
+.btn-sm:hover{border-color:var(--accent);color:var(--accent)}
+.btn-sm.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+.btn-sm.copied{border-color:var(--accent);color:var(--accent)}
+
+/* EDIT MODE */
+.output-box{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:20px;font-family:var(--mono);font-size:13px;line-height:1.85;white-space:pre-wrap;color:var(--text);word-break:break-word;outline:none;transition:border-color 0.2s;min-height:200px}
+.output-box[contenteditable=true]{border-color:var(--warn);cursor:text}
+.output-box[contenteditable=true]:focus{border-color:var(--warn)}
+.edit-hint{font-family:var(--mono);font-size:11px;color:var(--warn);margin-top:8px;display:none}
+.edit-hint.show{display:block}
+
+.btn-new{margin-top:14px;padding:9px 18px;background:transparent;border:1px solid var(--border-hover);border-radius:8px;color:var(--text-dim);font-family:var(--mono);font-size:12px;cursor:pointer;transition:all 0.2s}
+.btn-new:hover{border-color:var(--accent);color:var(--accent)}
+
+/* HISTORY */
+.history-empty{text-align:center;padding:60px 24px;color:var(--text-muted);font-family:var(--mono);font-size:13px}
+.history-grid{display:flex;flex-direction:column;gap:12px}
+.history-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;transition:all 0.2s;cursor:pointer}
+.history-item:hover{border-color:var(--border-hover);transform:translateY(-1px)}
+.history-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.history-load{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)}
+.history-time{font-family:var(--mono);font-size:11px;color:var(--text-muted)}
+.history-route{font-size:13px;color:var(--text-dim);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history-meta{display:flex;gap:12px}
+.history-badge{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:4px;background:var(--surface2);color:var(--text-dim)}
+.history-actions{display:flex;gap:8px;margin-top:12px}
+.btn-history-action{padding:6px 12px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text-muted);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all 0.2s}
+.btn-history-action:hover{border-color:var(--accent);color:var(--accent)}
+.btn-history-delete{color:var(--danger)}
+.btn-history-delete:hover{border-color:var(--danger);color:var(--danger)}
+
+.history-preview{display:none;margin-top:14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;font-family:var(--mono);font-size:11px;line-height:1.7;color:var(--text-dim);white-space:pre-wrap;max-height:200px;overflow-y:auto}
+.history-preview.show{display:block}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* TRUCK INFO MODAL */
+.truck-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:110;align-items:center;justify-content:center;padding:24px}
+.truck-modal-overlay.show{display:flex;animation:fadeIn 0.2s ease}
+.truck-modal{background:var(--surface);border:1px solid var(--accent-glow);border-radius:20px;padding:32px;max-width:480px;width:100%}
+.truck-modal-title{font-size:20px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.truck-modal-sub{font-size:12px;color:var(--text-muted);font-family:var(--mono);margin-bottom:26px}
+.truck-field-row{display:flex;align-items:center;gap:14px;margin-bottom:16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;transition:border-color 0.2s}
+.truck-field-row:focus-within{border-color:var(--accent)}
+.truck-field-emoji{font-size:22px;flex-shrink:0;width:32px;text-align:center}
+.truck-field-inner{flex:1}
+.truck-field-lbl{font-size:10px;font-family:var(--mono);color:var(--accent);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.truck-field-inp{width:100%;background:transparent;border:none;outline:none;font-family:var(--mono);font-size:14px;color:var(--text);font-weight:500}
+.truck-field-inp::placeholder{color:var(--text-muted)}
+.truck-modal-actions{display:flex;gap:12px;margin-top:26px}
+.btn-truck-confirm{flex:1;padding:13px;background:var(--accent);color:#000;border:none;border-radius:10px;font-family:var(--display);font-size:14px;font-weight:800;cursor:pointer;transition:all 0.2s;letter-spacing:0.3px}
+.btn-truck-confirm:hover{opacity:0.9;transform:translateY(-1px)}
+.btn-truck-skip{padding:13px 20px;background:transparent;border:1px solid var(--border-hover);border-radius:10px;color:var(--text-dim);font-family:var(--mono);font-size:12px;cursor:pointer;transition:all 0.2s}
+.btn-truck-skip:hover{border-color:var(--text-dim);color:var(--text)}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<div class="truck-modal-overlay" id="truck-modal">
+  <div class="truck-modal">
+    <div class="truck-modal-title">🚛 Load details</div>
+    <div class="truck-modal-sub">// fill in before generating — or skip to leave as [fill]</div>
+    <div class="truck-field-row" style="background:var(--accent-dim);border-color:var(--accent-glow)">
+      <div class="truck-field-emoji">📍</div>
+      <div class="truck-field-inner">
+        <div class="truck-field-lbl">Base / Home location <span style="color:var(--warn);font-size:9px">REQUIRED FOR MILES</span></div>
+        <input class="truck-field-inp" id="ti-base" type="text" placeholder="e.g. Dallas, TX or 75201" autocomplete="off"/>
+      </div>
+    </div>
+    <div class="truck-field-row">
+      <div class="truck-field-emoji">🚚</div>
+      <div class="truck-field-inner">
+        <div class="truck-field-lbl">Truck #</div>
+        <input class="truck-field-inp" id="ti-truck" type="text" placeholder="e.g. 1042" autocomplete="off"/>
+      </div>
+    </div>
+    <div class="truck-field-row">
+      <div class="truck-field-emoji">👤</div>
+      <div class="truck-field-inner">
+        <div class="truck-field-lbl">Driver name</div>
+        <input class="truck-field-inp" id="ti-driver" type="text" placeholder="e.g. John Smith" autocomplete="off"/>
+      </div>
+    </div>
+    <div class="truck-field-row">
+      <div class="truck-field-emoji">👨‍💻</div>
+      <div class="truck-field-inner">
+        <div class="truck-field-lbl">Dispatcher</div>
+        <input class="truck-field-inp" id="ti-dispatcher" type="text" placeholder="e.g. Alex" autocomplete="off"/>
+      </div>
+    </div>
+    <div class="truck-modal-actions">
+      <button class="btn-truck-skip" onclick="truckSkip()">Skip →</button>
+      <button class="btn-truck-confirm" onclick="truckConfirm()">Generate ↗</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title">⚠️ Missing information</div>
+    <div class="modal-sub">// AI couldn't extract some fields — fill them manually</div>
+    <div id="modal-fields"></div>
+    <div class="modal-actions">
+      <button class="btn-skip" onclick="skipMissing()">Skip & generate anyway</button>
+      <button class="btn-confirm" onclick="confirmMissing()">Confirm & generate ↗</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+      </div>
+      <h1>Load Sheet Generator</h1>
+    </div>
+    <p class="subtitle">// paste rate confirmation → AI fills → edit → save to history</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('generate')">Generate</button>
+    <button class="tab" onclick="switchTab('history')" id="history-tab">History <span id="history-count" style="opacity:0.5"></span></button>
+  </div>
+
+  <div class="tab-panel active" id="tab-generate">
+    <div class="card">
+      <div class="card-label">01 — Rate Confirmation Input</div>
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" id="file-input" accept=".pdf,.txt,.png,.jpg,.jpeg" />
+        <div style="font-size:36px;margin-bottom:10px">📄</div>
+        <div class="drop-title">Drop rate confirmation file here</div>
+        <div class="drop-hint">PDF · TXT · PNG · JPG</div>
+        <div class="file-badge" id="file-badge"></div>
+      </div>
+      <div class="divider">or paste text</div>
+      <textarea id="text-input" placeholder="Paste rate confirmation text here...&#10;&#10;AI extracts: load #, shipper, consignee, dates, rate, miles, weight.&#10;Missing fields → you'll be asked to fill them in."></textarea>
+
+      <div style="margin-top:16px">
+        <button class="btn-primary" id="gen-btn" onclick="startGenerate()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          Generate Load Sheet
+        </button>
+      </div>
+      <div class="status-bar" id="status-bar"></div>
+    </div>
+
+    <div class="output-section" id="output-section">
+      <div class="card">
+        <div class="output-header">
+          <div class="card-label" style="margin-bottom:0;flex:1">02 — Load Sheet</div>
+          <div class="output-actions">
+            <button class="btn-sm" id="edit-btn" onclick="toggleEdit()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Edit
+            </button>
+            <button class="btn-sm" id="save-btn" onclick="saveToHistory()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save
+            </button>
+            <button class="btn-sm" id="copy-btn" onclick="copyOutput()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Copy
+            </button>
+          </div>
+        </div>
+        <div class="output-box" id="output-box" spellcheck="false"></div>
+        <div class="edit-hint" id="edit-hint">✏️ Edit mode ON — click any text to modify. Click "Edit" again to lock.</div>
+        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+          <button class="btn-new" onclick="resetAll()">↺ New load</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-history">
+    <div class="card">
+      <div class="card-label">Load History</div>
+      <div id="history-container">
+        <div class="history-empty">No saved sheets yet.<br>Generate a load sheet and click Save.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ⚠️ GROQ API KEY INJECTED
+const GROQ_API_KEY = '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';
+
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+const RULES_FINES = `————————————————
+Rules:
+• send updates with any delay or issues
+• 100% communication
+• send scanned Bill of lading
+• take photo of the loaded product
+• count pallets and make sure it matches on BOL!
+• NO stopping on shoulder unless it is emergency
+————————————————
+⚠️ Fines:
+• no photo of the freight at the shipper -$250
+• late delivery - $500
+• rejection - $1000
+• not scanned BOL or POD - $100
+• No trailer photo (after pick-up and delivery) -$250
+* you will be not paid if you didn't provide the bill of lading`;
+
+let fileData=null, fileType=null, pendingExtracted=null, editMode=false, truckInfo={truck:'9384',driver:'Maksat',dispatcher:'Khan',base:'',bol:''};
+
+// TABS
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  event.target.classList.add('active');
+  if(tab==='history') renderHistory();
+}
+
+// FILE HANDLING & PDF EXTRACTION
+const dropZone=document.getElementById('drop-zone');
+const fileInput=document.getElementById('file-input');
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('dragging')});
+dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('dragging'));
+dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('dragging');if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0])});
+fileInput.addEventListener('change',()=>{if(fileInput.files[0])handleFile(fileInput.files[0])});
+
+// Check if extracted PDF text is real or garbage
+function isUsableText(text) {
+  if (!text || text.trim().length < 30) return false;
+  // Count ASCII printable chars vs total chars
+  const ascii = (text.match(/[ -~]/g) || []).length;
+  return (ascii / text.length) > 0.6;
+}
+
+// Render first page of PDF to a base64 image (fallback for garbled PDFs)
+async function pdfToImage(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+  const page = await pdf.getPage(1);
+  const viewport = page.getViewport({scale: 2.0});
+  const canvas = document.createElement('canvas');
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  const ctx = canvas.getContext('2d');
+  await page.render({canvasContext: ctx, viewport}).promise;
+  // Return base64 without the data:image/png;base64, prefix
+  return canvas.toDataURL('image/png').split(',')[1];
+}
+
+async function extractTextFromPDF(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+  let fullText = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items.map(item => item.str).join(' ');
+    fullText += pageText + '\n';
+  }
+  return fullText;
+}
+
+async function handleFile(file){
+  document.getElementById('file-badge').textContent='📎 '+file.name;
+  document.getElementById('file-badge').style.display='block';
+
+  // Handle PDFs
+  if(file.type === 'application/pdf') {
+    setStatus('loading', 'Reading PDF...');
+    try {
+      const extractedText = await extractTextFromPDF(file);
+      if (isUsableText(extractedText)) {
+        // Good readable text
+        fileData = extractedText;
+        fileType = 'text';
+        setStatus('info', '✓ PDF loaded (text mode).');
+      } else {
+        // Garbled/image PDF — render to image and use vision model
+        setStatus('loading', 'PDF has no readable text — rendering as image...');
+        const imgBase64 = await pdfToImage(file);
+        fileData = imgBase64;
+        fileType = 'image/png';
+        setStatus('info', '✓ PDF loaded (image mode — using vision AI).');
+      }
+    } catch (e) {
+      console.error(e);
+      setStatus('error', '✗ Could not read PDF. Try pasting the text instead.');
+    }
+    return;
+  }
+
+  // Handle plain text and images
+  const reader=new FileReader();
+  reader.onload=e=>{
+    if(file.type==='text/plain'){
+      fileData=e.target.result;
+      fileType='text';
+    }else{
+      fileData=e.target.result.split(',')[1];
+      fileType=file.type;
+    }
+  };
+  if(file.type==='text/plain') reader.readAsText(file); else reader.readAsDataURL(file);
+}
+
+// STATUS INDICATOR
+function setStatus(type,text){
+  const bar=document.getElementById('status-bar');
+  bar.className='status-bar show '+type;
+  if(type==='loading') bar.innerHTML=`<div class="spinner"></div><span>${text}</span>`;
+  else bar.innerHTML=`<span>${text}</span>`;
+}
+
+// AUTOMATIC MILES CALCULATION — OSRM (free, no key, works in browser)
+async function autoCalcMiles(extractedData) {
+  try {
+    setStatus('loading', 'Calculating route miles...');
+    const addresses = [];
+
+    // POINT 1: Base/home location (deadhead start)
+    const savedBase = localStorage.getItem('baseLocation') || '';
+    if (savedBase) addresses.push(savedBase);
+
+    // POINT 2: Pickup (shipper)
+    if (extractedData.shipper_street && extractedData.shipper_street !== 'UNKNOWN' &&
+        extractedData.shipper_city_state_zip && extractedData.shipper_city_state_zip !== 'UNKNOWN') {
+      addresses.push(extractedData.shipper_street + ', ' + extractedData.shipper_city_state_zip);
+    } else if (extractedData.shipper_address && extractedData.shipper_address !== 'UNKNOWN') {
+      addresses.push(extractedData.shipper_address);
+    }
+
+    // POINT 3+: Deliveries
+    if (extractedData.deliveries && extractedData.deliveries.length > 0) {
+      extractedData.deliveries.forEach(del => {
+        if (del.street && del.street !== 'UNKNOWN' && del.city_state_zip && del.city_state_zip !== 'UNKNOWN') {
+          addresses.push(del.street + ', ' + del.city_state_zip);
+        } else if (del.address && del.address !== 'UNKNOWN') {
+          addresses.push(del.address);
+        }
+      });
+    }
+
+    if (addresses.length >= 2) {
+      async function geocode(addr) {
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addr)}&format=json&limit=1`;
+        const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+        const data = await res.json();
+        if (!data || !data.length) throw new Error('Not found: ' + addr);
+        return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+      }
+      const coords = [];
+      for (const addr of addresses) {
+        coords.push(await geocode(addr));
+        await new Promise(r => setTimeout(r, 1100));
+      }
+      const coordStr = coords.map(c => `${c.lon},${c.lat}`).join(';');
+      const osrmRes = await fetch(`https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=false`);
+      const osrmData = await osrmRes.json();
+      if (osrmData.code === 'Ok') {
+        extractedData.miles = Math.round(osrmData.routes[0].distance / 1609.344).toString();
+        extractedData._hadBase = !!savedBase;
+        if (extractedData.missing_fields)
+          extractedData.missing_fields = extractedData.missing_fields.filter(f => f.toLowerCase() !== 'miles');
+      }
+    }
+  } catch (err) {
+    console.warn('Mile calculation failed:', err);
+  }
+  return extractedData;
+}
+
+// TRUCK INFO MODAL
+function openTruckModal(){
+  document.getElementById('ti-base').value = localStorage.getItem('baseLocation') || truckInfo.base || '';
+  document.getElementById('ti-truck').value = truckInfo.truck;
+  document.getElementById('ti-driver').value = truckInfo.driver;
+  document.getElementById('ti-dispatcher').value = truckInfo.dispatcher;
+  document.getElementById('truck-modal').classList.add('show');
+  setTimeout(()=>document.getElementById('ti-base').focus(), 100);
+}
+function truckConfirm(){
+  const base = document.getElementById('ti-base').value.trim();
+  if (base) localStorage.setItem('baseLocation', base);
+  truckInfo.base = base;
+  truckInfo.truck = document.getElementById('ti-truck').value.trim();
+  truckInfo.driver = document.getElementById('ti-driver').value.trim();
+  truckInfo.dispatcher = document.getElementById('ti-dispatcher').value.trim();
+  localStorage.setItem('savedTruckInfo', JSON.stringify({truck:truckInfo.truck,driver:truckInfo.driver,dispatcher:truckInfo.dispatcher}));
+  document.getElementById('truck-modal').classList.remove('show');
+  runGenerate();
+}
+function truckSkip(){
+  document.getElementById('truck-modal').classList.remove('show');
+  runGenerate();
+}
+
+// MAIN GENERATION LOGIC USING GROQ API
+function startGenerate(){
+  const textInput=document.getElementById('text-input').value.trim();
+  if(!textInput&&!fileData){setStatus('error','✗ Paste text or upload a file first');return}
+  if(!GROQ_API_KEY || GROQ_API_KEY === 'YOUR_GROQ_API_KEY') {
+    setStatus('error','✗ API Key missing. Add it to the script.'); return;
+  }
+  openTruckModal();
+}
+
+async function runGenerate(){
+  const textInput=document.getElementById('text-input').value.trim();
+  const btn=document.getElementById('gen-btn');
+  btn.disabled=true;
+  setStatus('loading','AI is reading the rate confirmation...');
+  
+  const prompt=`You are a truck dispatcher assistant. Extract structured freight data from the rate confirmation below.
+
+YOUR ENTIRE RESPONSE MUST BE ONLY RAW JSON. No markdown, no explanation, no text before or after. Just the JSON object.
+
+RULE 1 - SHIPPER = PICKUP (PU):
+The field labeled "Shipper" is ALWAYS the pickup. Extract its name, street, city/state/zip, pickup date, pickup time.
+There is ALWAYS exactly ONE shipper/pickup — never more than one.
+
+RULE 2 - CONSIGNEE = DELIVERY (DEL):
+The field labeled "Consignee" is ALWAYS the delivery location.
+"Consignee Stop Off #1" and "Consignee Stop Off #2" are extra delivery stops — only include if they have a real address filled in.
+
+RULE 3 - ADDRESSES TO COMPLETELY IGNORE (never use as shipper or delivery):
+- "Please send all Freight Bills and Invoices to:" section
+- "Please sign and fax form to:" or "or email to:" section  
+- Any address belonging to the broker or logistics company (Evans Delivery, Century Express, etc.)
+- Carrier payment addresses, company headquarters, billing addresses
+- Any city or address that appears only in billing, invoicing, or signature sections
+
+RULE 4 - LOAD NUMBER:
+Look for: Pro No., Load #, Order #, Reference #, Confirmation #. Often near top right next to "Pro No." or "Date".
+
+RULE 5 - BOL / PO NUMBER:
+Look in Notes or anywhere for: BOL, PO#, PU#, Bill of Lading, Pickup Number, Ref#. Extract the actual number value.
+
+RULE 6 - ADDRESS FORMAT:
+Always split every address into exactly two fields:
+- "street": street number + street name only (e.g. "251 Great Valley Pkwy")
+- "city_state_zip": City, ST ZIP (e.g. "White, GA 30184")
+Never combine them.
+
+OUTPUT - return exactly this JSON structure:
+{"load_number":"string or UNKNOWN","shipper_name":"ALL CAPS","shipper_street":"street only","shipper_city_state_zip":"City, ST ZIP","pickup_date":"MM-DD-YYYY","pickup_time":"time or FCFS or UNKNOWN","bol_number":"value or UNKNOWN","deliveries":[{"name":"ALL CAPS","street":"street only","city_state_zip":"City, ST ZIP","date":"MM-DD-YYYY","time":"string or UNKNOWN"}],"rate":"numbers only no dollar sign","weight":"with units or UNKNOWN","missing_fields":["only truly missing fields — never include truck, driver, phone, dispatcher"]}
+
+RATE CONFIRMATION DOCUMENT:`;
+
+  let modelToUse = 'llama-3.3-70b-versatile';
+  let messageContent = [];
+
+  if (fileData && fileType && fileType !== 'text') {
+      modelToUse = 'meta-llama/llama-4-scout-17b-16e-instruct';
+      messageContent.push({
+          type: "image_url",
+          image_url: { url: `data:${fileType};base64,${fileData}` }
+      });
+      messageContent.push({ type: "text", text: prompt });
+  } else {
+      const content = fileType === 'text' ? fileData : textInput;
+      messageContent = prompt + '\n\nRATE CONFIRMATION:\n' + content;
+  }
+
+  const isVision = (modelToUse === 'meta-llama/llama-4-scout-17b-16e-instruct');
+  const requestBody = {
+    model: modelToUse,
+    messages: [{ role: "user", content: messageContent }],
+    temperature: 0.1
+    // Note: response_format omitted — prompt instructs JSON and we parse it manually
+  };
+
+  try{
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${GROQ_API_KEY}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+    });
+    
+    const data = await res.json();
+    if(data.error) {
+      console.error('Groq API error:', JSON.stringify(data.error));
+      throw new Error(data.error.message || JSON.stringify(data.error));
+    }
+    
+    const rawText = data.choices[0].message.content;
+    console.log('Raw Groq response:', rawText);
+    // Strip markdown code fences and extract first JSON object
+    const cleaned = rawText.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+    // Extract just the JSON object in case there's extra text
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON found in response. Raw: ' + cleaned.slice(0,200));
+    let extracted = JSON.parse(jsonMatch[0]);
+    
+    extracted = await autoCalcMiles(extracted);
+
+    pendingExtracted = extracted;
+    
+    // STRICT BLOCKLIST: Ensure the popup NEVER asks for truck, driver, phone, type, or dispatcher info
+    let missing = extracted.missing_fields || [];
+    missing = missing.filter(field => {
+        const f = field.toLowerCase();
+        return !f.includes('truck') && !f.includes('driver') && !f.includes('name') && !f.includes('phone') && !f.includes('dispatcher') && !f.includes('type');
+    });
+    
+    if(missing.length > 0){
+      setStatus('info',`⚠ ${missing.length} field(s) missing — fill them in`);
+      showMissingModal(extracted, missing);
+    } else {
+      buildSheet(extracted);
+    }
+  }catch(err){
+    setStatus('error','✗ Error: '+err.message);
+  }
+  btn.disabled=false;
+}
+
+// MISSING MODAL
+const FIELD_CONFIG={
+  load_number:{label:'Load / Order number',placeholder:'e.g. 1881637'},
+  shipper_name:{label:'Shipper / pickup name',placeholder:'e.g. WALMART DC'},
+  shipper_address:{label:'Shipper address',placeholder:'e.g. 8130 Kaw Drive, Kansas City KS'},
+  pickup_date:{label:'Pickup date',placeholder:'MM-DD-YYYY'},
+  pickup_time:{label:'Pickup time',placeholder:'e.g. 08:00 or FCFS 0800-1700'},
+  bol_number:{label:'BOL / PO Pickup #',placeholder:'e.g. FKKD323525'},
+  miles:{label:'Total miles',placeholder:'e.g. 469'},
+  rate:{label:'Rate (no $)',placeholder:'e.g. 1300'},
+  weight:{label:'Weight',placeholder:'e.g. 40,000 lb'},
+};
+
+function showMissingModal(extracted,missing){
+  const container=document.getElementById('modal-fields');
+  container.innerHTML='';
+  missing.forEach(field=>{
+    const key=field.toLowerCase().replace(/\s+/g,'_');
+    const cfg=FIELD_CONFIG[key]||{label:field,placeholder:''};
+    const div=document.createElement('div');div.className='field-group';
+    div.innerHTML=`<label class="field-label">${cfg.label}</label><input class="field-input" id="missing-${key}" type="text" placeholder="${cfg.placeholder}" value="${extracted[key]==='UNKNOWN'?'':(extracted[key]||'')}"/>`;
+    container.appendChild(div);
+  });
+  document.getElementById('modal').classList.add('show');
+}
+
+function confirmMissing(){
+  if(!pendingExtracted)return;
+  (pendingExtracted.missing_fields||[]).forEach(field=>{
+    const key=field.toLowerCase().replace(/\s+/g,'_');
+    const el=document.getElementById('missing-'+key);
+    if(el&&el.value.trim())pendingExtracted[key]=el.value.trim();
+  });
+  document.getElementById('modal').classList.remove('show');
+  buildSheet(pendingExtracted);
+}
+
+function skipMissing(){
+  document.getElementById('modal').classList.remove('show');
+  if(pendingExtracted)buildSheet(pendingExtracted);
+}
+
+// BUILD SHEET
+function buildSheet(d){
+  const rate=parseFloat(d.rate)||0;
+  const miles=parseFloat(d.miles)||0;
+  const rpm=(rate>0&&miles>0)?(rate/miles).toFixed(2):'UNKNOWN';
+
+  // Helper: split a flat address into [street, cityStateZip] if needed
+  function splitAddress(street, cityStateZip, fallbackFull) {
+    if (street && street !== 'UNKNOWN' && cityStateZip && cityStateZip !== 'UNKNOWN') {
+      return [street, cityStateZip];
+    }
+    // Fallback: try splitting flat address on last comma
+    if (fallbackFull && fallbackFull !== 'UNKNOWN') {
+      const parts = fallbackFull.split(',');
+      if (parts.length >= 2) {
+        const streetPart = parts[0].trim();
+        const restPart = parts.slice(1).join(',').trim();
+        return [streetPart, restPart];
+      }
+      return [fallbackFull, ''];
+    }
+    return ['UNKNOWN', ''];
+  }
+
+  // Pickup address
+  const [puStreet, puCityStateZip] = splitAddress(d.shipper_street, d.shipper_city_state_zip, d.shipper_address);
+
+  let deliveryBlock='';
+  if(d.deliveries&&d.deliveries.length>0){
+    d.deliveries.forEach((del,i)=>{
+      if(i>0)deliveryBlock+='\n\n————————————————\n\n';
+      const label=i===0?'📍 DELIVERY':`📍 DELIVERY ${i+1}`;
+      const [delStreet, delCityStateZip] = splitAddress(del.street, del.city_state_zip, del.address);
+      const addrLines = delStreet !== 'UNKNOWN' ? delStreet + (delCityStateZip ? '\n📌 ' + delCityStateZip : '') : 'UNKNOWN';
+      deliveryBlock+=`${label}\n🏭 ${del.name||'UNKNOWN'}\n📦 ${addrLines}\n\n📅 ${del.date||'UNKNOWN'}\n⏰ ${del.time||'UNKNOWN'}`;
+    });
+  }else{
+    deliveryBlock='📍 DELIVERY\n🏭 UNKNOWN\n📦 UNKNOWN\n\n📅 UNKNOWN\n⏰ UNKNOWN'
+  }
+
+  const truckVal      = truckInfo.truck      || '[fill]';
+  const driverVal     = truckInfo.driver     || '[fill]';
+  const dispatcherVal = truckInfo.dispatcher || '[fill]';
+  const typeVal       = truckInfo.type       || 'SOLO';
+  const bolVal = (d.bol_number && d.bol_number !== 'UNKNOWN') ? d.bol_number : (truckInfo.bol || '');
+
+  const puAddrLines = puStreet !== 'UNKNOWN' ? puStreet + (puCityStateZip ? '\n📌 ' + puCityStateZip : '') : 'UNKNOWN';
+
+  const bolSection = bolVal ? `PU# ${bolVal}` : '';
+
+  const sheet=`🚛 Load # ${d.load_number||'UNKNOWN'}
+========================
+🚚 TR # VAN
+👤 Driver: SOLO
+🔢 Truck # ${truckVal}
+👤 Name: ${driverVal}
+👨‍💻 Dispatcher: ${dispatcherVal}
+========================
+
+📍 PICKUP
+📦 ${d.shipper_name||'UNKNOWN'}
+${puAddrLines}
+
+📅 ${d.pickup_date||'UNKNOWN'} 
+⏰ ${d.pickup_time||'UNKNOWN'}
+
+————————————————
+
+${deliveryBlock}
+
+————————————————
+
+📋 ${bolSection}
+————————————————
+
+📊 ${(d.miles && d.miles !== 'UNKNOWN') ? 'Miles: ' + d.miles + (d._hadBase ? ' (base→PU→DEL)' : ' (PU→DEL)') : 'Miles: UNKNOWN'}
+💰 Rate: $${d.rate||'UNKNOWN'}
+⚖️ Weight: ${d.weight||'UNKNOWN'}
+📈 RPM: $${rpm}
+
+————————————————
+
+${RULES_FINES}`;
+
+  const box=document.getElementById('output-box');
+  box.textContent=sheet;
+  // Always enable edit mode immediately so user can edit without clicking
+  if(!editMode){editMode=true;}
+  box.contentEditable='true';
+  document.getElementById('edit-btn').classList.add('active');
+  document.getElementById('edit-hint').classList.add('show');
+  document.getElementById('output-section').classList.add('visible');
+  document.getElementById('output-section').scrollIntoView({behavior:'smooth',block:'start'});
+  setStatus('success','✓ Done! Edit mode ON — click any text to modify.');
+  setTimeout(()=>box.focus(),400);
+}
+
+// EDIT MODE
+function toggleEdit(){
+  const box=document.getElementById('output-box');
+  const btn=document.getElementById('edit-btn');
+  const hint=document.getElementById('edit-hint');
+  editMode=!editMode;
+  box.contentEditable=editMode?'true':'false';
+  btn.classList.toggle('active',editMode);
+  hint.classList.toggle('show',editMode);
+  if(editMode)box.focus();
+}
+
+// COPY
+function copyOutput(){
+  const box=document.getElementById('output-box');
+  const text=box.innerText||box.textContent;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn=document.getElementById('copy-btn');
+    btn.textContent='✓ Copied!';btn.classList.add('copied');
+    setTimeout(()=>{btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy';btn.classList.remove('copied')},2000);
+  });
+}
+
+// HISTORY
+function getHistory(){try{return JSON.parse(localStorage.getItem('loadHistory')||'[]')}catch{return[]}}
+function saveHistory(arr){localStorage.setItem('loadHistory',JSON.stringify(arr))}
+
+function saveToHistory(){
+  const box=document.getElementById('output-box');
+  const text=box.innerText||box.textContent;
+  if(!text||text.length<10){setStatus('error','✗ Nothing to save');return}
+
+  const loadMatch=text.match(/Load #\s*(\S+)/);
+  const puMatch=text.match(/PU (.+)/);
+  const delMatch=text.match(/DEL\s+(.+)/);
+  const rateMatch=text.match(/Rate:\s*\$?([\d,]+\.?\d*)/);
+  const milesMatch=text.match(/Miles:\s*([\d,]+)/);
+
+  const entry={
+    id:Date.now(),
+    savedAt:new Date().toISOString(),
+    loadNumber:loadMatch?loadMatch[1]:'Unknown',
+    shipper:puMatch?puMatch[1].trim().split('\n')[0]:'Unknown',
+    consignee:delMatch?delMatch[1].trim():'Unknown',
+    rate:rateMatch?rateMatch[1]:'?',
+    miles:milesMatch?milesMatch[1]:'?',
+    sheet:text
+  };
+
+  const history=getHistory();
+  history.unshift(entry);
+  if(history.length>20)history.splice(20);
+  saveHistory(history);
+  updateHistoryCount();
+  setStatus('success','✓ Saved to history!');
+}
+
+function updateHistoryCount(){
+  const count=getHistory().length;
+  document.getElementById('history-count').textContent=count>0?`(${count})`:'';
+}
+
+function renderHistory(){
+  const container=document.getElementById('history-container');
+  const history=getHistory();
+  if(!history.length){container.innerHTML='<div class="history-empty">No saved sheets yet.<br>Generate a load sheet and click Save.</div>';return}
+  container.innerHTML='<div class="history-grid">'+history.map(entry=>{
+    const date=new Date(entry.savedAt);
+    const timeStr=date.toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    return `<div class="history-item">
+      <div class="history-header">
+        <span class="history-load">Load # ${entry.loadNumber}</span>
+        <span class="history-time">${timeStr}</span>
+      </div>
+      <div class="history-route">📦 ${entry.shipper} → ${entry.consignee}</div>
+      <div class="history-meta">
+        <span class="history-badge">$${entry.rate}</span>
+        <span class="history-badge">${entry.miles} mi</span>
+      </div>
+      <div class="history-actions">
+        <button class="btn-history-action" onclick="togglePreview(${entry.id})">Preview</button>
+        <button class="btn-history-action" onclick="copyFromHistory(${entry.id})">Copy</button>
+        <button class="btn-history-action" onclick="loadIntoEditor(${entry.id})">Open in editor</button>
+        <button class="btn-history-action btn-history-delete" onclick="deleteFromHistory(${entry.id})">Delete</button>
+      </div>
+      <div class="history-preview" id="preview-${entry.id}">${entry.sheet}</div>
+    </div>`;
+  }).join('')+'</div>';
+}
+
+function togglePreview(id){
+  const el=document.getElementById('preview-'+id);
+  if(el)el.classList.toggle('show');
+}
+
+function copyFromHistory(id){
+  const history=getHistory();
+  const entry=history.find(e=>e.id===id);
+  if(entry)navigator.clipboard.writeText(entry.sheet).then(()=>alert('Copied!'));
+}
+
+function loadIntoEditor(id){
+  const history=getHistory();
+  const entry=history.find(e=>e.id===id);
+  if(!entry)return;
+  const box=document.getElementById('output-box');
+  box.textContent=entry.sheet;
+  document.getElementById('output-section').classList.add('visible');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-generate').classList.add('active');
+  document.querySelector('.tab').classList.add('active');
+  // Auto-enable edit mode
+  editMode=true;
+  box.contentEditable='true';
+  document.getElementById('edit-btn').classList.add('active');
+  document.getElementById('edit-hint').classList.add('show');
+  setStatus('info','ℹ Loaded from history — edit mode ON.');
+  document.getElementById('output-section').scrollIntoView({behavior:'smooth',block:'start'});
+  setTimeout(()=>box.focus(),400);
+}
+
+function deleteFromHistory(id){
+  if(!confirm('Delete this load sheet?'))return;
+  const history=getHistory().filter(e=>e.id!==id);
+  saveHistory(history);
+  updateHistoryCount();
+  renderHistory();
+}
+
+function resetAll(){
+  document.getElementById('text-input').value='';
+  document.getElementById('output-section').classList.remove('visible');
+  document.getElementById('status-bar').className='status-bar';
+  document.getElementById('file-badge').style.display='none';
+  document.getElementById('gen-btn').disabled=false;
+  editMode=false;
+  const box=document.getElementById('output-box');
+  box.contentEditable='false';
+  document.getElementById('edit-btn').classList.remove('active');
+  document.getElementById('edit-hint').classList.remove('show');
+  fileData=null;fileType=null;pendingExtracted=null;
+  // Keep truck info for next load — just reset bol
+  truckInfo.bol='';
+  fileInput.value='';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+updateHistoryCount();
+
+// Restore saved truck info from localStorage (persists between sessions)
+(function(){
+  try {
+    const saved = JSON.parse(localStorage.getItem('savedTruckInfo')||'null');
+    if(saved){
+      if(saved.truck) truckInfo.truck = saved.truck;
+      if(saved.driver) truckInfo.driver = saved.driver;
+      if(saved.dispatcher) truckInfo.dispatcher = saved.dispatcher;
+
+    }
+  } catch(e){}
+})();
+
+// PRE-LOAD: Load #186713 — auto-fills the input box on page load
+(function preloadLoad186713(){
+  document.getElementById('text-input').value = [
+    'Load # 186713',
+    '========================',
+    '🚚 #: 9384',
+    '👤: Maksat',
+    '👨🏻‍💻: Khan',
+    '========================',
+    'PU KIDS CHOICE - ARCADIA',
+    '1768 NORTHEAST BISHOP STREET, Arcadia, FL 34266',
+    '06-03-2026 08:00 - 17:00',
+    '————————————————',
+    'DEL ALDI - WEBBERVILLE',
+    '2625 NORTH M52, Webberville, MI 48892',
+    '06-05-2026 01:00',
+    '————————————————',
+    'Miles: 1264',
+    'Rate: $4000',
+    'Weight: 43000 LB',
+    'RPM: $3.16'
+  ].join('\n');
+})();
+</script>
+</body>
+</html>

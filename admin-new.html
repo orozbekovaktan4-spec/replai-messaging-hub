@@ -43,6 +43,22 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }
+
+        /* Targeted theme transitions — only on elements that actually change with theme */
+        body,
+        .card,
+        .header,
+        .stat-card,
+        .platform-card,
+        .form-group input,
+        .form-group textarea,
+        .form-group select,
+        .chat-message,
+        .connection-steps,
+        .booking-day,
+        .booking-table th,
+        .booking-table td {
             transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
         }
 
@@ -76,6 +92,8 @@
             display: flex;
             flex-direction: column;
             box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+            will-change: transform;
+            transform: translateZ(0);
         }
 
         .logo {
@@ -212,7 +230,7 @@
 
         .card {
             background: var(--bg-primary);
-            padding: 25px;
+            padding: 32px;
             border-radius: 16px;
             box-shadow: var(--card-shadow);
             margin-bottom: 20px;
@@ -323,7 +341,7 @@
         .platform-card {
             border: 2px solid var(--border-color);
             border-radius: 16px;
-            padding: 24px;
+            padding: 28px 32px;
             margin-bottom: 20px;
             display: flex;
             justify-content: space-between;
@@ -414,14 +432,14 @@
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
             margin-bottom: 30px;
         }
 
         .stat-card {
             background: var(--bg-primary);
-            padding: 24px;
+            padding: 32px 28px;
             border-radius: 16px;
             box-shadow: var(--card-shadow);
             text-align: center;
@@ -436,7 +454,7 @@
         }
 
         .stat-number {
-            font-size: 36px;
+            font-size: 40px;
             font-weight: bold;
             background: linear-gradient(135deg, var(--primary-cyan) 0%, var(--primary-blue) 100%);
             -webkit-background-clip: text;
@@ -453,32 +471,41 @@
         .chat-log {
             max-height: 400px;
             overflow-y: auto;
-            border: 2px solid #e0e0e0;
+            border: 2px solid var(--border-color);
             border-radius: 8px;
             padding: 15px;
+            background: var(--bg-primary);
         }
 
         .chat-message {
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            background: #f9f9f9;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+
+        .chat-message:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         .chat-message .platform {
             font-size: 12px;
-            color: #667eea;
+            color: var(--primary-blue);
             font-weight: 600;
         }
 
         .chat-message .time {
             font-size: 11px;
-            color: #999;
+            color: var(--text-secondary);
         }
 
         .chat-message .text {
-            margin-top: 5px;
-            color: #333;
+            margin-top: 8px;
+            color: var(--text-primary);
+            line-height: 1.5;
         }
 
         .success-message {
@@ -620,6 +647,7 @@
 
         /* Onboarding Wizard - Apple Style */
         .onboarding-overlay {
+            display: none !important; /* Force hide onboarding */
             position: fixed;
             top: 0;
             left: 0;
@@ -628,7 +656,6 @@
             background: rgba(0, 0, 0, 0.95);
             backdrop-filter: blur(20px);
             z-index: 9999;
-            display: flex;
             align-items: center;
             justify-content: center;
             opacity: 0;
@@ -830,11 +857,11 @@
             }
 
             .stat-card {
-                padding: 20px;
+                padding: 24px 20px;
             }
 
             .stat-number {
-                font-size: 28px;
+                font-size: 32px;
             }
 
             .header {
@@ -852,6 +879,7 @@
                 flex-direction: column;
                 gap: 16px;
                 text-align: center;
+                padding: 24px 20px;
             }
 
             .platform-info {
@@ -865,7 +893,7 @@
             }
 
             .card {
-                padding: 20px;
+                padding: 24px 20px;
             }
 
             .onboarding-container {
@@ -905,11 +933,11 @@
             }
 
             .stat-number {
-                font-size: 20px;
+                font-size: 24px;
             }
 
             .card {
-                padding: 12px;
+                padding: 16px;
             }
 
             .main-content {
@@ -1040,6 +1068,63 @@
     </style>
 </head>
 <body>
+    <!-- Loading Screen -->
+    <div id="auth-loading" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1e293b; display: flex; align-items: center; justify-content: center; z-index: 99999;">
+        <div style="text-align: center; color: white;">
+            <div style="font-size: 48px; font-weight: 700; margin-bottom: 16px;">
+                <span style="color: white;">REPL</span><span style="background: linear-gradient(135deg, #60efff 0%, #0061ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">AI</span>
+            </div>
+            <div style="font-size: 14px; color: rgba(255,255,255,0.6);">Verifying session...</div>
+        </div>
+    </div>
+    
+    <!-- Authentication Check -->
+    <script>
+        (function() {
+            // Check for session from URL (OAuth redirect)
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionFromUrl = urlParams.get('session');
+            
+            if (sessionFromUrl) {
+                localStorage.setItem('sessionId', sessionFromUrl);
+                // Clean URL
+                window.history.replaceState({}, document.title, '/admin');
+            }
+
+            // Verify session
+            const sessionId = localStorage.getItem('sessionId');
+            
+            if (!sessionId) {
+                console.log('No session found, redirecting to login...');
+                window.location.replace('/');
+                return;
+            }
+
+            // Verify session with server
+            fetch('/api/auth/verify', {
+                headers: { 'X-Session-ID': sessionId }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.valid) {
+                    console.log('Invalid session, redirecting to login...');
+                    localStorage.removeItem('sessionId');
+                    localStorage.removeItem('user');
+                    window.location.replace('/');
+                } else {
+                    console.log('Session valid, loading admin panel...');
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    // Hide loading screen
+                    document.getElementById('auth-loading').style.display = 'none';
+                }
+            })
+            .catch(err => {
+                console.error('Session verification failed:', err);
+                window.location.replace('/');
+            });
+        })();
+    </script>
+
     <!-- Onboarding Wizard -->
     <div class="onboarding-overlay" id="onboarding">
         <div class="onboarding-container">
@@ -1051,6 +1136,7 @@
                     Built by entrepreneurs, for entrepreneurs. Automate customer conversations on Instagram, Telegram, and WhatsApp — all powered by free AI.
                 </div>
                 <div class="onboarding-buttons">
+                    <button class="onboarding-btn onboarding-btn-secondary" onclick="completeOnboarding()" data-i18n="skip">Skip</button>
                     <button class="onboarding-btn onboarding-btn-primary" onclick="nextOnboardingStep()" data-i18n="getStarted">Get Started →</button>
                 </div>
                 <div class="onboarding-progress">
@@ -1197,6 +1283,10 @@
     <div class="main-content">
         <div class="header">
             <h1 data-i18n="dashboard">REPLAI Dashboard</h1>
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <span id="userEmail" style="font-size: 14px; color: var(--text-secondary);"></span>
+                <button onclick="handleLogout()" style="padding: 8px 16px; background: var(--text-secondary); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;">Logout</button>
+            </div>
         </div>
 
         <div id="success-message" class="success-message">
@@ -1234,7 +1324,7 @@
                 <p data-i18n="analyticsDesc">Insights into your customer messages and engagement</p>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; margin-bottom: 24px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); gap: 24px; margin-bottom: 24px;">
                 <div class="card">
                     <h3 style="margin-bottom: 16px; color: var(--text-primary);" data-i18n="peakHours">Peak Hours</h3>
                     <canvas id="peakHoursChart"></canvas>
@@ -1315,22 +1405,113 @@
                     <button class="btn" id="instagram-connect-btn" onclick="openInstagramWizard()" style="background: linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%); box-shadow: 0 4px 15px rgba(131,58,180,0.35);" data-i18n="connect">Connect</button>
                 </div>
 
-                <!-- Instagram Login Modal -->
-                <div id="instagram-wizard-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); backdrop-filter:blur(12px); z-index:10000; align-items:center; justify-content:center;">
-                    <div id="instagram-wizard" style="background:var(--bg-primary); border-radius:24px; max-width:480px; width:92%; box-shadow:0 30px 80px rgba(0,0,0,0.4); border:1px solid var(--border-color); animation: fadeIn 0.35s ease;">
-                        <div style="background:linear-gradient(135deg,#833ab4 0%,#fd1d1d 50%,#fcb045 100%); padding:28px 32px; border-radius:24px 24px 0 0; position:relative;">
-                            <button onclick="closeInstagramWizard()" style="position:absolute;top:16px;right:20px;background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;">✕</button>
-                            <div style="display:flex;align-items:center;gap:14px;"><div style="width:50px;height:50px;background:rgba(255,255,255,0.2);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;">📸</div><div><div style="color:white;font-size:20px;font-weight:700;" data-i18n="igWizardTitle">Instagram Login</div><div style="color:rgba(255,255,255,0.8);font-size:13px;margin-top:2px;" data-i18n="igWizardSubtitle">Username and password connection</div></div></div>
+                <!-- Instagram Connection Modal -->
+                <div id="instagram-wizard-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:transparent; z-index:10000; align-items:center; justify-content:center;">
+                  <div id="instagram-wizard" style="background:var(--bg-primary); border-radius:24px; max-width:680px; width:92%; box-shadow:0 8px 40px rgba(0,0,0,0.12); border:1px solid var(--border-color); animation: fadeIn 0.35s ease;">
+                    <div style="background:linear-gradient(135deg,#833ab4 0%,#fd1d1d 50%,#fcb045 100%); padding:28px 32px; border-radius:24px 24px 0 0; position:relative;">
+                      <button onclick="closeInstagramWizard()" style="position:absolute;top:16px;right:20px;background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;">✕</button>
+                      <div style="display:flex;align-items:center;gap:14px;">
+                        <div style="width:50px;height:50px;background:rgba(255,255,255,0.2);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;">📸</div>
+                        <div>
+                          <div style="color:white;font-size:20px;font-weight:700;" data-i18n="igWizardTitle">Instagram Connection</div>
+                          <div style="color:rgba(255,255,255,0.8);font-size:13px;margin-top:2px;" data-i18n="igWizardSubtitle">Connection instructions</div>
                         </div>
-                        <div style="padding:28px 32px;">
-                            <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:14px 16px;margin-bottom:18px;font-size:13px;color:var(--text-secondary);line-height:1.6;" data-i18n="igUnofficialWarning">⚠️ Unofficial method — Instagram may block accounts. Use at your own risk.</div>
-                            <div id="ig-login-error" style="display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:14px 16px;margin-bottom:16px;color:#ef4444;font-size:13px;"></div>
-                            <div id="ig-login-success" style="display:none;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:12px;padding:14px 16px;margin-bottom:16px;color:#10b981;font-size:13px;"></div>
-                            <div class="form-group"><label data-i18n="igUsername">📱 Instagram Username</label><input type="text" id="ig-username" data-i18n-placeholder="igUsernamePlaceholder" placeholder="your_username" autocomplete="username"></div>
-                            <div class="form-group"><label data-i18n="igPassword">🔑 Password</label><input type="password" id="ig-password" data-i18n-placeholder="igPasswordPlaceholder" placeholder="Instagram password" autocomplete="current-password"></div>
-                            <button class="btn" id="ig-authorize-btn" onclick="connectInstagram()" style="width:100%;background:linear-gradient(135deg,#833ab4 0%,#fd1d1d 50%,#fcb045 100%);" data-i18n="igLoginConnect">🔗 Login & Connect</button>
-                        </div>
+                      </div>
                     </div>
+                    
+                    <!-- Single Page Instructions (Fusion AI Style) -->
+                    <div style="padding:32px;max-height:70vh;overflow-y:auto;">
+                      
+                      <!-- Section 1: Prepare the profile -->
+                      <div style="margin-bottom:32px;">
+                        <div style="font-size:18px;font-weight:700;color:var(--text-primary);margin-bottom:16px;" data-i18n="igSection1Title">1. Prepare the profile (in the Instagram app)</div>
+                        <div style="font-size:14px;color:var(--text-secondary);margin-bottom:20px;line-height:1.6;" data-i18n="igSection1Desc">Before clicking the connect button on your computer, make sure of two things on your phone:</div>
+                        
+                        <!-- Account Type -->
+                        <div style="margin-bottom:20px;">
+                          <div style="font-weight:700;color:var(--text-primary);font-size:14px;margin-bottom:8px;" data-i18n="igAccountTypeTitle">1. Account type:</div>
+                          <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-bottom:8px;" data-i18n="igAccountTypeDesc">You need a Business Account or Creator Account. A personal account will not work</div>
+                          <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-bottom:4px;" data-i18n="igAccountTypeHowTitle"><strong>How to switch:</strong></div>
+                          <ul style="margin:0;padding-left:20px;font-size:13px;color:var(--text-secondary);line-height:1.7;">
+                            <li data-i18n="igAccountTypeStep1">Open Instagram Settings</li>
+                            <li data-i18n="igAccountTypeStep2">Go to Account type and tools</li>
+                            <li data-i18n="igAccountTypeStep3">Switch to a professional account</li>
+                          </ul>
+                        </div>
+                        
+                        <!-- Message Access -->
+                        <div style="margin-bottom:20px;">
+                          <div style="font-weight:700;color:var(--text-primary);font-size:14px;margin-bottom:8px;" data-i18n="igMessageAccessTitle">2. Message access:</div>
+                          <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-bottom:8px;" data-i18n="igMessageAccessDesc">You need to allow services to read your messages</div>
+                          <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-bottom:4px;" data-i18n="igMessageAccessWhereTitle"><strong>Where to enable it:</strong></div>
+                          <ul style="margin:0;padding-left:20px;font-size:13px;color:var(--text-secondary);line-height:1.7;">
+                            <li data-i18n="igMessageAccessStep1">Settings</li>
+                            <li data-i18n="igMessageAccessStep2">Messages and story replies</li>
+                            <li data-i18n="igMessageAccessStep3">Message requests folder</li>
+                            <li data-i18n="igMessageAccessStep4">Allow access to messages. It should be enabled.</li>
+                          </ul>
+                        </div>
+                      </div>
+                      
+                      <!-- Section 2: Connect to REPLAI via Instagram -->
+                      <div style="margin-bottom:32px;">
+                        <div style="font-size:18px;font-weight:700;color:var(--text-primary);margin-bottom:16px;">2. Connect Instagram</div>
+                        
+                        <div style="padding:16px;background:rgba(33,150,243,0.1);border:2px solid rgba(33,150,243,0.3);border-radius:12px;margin-bottom:16px;">
+                          <div style="font-weight:700;color:#1976d2;margin-bottom:8px;">📘 Instagram Professional account required</div>
+                          <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;">
+                            Connect a <strong>Business</strong> or <strong>Creator</strong> account directly through Instagram Login.
+                          </div>
+                          <div style="margin-top:8px;font-size:13px;color:var(--text-secondary);line-height:1.7;">
+                            No Facebook Page link is required for this flow.
+                          </div>
+                        </div>
+                        
+                        <div style="padding:16px;background:rgba(255,193,7,0.1);border:2px solid rgba(255,193,7,0.3);border-radius:12px;margin-bottom:16px;">
+                          <div style="font-weight:700;color:#f57c00;margin-bottom:8px;">⚠️ If you see "Reconnect" dialog:</div>
+                          <ol style="margin:0;padding-left:20px;font-size:13px;color:var(--text-secondary);line-height:1.7;">
+                            <li>Click <strong>"Edit settings"</strong> if Meta shows it</li>
+                            <li>Make sure <strong>ALL Instagram permissions</strong> are checked</li>
+                            <li>Then click "Continue"</li>
+                          </ol>
+                        </div>
+                        
+                        <div style="font-size:13px;color:var(--text-secondary);line-height:1.8;margin-bottom:16px;">
+                          <div>Click the <strong>"Connect Instagram"</strong> button below</div>
+                          <div>Login with Instagram and authorize the permissions</div>
+                          <div>Your Instagram will connect directly through Instagram Login</div>
+                          <div data-i18n="igConnectStep4">Grant all requested permissions</div>
+                          <div data-i18n="igConnectStep5">If everything goes well, you will see: "Connection established successfully"</div>
+                        </div>
+                      </div>
+                      
+                      <!-- Important Conditions -->
+                      <div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:12px;padding:16px;margin-bottom:24px;">
+                        <div style="font-weight:700;color:var(--text-primary);font-size:14px;margin-bottom:10px;" data-i18n="igImportantTitle">✅ Why Instagram Login?</div>
+                        <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-bottom:8px;">This connects your professional Instagram account directly through Instagram's consent screen.</div>
+                        <ul style="margin:0;padding-left:20px;font-size:13px;color:var(--text-secondary);line-height:1.7;">
+                          <li>✅ Secure OAuth 2.0 authentication</li>
+                          <li>✅ Official Meta Graph API</li>
+                          <li>✅ No password storage needed</li>
+                          <li>✅ Long-lived token (~60 days)</li>
+                        </ul>
+                      </div>
+                      
+                      <!-- Error/Success Messages -->
+                      <div id="ig-connect-error" style="display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:14px 16px;margin-bottom:16px;color:#ef4444;font-size:13px;line-height:1.5;"></div>
+                      <div id="ig-connect-success" style="display:none;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:12px;padding:14px 16px;margin-bottom:16px;color:#10b981;font-size:13px;"></div>
+
+                      <!-- Instagram OAuth Connect Button -->
+                      <button id="ig-oauth-btn" onclick="openInstagramOAuth()" style="width:100%;padding:16px;background:linear-gradient(135deg,#E1306C 0%,#C13584 100%);color:white;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(193,53,132,0.35);margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:10px;">
+                        <span style="font-size:20px;">📸</span>
+                        <span>Connect Instagram</span>
+                      </button>
+
+                      <!-- Done Button (appears after success) -->
+                      <button id="ig-done-btn" onclick="closeInstagramWizard()" style="width:100%;padding:16px;background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:white;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;display:none;" data-i18n="igDone">Done 🎉</button>
+                      
+                    </div>
+                  </div>
                 </div>
 
                 <!-- WhatsApp -->
@@ -1345,8 +1526,8 @@
                 </div>
 
                 <!-- WhatsApp QR Wizard Modal -->
-                <div id="whatsapp-wizard-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);backdrop-filter:blur(12px);z-index:10000;align-items:center;justify-content:center;">
-                    <div id="whatsapp-wizard" style="background:var(--bg-primary);border-radius:24px;max-width:580px;width:92%;max-height:92vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,0.4);border:1px solid var(--border-color);animation:fadeIn 0.35s ease;">
+                <div id="whatsapp-wizard-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg-secondary);z-index:10000;align-items:center;justify-content:center;">
+                    <div id="whatsapp-wizard" style="background:var(--bg-primary);border-radius:24px;max-width:680px;width:92%;max-height:92vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,0.25);border:1px solid var(--border-color);animation:fadeIn 0.35s ease;">
                         <div style="background:linear-gradient(135deg,#25D366 0%,#128C7E 100%);padding:28px 32px;border-radius:24px 24px 0 0;position:relative;">
                             <button onclick="closeWhatsAppWizard()" style="position:absolute;top:16px;right:20px;background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.35)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">✕</button>
                             <div style="display:flex;align-items:center;gap:14px;"><div style="width:50px;height:50px;background:rgba(255,255,255,0.2);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;">💬</div><div><div style="color:white;font-size:20px;font-weight:700;letter-spacing:-0.4px;" data-i18n="waWizardTitle">WhatsApp Connection</div><div style="color:rgba(255,255,255,0.8);font-size:13px;margin-top:2px;" data-i18n="waWizardSubtitle">REPLAI · Connection Instructions</div></div></div>
@@ -1605,16 +1786,10 @@
         let currentOnboardingStep = 1;
 
         function checkOnboarding() {
-            const completed = localStorage.getItem('replai-onboarding-completed');
+            // Onboarding disabled - always hide it
             const overlay = document.getElementById('onboarding');
-
-            if (completed === 'true') {
-                overlay.style.display = 'none';
-                document.body.classList.remove('onboarding-active');
-            } else {
-                overlay.style.display = 'flex';
-                document.body.classList.add('onboarding-active');
-            }
+            overlay.style.display = 'none';
+            document.body.classList.remove('onboarding-active');
         }
 
         function nextOnboardingStep() {
@@ -1807,9 +1982,98 @@
             }
         }
 
+        // Update charts with real data from chat logs
+        async function updateChartsWithRealData() {
+            try {
+                const response = await fetch('/api/admin/chat-logs');
+                const logs = await response.json();
+                
+                // Also update the stats numbers
+                const statsResponse = await fetch('/api/admin/stats');
+                const stats = await statsResponse.json();
+                if (stats) {
+                    const totalEl = document.getElementById('total-messages');
+                    const todayEl = document.getElementById('today-messages');
+                    const platformsEl = document.getElementById('connected-platforms');
+                    if (totalEl) totalEl.textContent = stats.totalMessages || 0;
+                    if (todayEl) todayEl.textContent = stats.todayMessages || 0;
+                    if (platformsEl) platformsEl.textContent = stats.connectedPlatforms || 0;
+                }
+                
+                if (!logs || logs.length === 0) return;
+                
+                // Calculate peak hours (0-23)
+                const hourCounts = new Array(24).fill(0);
+                logs.forEach(log => {
+                    const hour = new Date(log.timestamp).getHours();
+                    hourCounts[hour]++;
+                });
+                
+                // Calculate platform distribution
+                const platformCounts = {};
+                logs.forEach(log => {
+                    const platform = log.platform;
+                    platformCounts[platform] = (platformCounts[platform] || 0) + 1;
+                });
+                
+                // Calculate daily trend (last 7 days)
+                const dailyCounts = {};
+                const today = new Date();
+                for (let i = 6; i >= 0; i--) {
+                    const date = new Date(today);
+                    date.setDate(date.getDate() - i);
+                    const dateKey = date.toISOString().split('T')[0];
+                    dailyCounts[dateKey] = 0;
+                }
+                
+                logs.forEach(log => {
+                    const dateKey = log.timestamp.split('T')[0];
+                    if (dailyCounts.hasOwnProperty(dateKey)) {
+                        dailyCounts[dateKey]++;
+                    }
+                });
+                
+                // Update Peak Hours Chart
+                if (peakHoursChart) {
+                    peakHoursChart.data.datasets[0].data = hourCounts;
+                    peakHoursChart.update();
+                }
+                
+                // Update Platform Chart
+                if (platformChart) {
+                    const platforms = Object.keys(platformCounts);
+                    const counts = Object.values(platformCounts);
+                    platformChart.data.labels = platforms.map(p => 
+                        p === 'telegram' ? tr('chartTelegram') :
+                        p === 'instagram' ? tr('chartInstagram') :
+                        p === 'whatsapp' ? tr('chartWhatsApp') : p
+                    );
+                    platformChart.data.datasets[0].data = counts;
+                    platformChart.update();
+                }
+                
+                // Update Daily Trend Chart
+                if (dailyTrendChart) {
+                    const labels = Object.keys(dailyCounts).map(date => {
+                        const d = new Date(date);
+                        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    });
+                    dailyTrendChart.data.labels = labels;
+                    dailyTrendChart.data.datasets[0].data = Object.values(dailyCounts);
+                    dailyTrendChart.update();
+                }
+                
+            } catch (error) {
+                console.error('Error updating charts:', error);
+            }
+        }
+
         // Initialize charts when DOM is ready
         window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(initializeCharts, 100);
+            setTimeout(() => {
+                initializeCharts();
+                updateChartsWithRealData();
+            }, 100);
             loadBookings();
             loadInstagramStatus();
         });
@@ -1823,8 +2087,22 @@
                 if (platformChart) platformChart.destroy();
                 if (dailyTrendChart) dailyTrendChart.destroy();
                 initializeCharts();
+                updateChartsWithRealData();
             }, 100);
         };
+        
+        // Auto-refresh charts every 30 seconds when on dashboard
+        let chartsRefreshInterval = null;
+        function startChartsAutoRefresh() {
+            if (chartsRefreshInterval) clearInterval(chartsRefreshInterval);
+            chartsRefreshInterval = setInterval(updateChartsWithRealData, 30000);
+        }
+        function stopChartsAutoRefresh() {
+            if (chartsRefreshInterval) {
+                clearInterval(chartsRefreshInterval);
+                chartsRefreshInterval = null;
+            }
+        }
 
         // Language translations
         const translations = {
@@ -1960,47 +2238,45 @@
                 step3Desc: "Send a test message and watch AI respond!",
                 startBuilding: "Start Building 🚀",
                 igWizardTitle: "Instagram Connection",
-                igWizardSubtitle: "Username and password connection",
-                igUnofficialWarning: "⚠️ Unofficial method — Instagram may block accounts. Use at your own risk.",
-                igUsername: "📱 Instagram Username",
-                igUsernamePlaceholder: "your_username",
-                igPassword: "🔑 Password",
-                igPasswordPlaceholder: "Instagram password",
-                igLoginConnect: "🔗 Login & Connect",
-                igLoggingIn: "Logging in...",
-                igMissingCredentials: "Please enter Instagram username and password.",
-                igLoginFailed: "Login failed. Check credentials or Instagram may be blocking this login attempt.",
-                igStep1Of2: "Step 1 of 2",
-                igStep1Title: "Preparing your profile",
-                igStep1Desc: "Before clicking the connect button on your computer, make sure two things are set up on your phone:",
-                igAccountType: "Account Type",
-                igAccountTypeDesc: "You must have a <strong>Business Account</strong> or <strong>Creator Account</strong>. Personal accounts are not supported.",
-                igAccountTypeHow: "📍 <strong>How to switch:</strong><br>Instagram Settings → Account type and tools → Switch to professional account",
-                igMessageAccess: "Message Access",
-                igMessageAccessDesc: "You must allow services to read your messages.",
-                igMessageAccessHow: "📍 <strong>Where to enable:</strong><br>Settings → Messages and story replies → Message controls → <strong>Allow access to messages</strong> (ON)",
-                igCancel: "Cancel",
+                igWizardSubtitle: "Connection instructions",
+                igSection1Title: "1. Prepare the profile (in the Instagram app)",
+                igSection1Desc: "Before clicking the connect button on your computer, make sure of two things on your phone:",
+                igAccountTypeTitle: "1. Account type:",
+                igAccountTypeDesc: "You need a Business Account or Creator Account. A personal account will not work",
+                igAccountTypeHowTitle: "How to switch:",
+                igAccountTypeStep1: "Open Instagram Settings",
+                igAccountTypeStep2: "Go to Account type and tools",
+                igAccountTypeStep3: "Switch to a professional account",
+                igMessageAccessTitle: "2. Message access:",
+                igMessageAccessDesc: "You need to allow services to read your messages",
+                igMessageAccessWhereTitle: "Where to enable it:",
+                igMessageAccessStep1: "Settings",
+                igMessageAccessStep2: "Messages and story replies",
+                igMessageAccessStep3: "Message requests folder",
+                igMessageAccessStep4: "Allow access to messages. It should be enabled.",
+                igSection2Title: "2. Connect to REPLAI",
+                igConnectStep1: "Click the purple \"Connect\" button at the bottom of the screen",
+                igConnectStep2: "In the opened window, enter your Instagram login and password",
+                igConnectStep3: "The system will ask for permissions. Click \"Allow\" or confirm all checkboxes",
+                igConnectStep4: "Click the \"Authorize\" button",
+                igConnectStep5: "If everything goes well, you will see the message: \"Connection established successfully\"",
+                igImportantTitle: "Important conditions to avoid errors",
+                igImportantDesc: "According to the on-screen instructions, check the following if the connection fails:",
+                igImportantBrowser: "You are using an official browser",
+                igImportantVPN: "Your VPN or anonymizer is turned off",
+                igImportantAccount: "The account is definitely set as a Professional account (Business or Creator)",
+                igConnectButton: "Connect",
+                igDone: "Done 🎉",
                 igContinue: "✅ Done, Continue →",
                 igStep2Of2: "Step 2 of 2",
-                igStep2Title: "Connecting to REPLAI",
-                igStep2Desc: "Enter your Instagram username and password:",
-                igPageToken: "Instagram Username",
-                igPageTokenPlaceholder: "your_username",
-                igAccountId: "Password",
-                igAccountIdPlaceholder: "Instagram password",
-                igTokenHelp: "⚠️ Unofficial method — Instagram may block accounts. Use at your own risk.",
-                igAuthorize: "🔗 Connect & Setup Webhook",
+                igStep2Title: "Connect to REPLAI",
+                igStep2Desc: "Click the button below to connect your Instagram account via Facebook.",
+                igLoginConnect: "📘 Connect with Facebook",
+                igLoggingIn: "Connecting...",
                 igSuccess: "Connection Established!",
                 igSuccessDesc: "Your Instagram account is now connected to REPLAI. The bot will start responding to your messages automatically.",
                 igDone: "Done 🎉",
-                igErrorToken: "⚠️ Enter your Instagram Username",
-                igConnecting: "⏳ Connecting...",
-                igConnectError: "❌ Connection error. Check your token.",
-                igTroubleshooting: "If the connection fails, check:",
-                igTroubleshootingBrowser: "You are using an official, up-to-date browser",
-                igTroubleshootingVPN: "You have disabled your VPN or anonymizer",
-                igTroubleshootingAccount: "Your account has been switched to Professional status (Business or Creator)",
-                igNetworkError: "❌ Network error: ",
+                igBack: "← Back",
                 waWizardTitle: "WhatsApp Connection",
                 waWizardSubtitle: "REPLAI · Connection Instructions",
                 waStep1Of4: "Step 1 of 4",
@@ -2199,38 +2475,42 @@
                 step3Desc: "Отправьте тестовое сообщение и посмотрите, как ИИ ответит!",
                 startBuilding: "Начать Создание 🚀",
                 igWizardTitle: "Подключение Instagram",
-                igWizardSubtitle: "REPLAI · Инструкция по подключению",
-                igStep1Of2: "Шаг 1 из 2",
-                igStep1Title: "Подготовка профиля",
-                igStep1Desc: "Перед нажатием кнопки подключения на компьютере убедитесь, что на телефоне настроены две вещи:",
-                igAccountType: "Тип Аккаунта",
-                igAccountTypeDesc: "У вас должен быть <strong>Бизнес-аккаунт</strong> или <strong>Аккаунт автора</strong>. Личные аккаунты не поддерживаются.",
-                igAccountTypeHow: "📍 <strong>Как переключить:</strong><br>Настройки Instagram → Тип аккаунта и инструменты → Переключиться на профессиональный аккаунт",
-                igMessageAccess: "Доступ к Сообщениям",
-                igMessageAccessDesc: "Вы должны разрешить сервисам читать ваши сообщения.",
-                igMessageAccessHow: "📍 <strong>Где включить:</strong><br>Настройки → Сообщения и ответы на истории → Управление сообщениями → <strong>Разрешить доступ к сообщениям</strong> (ВКЛ)",
-                igCancel: "Отмена",
-                igContinue: "✅ Готово, Продолжить →",
-                igStep2Of2: "Шаг 2 из 2",
-                igStep2Title: "Подключение к REPLAI",
-                igStep2Desc: "Введите токен доступа вашей страницы Facebook с разрешениями Instagram:",
-                igPageToken: "Имя пользователя Instagram",
-                igPageTokenPlaceholder: "your_username",
-                igAccountId: "Пароль",
-                igAccountIdPlaceholder: "Пароль Instagram",
-                igTokenHelp: "⚠️ Unofficial method — Instagram may block accounts. Use at your own risk.",
-                igAuthorize: "🔗 Подключить и Настроить Вебхук",
+                igWizardSubtitle: "Инструкция по подключению",
+                igSection1Title: "1. Подготовка профиля (в приложении Instagram)",
+                igSection1Desc: "Перед нажатием кнопки подключения на компьютере убедитесь, что на телефоне настроены две вещи:",
+                igAccountTypeTitle: "1. Тип аккаунта:",
+                igAccountTypeDesc: "Нужен Бизнес-аккаунт или Аккаунт автора. Личный аккаунт не подойдет",
+                igAccountTypeHowTitle: "Как переключить:",
+                igAccountTypeStep1: "Откройте Настройки Instagram",
+                igAccountTypeStep2: "Перейдите в Тип аккаунта и инструменты",
+                igAccountTypeStep3: "Переключитесь на профессиональный аккаунт",
+                igMessageAccessTitle: "2. Доступ к сообщениям:",
+                igMessageAccessDesc: "Нужно разрешить сервисам читать ваши сообщения",
+                igMessageAccessWhereTitle: "Где включить:",
+                igMessageAccessStep1: "Настройки",
+                igMessageAccessStep2: "Сообщения и ответы на истории",
+                igMessageAccessStep3: "Папка запросов сообщений",
+                igMessageAccessStep4: "Разрешить доступ к сообщениям. Должно быть включено.",
+                igSection2Title: "2. Подключение к REPLAI",
+                igConnectStep1: "Нажмите фиолетовую кнопку \"Подключить\" внизу экрана",
+                igConnectStep2: "В открывшемся окне введите логин и пароль Instagram",
+                igConnectStep3: "Система запросит разрешения. Нажмите \"Разрешить\" или подтвердите все галочки",
+                igConnectStep4: "Нажмите кнопку \"Авторизовать\"",
+                igConnectStep5: "Если всё пройдёт успешно, вы увидите сообщение: \"Подключение установлено успешно\"",
+                igImportantTitle: "Важные условия для избежания ошибок",
+                igImportantDesc: "Согласно инструкциям на экране, проверьте следующее, если подключение не удалось:",
+                igImportantBrowser: "Вы используете официальный браузер",
+                igImportantVPN: "Ваш VPN или анонимайзер выключен",
+                igImportantAccount: "Аккаунт точно установлен как Профессиональный (Бизнес или Автор)",
+                igConnectButton: "Подключить",
+                igDone: "Готово 🎉",
+                igStep2Desc: "Нажмите кнопку ниже, чтобы подключить аккаунт Instagram через Facebook.",
+                igLoginConnect: "📘 Подключить через Facebook",
+                igLoggingIn: "Подключение...",
                 igSuccess: "Подключение Установлено!",
                 igSuccessDesc: "Ваш аккаунт Instagram теперь подключен к REPLAI. Бот начнёт автоматически отвечать на ваши сообщения.",
                 igDone: "Готово 🎉",
-                igErrorToken: "⚠️ Введите токен доступа страницы",
-                igConnecting: "⏳ Подключение...",
-                igConnectError: "❌ Ошибка подключения. Проверьте токен.",
-                igTroubleshooting: "Если подключение не удалось, проверьте:",
-                igTroubleshootingBrowser: "Вы используете официальный и актуальный браузер",
-                igTroubleshootingVPN: "VPN или анонимайзер отключены",
-                igTroubleshootingAccount: "Ваш аккаунт переведён в профессиональный статус (Business или Creator)",
-                igNetworkError: "❌ Ошибка сети: ",
+                igBack: "← Назад",
                 waWizardTitle: "Подключение WhatsApp",
                 waWizardSubtitle: "REPLAI · Инструкция по подключению",
                 waStep1Of4: "Шаг 1 из 4",
@@ -2429,38 +2709,27 @@
                 step3Desc: "Тест билдирүүсүн жөнөтүп, AI кантип жооп берерин көрүңүз!",
                 startBuilding: "Түзүүнү Баштоо 🚀",
                 igWizardTitle: "Instagram'ды Туташтыруу",
-                igWizardSubtitle: "REPLAI · Туташтыруу боюнча нускама",
+                igWizardSubtitle: "Туташтыруу боюнча нускама",
                 igStep1Of2: "1-кадам, 2дан",
                 igStep1Title: "Профилди даярдоо",
                 igStep1Desc: "Компьютердеги туташтыруу баскычын басуудан мурун телефонуңузда эки нерсе туураланганын текшериңиз:",
-                igAccountType: "Аккаунт Тиб",
-                igAccountTypeDesc: "Сизде <strong>Бизнес аккаунт</strong> же <strong>Автор аккаунту</strong> болушу керек. Жеке аккаунттар колдоого алынбайт.",
+                igAccountType: "1. Аккаунт Тиби",
+                igAccountTypeDesc: "Сизге <strong>Бизнес аккаунт</strong> же <strong>Автор аккаунту</strong> керек. Жеке аккаунттар иштебейт.",
                 igAccountTypeHow: "📍 <strong>Кантип өзгөртүү:</strong><br>Instagram Тууралоолор → Аккаунт тиби жана куралдар → Профессионал аккаунтка өтүү",
-                igMessageAccess: "Билдирүүлөргө Кирүү",
-                igMessageAccessDesc: "Сервисдерге билдирүүлөрүңүздү окууга уруксат беришиңиз керек.",
-                igMessageAccessHow: "📍 <strong>Кайдан иштетүү:</strong><br>Тууралоолор → Билдирүүлөр жана история жооптору → Билдирүүлөрдү башкаруу → <strong>Билдирүүлөргө кирүүгө уруксат</strong> (КҮЙҮК)",
+                igMessageAccess: "2. Билдирүүлөргө Кирүү",
+                igMessageAccessDesc: "Сервислерге билдирүүлөрүңүздү окууга уруксат беришиңиз керек.",
+                igMessageAccessHow: "📍 <strong>Кайдан иштетүү:</strong><br>Тууралоолор → Билдирүүлөр жана история жооптору → Билдирүүлөрдүн папкасы → <strong>Билдирүүлөргө кирүүгө уруксат</strong> (КҮЙҮК)",
                 igCancel: "Жокко чыгаруу",
                 igContinue: "✅ Даяр, Улантуу →",
                 igStep2Of2: "2-кадам, 2ден",
                 igStep2Title: "REPLAI'га туташтыруу",
-                igStep2Desc: "Instagram уруксаттары менен Facebook баракчаңыздын кирүү токенін киргизиңиз:",
-                igPageToken: "Instagram колдонуучу аты",
-                igPageTokenPlaceholder: "your_username",
-                igAccountId: "Сырсөз",
-                igAccountIdPlaceholder: "Instagram сырсөзү",
-                igTokenHelp: "⚠️ Unofficial method — Instagram may block accounts. Use at your own risk.",
-                igAuthorize: "🔗 Туташтыруу жана Webhook Тууралоо",
+                igStep2Desc: "Төмөнкү баскычты басып, Instagram аккаунтуңузду Facebook аркылуу туташтырыңыз.",
+                igLoginConnect: "📘 Facebook аркылуу туташтыруу",
+                igLoggingIn: "Туташтырылууда...",
                 igSuccess: "Туташуу Орнотулду!",
                 igSuccessDesc: "Сиздин Instagram аккаунтуңуз эми REPLAI'га туташты. Бот билдирүүлөрүңүзгө автоматтык түрдө жооп бере баштайт.",
                 igDone: "Даяр 🎉",
-                igErrorToken: "⚠️ Баракча кирүү токенін киргизиңиз",
-                igConnecting: "⏳ Туташтырылууда...",
-                igConnectError: "❌ Туташуу катасы. Токенди текшериңиз.",
-                igTroubleshooting: "Туташуу ишке ашпаса, төмөнкүлөрдү текшериңиз:",
-                igTroubleshootingBrowser: "Расмий жана жаңыртылган браузерди колдонуп жатасыз",
-                igTroubleshootingVPN: "VPN же анонимайзер өчүрүлгөн",
-                igTroubleshootingAccount: "Аккаунтуңуз Professional статусуна которулган (Business же Creator)",
-                igNetworkError: "❌ Тармак катасы: ",
+                igBack: "← Артка",
                 waWizardTitle: "WhatsApp'ты Туташтыруу",
                 waWizardSubtitle: "REPLAI · Туташтыруу боюнча нускама",
                 waStep1Of4: "1-кадам, 4төн",
@@ -2605,6 +2874,32 @@
             }
         });
 
+        // Display user info
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const userEmailEl = document.getElementById('userEmail');
+        if (userEmailEl && user.email) {
+            userEmailEl.textContent = user.name || user.email;
+        }
+
+        // Logout function
+        async function handleLogout() {
+            const sessionId = localStorage.getItem('sessionId');
+            
+            try {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId })
+                });
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+
+            localStorage.removeItem('sessionId');
+            localStorage.removeItem('user');
+            window.location.href = '/';
+        }
+
         // Show section
         function showSection(section) {
             // Hide all sections
@@ -2617,8 +2912,25 @@
 
             // Show selected section
             document.getElementById(section + '-section').classList.add('active');
-            const menuItem = event?.target?.closest?.('.menu-item');
-            if (menuItem) menuItem.classList.add('active');
+
+            // Reliably mark the correct menu item active by matching onclick attribute
+            const menuItems = document.querySelectorAll('.menu-item');
+            menuItems.forEach(m => {
+                const onclick = m.getAttribute('onclick') || '';
+                if (onclick.includes(`'${section}'`)) {
+                    m.classList.add('active');
+                }
+            });
+            
+            // Handle section-specific logic
+            if (section === 'dashboard') {
+                updateChartsWithRealData(); // Update charts immediately
+                loadChatLogs(); // Update stats
+                startChartsAutoRefresh(); // Start auto-refresh
+            } else {
+                stopChartsAutoRefresh(); // Stop when leaving dashboard
+            }
+            
             if (section === 'bookings') {
                 loadBookings();
                 clearInterval(bookingRefreshTimer);
@@ -2626,6 +2938,14 @@
             } else if (bookingRefreshTimer) {
                 clearInterval(bookingRefreshTimer);
                 bookingRefreshTimer = null;
+            }
+
+            // Handle chat logs auto-refresh
+            if (section === 'chat-logs') {
+                loadChatLogs(); // Load immediately
+                startChatLogsAutoRefresh(); // Start auto-refresh
+            } else {
+                stopChatLogsAutoRefresh(); // Stop auto-refresh when leaving section
             }
         }
 
@@ -2897,71 +3217,144 @@
             }
         }
 
-        // Instagram username/password private API helpers
+        let igCurrentStep = 1;
+
         function openInstagramWizard() {
+            igCurrentStep = 1;
             document.getElementById('instagram-wizard-overlay').style.display = 'flex';
-            document.getElementById('ig-login-error').style.display = 'none';
-            document.getElementById('ig-login-success').style.display = 'none';
+            document.getElementById('ig-connect-error').style.display = 'none';
+            document.getElementById('ig-connect-success').style.display = 'none';
+            igGoToStep(1);
         }
 
         function closeInstagramWizard() {
             document.getElementById('instagram-wizard-overlay').style.display = 'none';
         }
 
+        // Instagram wizard - OAuth 2.0 only (no username/password)
+        function igGoToStep(step) {
+            // No-op: single page design
+        }
+
+        // Close wizard when clicking outside
         document.getElementById('instagram-wizard-overlay').addEventListener('click', function(e) {
             if (e.target === this) closeInstagramWizard();
         });
 
+        // Instagram OAuth flow via the official Instagram Login consent screen
+        async function openInstagramOAuth() {
+            try {
+                var response = await fetch('/api/admin/instagram/oauth/auth-url');
+                var data = await response.json();
+                
+                if (!response.ok || !data.authUrl) {
+                    var errBox = document.getElementById('ig-connect-error');
+                    errBox.innerHTML = '❌ ' + (data.error || 'Failed to generate OAuth URL. Please check INSTAGRAM_APP_ID in .env');
+                    errBox.style.display = 'block';
+                    return;
+                }
+
+                var width = 600;
+                var height = 700;
+                var left = (screen.width - width) / 2;
+                var top = (screen.height - height) / 2;
+                var popup = window.open(data.authUrl, 'InstagramOAuth', 'width=' + width + ',height=' + height + ',left=' + left + ',top=' + top);
+
+                window.addEventListener('message', async function handleOAuthMessage(event) {
+                    if (event.data && event.data.code) {
+                        window.removeEventListener('message', handleOAuthMessage);
+                        await exchangeOAuthCode(event.data.code);
+                    } else if (event.data && event.data.error) {
+                        window.removeEventListener('message', handleOAuthMessage);
+                        var errBox = document.getElementById('ig-connect-error');
+                        errBox.innerHTML = '❌ Instagram OAuth failed: ' + event.data.error;
+                        errBox.style.display = 'block';
+                    }
+                });
+            } catch (error) {
+                console.error('Instagram OAuth error:', error);
+                var errBox = document.getElementById('ig-connect-error');
+                errBox.innerHTML = '❌ Failed to start OAuth: ' + error.message;
+                errBox.style.display = 'block';
+            }
+        }
+
+        async function exchangeOAuthCode(code) {
+            var errBox = document.getElementById('ig-connect-error');
+            var successBox = document.getElementById('ig-connect-success');
+            
+            errBox.style.display = 'none';
+            successBox.style.display = 'none';
+            
+            try {
+                var response = await fetch('/api/admin/instagram/oauth/exchange', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code })
+                });
+                var result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    throw new Error(result.error || 'OAuth exchange failed');
+                }
+
+                var expiryInfo = result.expiresAt ? ' (Token valid until ' + new Date(result.expiresAt).toLocaleDateString() + ')' : '';
+                successBox.innerHTML = '✅ <strong>Instagram OAuth successful!</strong> @' + result.username + ' connected via Instagram Login.' + expiryInfo;
+                successBox.style.display = 'block';
+                setPlatformConnected('instagram', '@' + result.username);
+                showSuccess();
+                updateStats();
+                document.getElementById('ig-done-btn').style.display = 'block';
+                document.getElementById('ig-authorize-btn').style.display = 'none';
+            } catch (error) {
+                errBox.innerHTML = '❌ ' + escapeHtml(error.message || 'OAuth exchange failed');
+                errBox.style.display = 'block';
+            }
+        }
+
+        // Refresh Instagram token
+        async function refreshInstagramToken() {
+            try {
+                var response = await fetch('/api/admin/instagram/oauth/refresh', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                var result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    throw new Error(result.error || 'Token refresh failed');
+                }
+
+                var expiryDate = new Date(result.expiresAt).toLocaleDateString();
+                alert('✅ Instagram token refreshed successfully! New expiration: ' + expiryDate);
+                await loadInstagramStatus();
+            } catch (error) {
+                alert('❌ Failed to refresh token: ' + error.message + '\nYou may need to reconnect Instagram.');
+            }
+        }
+
+        // Helper to escape HTML in error messages
+        function escapeHtml(text) {
+            var div = document.createElement('div');
+            div.appendChild(document.createTextNode(text));
+            return div.innerHTML;
+        }
+
         async function loadInstagramStatus() {
             try {
-                const res = await fetch('/api/admin/instagram/status');
-                const data = await res.json();
-                if (data.connected) setPlatformConnected('instagram', data.username ? `@${data.username}` : 'Instagram');
+                var res = await fetch('/api/admin/instagram/status');
+                var data = await res.json();
+                if (data.connected) {
+                    var username = data.username || data.graphApiUsername || 'Instagram';
+                    setPlatformConnected('instagram', '@' + username);
+                }
             } catch (error) {
                 console.warn('Could not load Instagram status', error);
             }
         }
 
-        async function connectInstagram() {
-            const username = document.getElementById('ig-username').value.trim();
-            const password = document.getElementById('ig-password').value;
-            const errBox = document.getElementById('ig-login-error');
-            const successBox = document.getElementById('ig-login-success');
-            const btn = document.getElementById('ig-authorize-btn');
-            errBox.style.display = 'none';
-            successBox.style.display = 'none';
-            if (!username || !password) {
-                errBox.textContent = tr('igMissingCredentials');
-                errBox.style.display = 'block';
-                return;
-            }
-            btn.textContent = tr('igLoggingIn');
-            btn.disabled = true;
-            try {
-                const response = await fetch('/api/admin/connect/instagram', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
-                const result = await response.json().catch(() => ({}));
-                if (!response.ok || !result.success) throw new Error(result.error || tr('igLoginFailed'));
-                successBox.textContent = `✅ @${result.username} connected`;
-                successBox.style.display = 'block';
-                setPlatformConnected('instagram', `@${result.username}`);
-                showSuccess();
-                updateStats();
-                setTimeout(closeInstagramWizard, 900);
-            } catch (error) {
-                errBox.textContent = error.message || tr('igLoginFailed');
-                errBox.style.display = 'block';
-            } finally {
-                btn.textContent = tr('igLoginConnect');
-                btn.disabled = false;
-            }
-        }
-
-        setInterval(() => {
-            fetch('/api/instagram/poll', { method: 'POST' }).catch(() => {});
+        setInterval(function() {
+            fetch('/api/instagram/poll', { method: 'POST' }).catch(function() {});
         }, 30000);
 
         async function connectTikTok() {
@@ -3062,6 +3455,77 @@
         function updateStats() {
             const connected = document.querySelectorAll('.platform-status.connected').length;
             document.getElementById('connected-platforms').textContent = connected;
+            loadChatLogs(); // Refresh chat logs when stats update
+        }
+
+        // Load and display chat logs
+        async function loadChatLogs() {
+            try {
+                const response = await fetch('/api/admin/chat-logs');
+                const logs = await response.json();
+                const chatLogContainer = document.getElementById('chat-log');
+                
+                if (!logs || logs.length === 0) {
+                    chatLogContainer.innerHTML = `<p style="text-align: center; color: var(--text-secondary); padding: 20px;" data-i18n="noChatLogs">No chat logs yet. Messages will appear here once customers start chatting.</p>`;
+                    return;
+                }
+
+                chatLogContainer.innerHTML = logs.map(log => `
+                    <div class="chat-message">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span class="platform" style="font-weight: 600; color: var(--primary-blue);">
+                                ${log.platform === 'instagram-unofficial' ? '📸 Instagram' : 
+                                  log.platform === 'telegram' ? '✈️ Telegram' : 
+                                  log.platform === 'whatsapp' ? '💬 WhatsApp' : 
+                                  log.platform === 'tiktok' ? '🎵 TikTok' : log.platform}
+                                ${log.userName ? ' - @' + log.userName : ''}
+                            </span>
+                            <span class="time" style="font-size: 11px; color: var(--text-secondary);">
+                                ${new Date(log.timestamp).toLocaleString()}
+                            </span>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <strong style="color: var(--text-primary);">Customer:</strong>
+                            <div class="text" style="margin-top: 4px; padding: 8px 12px; background: var(--bg-secondary); border-radius: 8px; color: var(--text-primary);">
+                                ${escapeHtml(log.userMessage)}
+                            </div>
+                        </div>
+                        <div>
+                            <strong style="color: var(--success);">AI Response:</strong>
+                            <div class="text" style="margin-top: 4px; padding: 8px 12px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; color: var(--text-primary);">
+                                ${escapeHtml(log.aiResponse)}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Update message count stats
+                const statsResponse = await fetch('/api/admin/stats');
+                const stats = await statsResponse.json();
+                if (stats) {
+                    const totalEl = document.getElementById('total-messages');
+                    const todayEl = document.getElementById('today-messages');
+                    const platformsEl = document.getElementById('connected-platforms');
+                    if (totalEl) totalEl.textContent = stats.totalMessages || 0;
+                    if (todayEl) todayEl.textContent = stats.todayMessages || 0;
+                    if (platformsEl) platformsEl.textContent = stats.connectedPlatforms || 0;
+                }
+            } catch (error) {
+                console.error('Error loading chat logs:', error);
+            }
+        }
+
+        // Auto-refresh chat logs every 10 seconds when on chat logs section
+        let chatLogsInterval = null;
+        function startChatLogsAutoRefresh() {
+            if (chatLogsInterval) clearInterval(chatLogsInterval);
+            chatLogsInterval = setInterval(loadChatLogs, 10000); // Refresh every 10 seconds
+        }
+        function stopChatLogsAutoRefresh() {
+            if (chatLogsInterval) {
+                clearInterval(chatLogsInterval);
+                chatLogsInterval = null;
+            }
         }
 
         // Load settings on page load
@@ -3097,6 +3561,7 @@
                 }
 
                 updateStats();
+                loadChatLogs(); // Load chat logs on page load
             } catch (error) {
                 console.error('Error loading settings:', error);
             }

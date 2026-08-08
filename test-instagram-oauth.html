@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Instagram OAuth</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        button {
+            padding: 15px 30px;
+            background: #0061ff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #0051d9;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Instagram OAuth Test</h1>
+    
+    <h2>Step 1: Get OAuth URL</h2>
+    <button onclick="getOAuthURL()">Get OAuth URL</button>
+    <pre id="urlResult"></pre>
+    
+    <h2>Step 2: Open OAuth (Direct Link)</h2>
+    <button onclick="openOAuthDirect()" id="openBtn" disabled>Open Instagram OAuth</button>
+    <p id="status"></p>
+    
+    <script>
+        let oauthUrl = '';
+        
+        async function getOAuthURL() {
+            const resultEl = document.getElementById('urlResult');
+            const openBtn = document.getElementById('openBtn');
+            
+            try {
+                resultEl.textContent = 'Loading...';
+                
+                const response = await fetch('/api/admin/instagram/oauth/auth-url');
+                const data = await response.json();
+                
+                if (data.authUrl) {
+                    oauthUrl = data.authUrl;
+                    resultEl.innerHTML = '<span class="success">✅ OAuth URL Generated!</span>\n\n' + JSON.stringify(data, null, 2);
+                    openBtn.disabled = false;
+                } else {
+                    resultEl.innerHTML = '<span class="error">❌ Error: ' + (data.error || 'No URL returned') + '</span>';
+                }
+            } catch (error) {
+                resultEl.innerHTML = '<span class="error">❌ Error: ' + error.message + '</span>';
+            }
+        }
+        
+        function openOAuthDirect() {
+            if (!oauthUrl) {
+                alert('Please get OAuth URL first!');
+                return;
+            }
+            
+            document.getElementById('status').innerHTML = '🔄 Opening OAuth page...';
+            
+            // Direct redirect (more reliable than popup)
+            window.location.href = oauthUrl;
+        }
+    </script>
+</body>
+</html>

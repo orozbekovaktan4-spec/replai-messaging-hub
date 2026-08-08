@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Context CRM — UI</title>
+  <style>
+    :root{
+      --bg1: #0f2027;
+      --bg2: #203a43;
+      --accent: #7b61ff;
+      --glass: rgba(255,255,255,0.06);
+      --muted: rgba(255,255,255,0.7);
+      --card: rgba(255,255,255,0.04);
+    }
+    html,body{height:100%;}
+    body{
+      margin:0; font-family: Poppins, Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(135deg,var(--bg1),var(--bg2)); color: #fff; -webkit-font-smoothing:antialiased;
+      display:flex; align-items:center; justify-content:center; padding:40px 20px;
+    }
+    .container{width:1100px; max-width:100%;}
+    header{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px}
+      header{display:flex; align-items:center; justify-content:center; margin-bottom:18px}
+      .brand{display:flex; align-items:center; gap:8px}
+    .logo{width:44px; height:44px; border-radius:10px; background:linear-gradient(135deg,#9b8cff,#61d4ff); display:flex; align-items:center; justify-content:center; color:#051027; font-weight:700}
+    h1{font-size:18px; margin:0}
+    .subtitle{font-size:12px; color:var(--muted)}
+
+    .grid{display:grid; grid-template-columns: 1fr 420px; gap:18px}
+
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02)); border-radius:12px; padding:16px; box-shadow: 0 6px 18px rgba(2,6,23,0.6); backdrop-filter: blur(6px); border:1px solid rgba(255,255,255,0.04)}
+      .card{background:rgba(255,255,255,0.03); border-radius:12px; padding:16px; box-shadow: none; backdrop-filter: blur(4px); border:1px solid rgba(255,255,255,0.04)}
+    .card h3{margin:0 0 8px 0}
+    label{display:block; font-size:12px; color:var(--muted); margin-bottom:6px}
+    input, textarea{width:100%; padding:10px 12px; border-radius:8px; border:none; outline:none; background:var(--glass); color:#fff; resize:vertical}
+    textarea{min-height:80px}
+    .actions{display:flex; gap:8px; margin-top:10px}
+    button{background:linear-gradient(90deg,var(--accent), #4ad0ff); color:#051027; border:none; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600}
+    button.secondary{background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.06)}
+    button:hover{transform:translateY(-1px); box-shadow:0 6px 18px rgba(123,97,255,0.12)}
+
+    .panel{display:flex; flex-direction:column; gap:12px}
+    pre{background:transparent; padding:12px; border-radius:8px; max-height:260px; overflow:auto; color: #e6eef8}
+
+    .contact-list{display:flex; flex-direction:column; gap:8px}
+    .contact-item{display:flex; align-items:center; gap:10px; padding:8px; border-radius:8px; background:rgba(0,0,0,0.16)}
+    .contact-item .meta{font-size:13px}
+
+    footer{margin-top:12px; font-size:12px; color:var(--muted)}
+
+    /* Inline chat pane */
+    .chat-container{display:flex;flex-direction:column;gap:8px;background:rgba(0,0,0,0.12);padding:12px;border-radius:10px;max-height:280px;overflow:auto}
+    .msg{display:flex;margin:6px 0}
+    .msg.user{justify-content:flex-end}
+    .msg.assistant{justify-content:flex-start}
+    .bubble{max-width:78%;padding:10px 14px;border-radius:14px;color:#051027;background:#e6eef8;word-break:break-word}
+    .msg.user .bubble{background:linear-gradient(90deg,var(--accent),#4ad0ff);color:#001018}
+    .msg.assistant .bubble{background:rgba(255,255,255,0.92);color:#051027}
+    .chat-controls{display:flex;gap:8px;margin-top:8px}
+
+    @media (max-width:1000px){
+      .grid{grid-template-columns: 1fr;}
+      .container{padding:0 6px}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header style="text-align:center;padding:80px 0 40px">
+      <h1 style="font-size:64px;margin:0;font-weight:600;letter-spacing:1px">Your move, Aktan!</h1>
+    </header>
+
+    <div style="display:flex;justify-content:center;margin-bottom:28px">
+      <div style="width:78%; max-width:1100px;">
+        <div style="display:flex;align-items:center;background:rgba(0,0,0,0.6);padding:18px 20px;border-radius:60px;box-shadow:0 10px 40px rgba(2,6,23,0.6);">
+            <div style="display:flex;align-items:center;background:rgba(255,255,255,0.03);padding:16px 20px;border-radius:60px;">
+              <button title="Add person" style="background:transparent;border:1px solid rgba(255,255,255,0.06);color:#fff;font-size:18px;padding:10px 14px;border-radius:10px;margin-right:16px;cursor:pointer" onclick="document.getElementById('new-person-name').focus();">Add</button>
+              <input id="hero-input" placeholder="Ask L" style="flex:1;background:transparent;border:none;color:#fff;font-size:20px;outline:none;padding:6px 8px" onkeydown="if(event.key==='Enter'){heroAsk()}" />
+            </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:center">
+      <div style="width:78%; max-width:1100px;">
+        <div class="card">
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div style="flex:1">
+              <h3 style="margin-top:0">People</h3>
+              <div style="display:flex;gap:8px;margin-bottom:8px">
+                <input id="new-person-name" placeholder="Add person name" />
+                <button onclick="createPerson()">Add</button>
+              </div>
+              <div id="list-result" class="contact-list"></div>
+            </div>
+
+            <div style="width:420px">
+              <h3 style="margin-top:0">Selected Person</h3>
+              <div id="selected-person" style="margin-bottom:8px;color:var(--muted)">No person selected</div>
+              <label for="person-notes">All data / notes</label>
+              <textarea id="person-notes" placeholder="Write all data, notes, and context about the person here..."></textarea>
+              <div class="actions">
+                <button onclick="analyzeSelected()">Analyze (L)</button>
+                <button class="secondary" onclick="saveNotes()">Save Notes</button>
+              </div>
+              <pre id="person-action-result"></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer style="text-align:center;margin-top:28px;color:var(--muted)">Stored locally in <strong>context_crm/contacts</strong>. LLM provider set in <strong>context_crm/config/settings.json</strong>.</footer>
+  </div>
+
+  <!-- Chat pane -->
+  <div style="position:fixed;right:28px;bottom:28px;width:360px;z-index:999;">
+    <div class="card" style="padding:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <strong>Assistant</strong>
+        <small style="color:var(--muted)">Demo</small>
+      </div>
+      <div id="chat" class="chat-container"></div>
+      <div class="chat-controls">
+        <input id="chat-input" placeholder="Say something..." style="flex:1;background:transparent;border:none;color:#fff;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04)" onkeydown="if(event.key==='Enter'){chatSend()}" />
+        <button onclick="chatSend()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const base = window.location.origin; // assumes ui served from server
+
+    async function ingest(){
+      const name = document.getElementById('ingest-name').value.trim();
+      const note = document.getElementById('ingest-note').value.trim();
+      if(!name || !note){ alert('Name and note required'); return }
+      const res = await fetch(base + '/ingest', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name, note})});
+      const j = await res.json();
+      document.getElementById('ingest-result').innerText = JSON.stringify(j, null, 2);
+      listContacts();
+    }
+
+    async function find(){
+      const q = document.getElementById('find-query').value;
+      const res = await fetch(base + '/find', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({query: q})});
+      const j = await res.json();
+      document.getElementById('find-result').innerText = JSON.stringify(j, null, 2);
+    }
+
+    async function brief(){
+      const name = document.getElementById('brief-name').value.trim();
+      if(!name){ alert('Name required'); return }
+      const res = await fetch(base + '/brief', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name})});
+      const j = await res.json();
+      document.getElementById('brief-result').innerText = j.brief || JSON.stringify(j, null, 2);
+    }
+
+    async function draft(){
+      const name = document.getElementById('draft-name').value.trim();
+      const instruction = document.getElementById('draft-instruction').value.trim();
+      if(!name || !instruction){ alert('Name and instruction required'); return }
+      const res = await fetch(base + '/draft', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name, instruction})});
+      const j = await res.json();
+      document.getElementById('draft-result').innerText = j.message || JSON.stringify(j, null, 2);
+    }
+
+    let contactsCache = [];
+    let selected = null;
+
+    async function listContacts(){
+      try{
+        const res = await fetch(base + '/list');
+        const j = await res.json();
+        contactsCache = j.contacts || [];
+        const container = document.getElementById('list-result');
+        container.innerHTML = '';
+        contactsCache.forEach(c=>{
+          const el = document.createElement('div'); el.className='contact-item';
+
+          const avatar = document.createElement('div');
+          avatar.style.width = '44px'; avatar.style.height = '44px'; avatar.style.borderRadius = '8px';
+          avatar.style.background = 'linear-gradient(135deg,#7b61ff,#61d4ff)'; avatar.style.display = 'flex'; avatar.style.alignItems = 'center'; avatar.style.justifyContent = 'center'; avatar.style.color = '#051027'; avatar.style.fontWeight = '700';
+          avatar.innerText = (c.name||'')[0]||'?';
+
+          const meta = document.createElement('div'); meta.className = 'meta'; meta.style.flex = '1';
+          meta.innerHTML = `<strong>${c.name}</strong><div style="font-size:12px;color:rgba(255,255,255,0.7)">${c.relationship_tier||''}</div><div style="font-size:11px;color:rgba(255,255,255,0.6)">${c.last_updated||''}</div>`;
+
+          const btnWrap = document.createElement('div'); btnWrap.style.display = 'flex'; btnWrap.style.gap = '8px';
+
+          const openBtn = document.createElement('button'); openBtn.innerText = 'Open'; openBtn.style.padding='6px 10px'; openBtn.style.borderRadius='8px';
+          openBtn.addEventListener('click', (e)=> selectPerson(e, encodeURIComponent(c.name)) );
+
+          const delBtn = document.createElement('button'); delBtn.innerText = 'Remove'; delBtn.style.padding='6px 10px'; delBtn.style.borderRadius='8px'; delBtn.style.background='transparent'; delBtn.style.border='1px solid rgba(255,255,255,0.06)';
+          delBtn.addEventListener('click', (e)=> deletePerson(e, encodeURIComponent(c.name)) );
+
+          btnWrap.appendChild(openBtn); btnWrap.appendChild(delBtn);
+
+          el.appendChild(avatar); el.appendChild(meta); el.appendChild(btnWrap);
+          container.appendChild(el);
+        })
+      }catch(err){
+        document.getElementById('person-action-result').innerText = 'Failed to list contacts: '+err;
+      }
+    }
+
+    function selectPerson(e, encodedName){
+      if(e) e.stopPropagation();
+      const name = decodeURIComponent(encodedName || '');
+      selected = name;
+      document.getElementById('selected-person').innerText = name || 'No person selected';
+      // load contact content
+      fetch(base + '/view?name=' + encodeURIComponent(name)).then(r=>r.json()).then(j=>{
+        const contact = j.contact || {};
+        const notes = (contact.historical_timeline || []).map(ev=>`- ${ev.timestamp || ''}: ${ev.note || ''}`).join('\n');
+        document.getElementById('person-notes').value = notes;
+      }).catch(err => {
+        document.getElementById('person-action-result').innerText = 'Failed to load contact: ' + err;
+      })
+    }
+
+    async function deletePerson(e, encodedName){
+      if(e) e.stopPropagation();
+      const name = decodeURIComponent(encodedName || '');
+      if(!name) return;
+      if(!confirm(`Delete ${name}? This cannot be undone.`)) return;
+      try{
+        const res = await fetch(base + '/delete', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name})});
+        const j = await res.json();
+        document.getElementById('person-action-result').innerText = JSON.stringify(j, null, 2);
+        if(res.ok){
+          if(selected === name){ selected = null; document.getElementById('selected-person').innerText = 'No person selected'; document.getElementById('person-notes').value = ''; }
+          listContacts();
+        }
+      }catch(err){
+        document.getElementById('person-action-result').innerText = 'Delete failed: '+err;
+      }
+    }
+
+    async function createPerson(){
+      try{
+        const name = document.getElementById('new-person-name').value.trim();
+        if(!name){ alert('Name required'); return }
+        const res = await fetch(base + '/create', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name})});
+        const j = await res.json();
+        document.getElementById('person-action-result').innerText = JSON.stringify(j, null, 2);
+        document.getElementById('new-person-name').value = '';
+        listContacts();
+      }catch(err){
+        document.getElementById('person-action-result').innerText = 'Create failed: '+err;
+      }
+    }
+
+    async function analyzeSelected(){
+      if(!selected){ alert('Select a person first'); return }
+      const note = document.getElementById('person-notes').value.trim();
+      if(!note){ alert('Write notes to analyze'); return }
+      const res = await fetch(base + '/ingest', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name: selected, note})});
+      const j = await res.json();
+      document.getElementById('person-action-result').innerText = JSON.stringify(j, null, 2);
+      listContacts();
+    }
+
+    async function saveNotes(){
+      if(!selected){ alert('Select a person first'); return }
+      const note = document.getElementById('person-notes').value.trim();
+      if(!note){ alert('Write notes to save'); return }
+      const res = await fetch(base + '/save_notes', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name: selected, note})});
+      const j = await res.json();
+      document.getElementById('person-action-result').innerText = JSON.stringify(j, null, 2);
+      listContacts();
+    }
+
+    // Conversation state and helpers
+    const convo = [];
+    const chatEl = document.getElementById('chat');
+
+    function renderMessage(role, text){
+      const m = document.createElement('div');
+      m.className = 'msg ' + (role === 'user' ? 'user' : 'assistant');
+      const b = document.createElement('div'); b.className='bubble'; b.innerText = text;
+      m.appendChild(b);
+      chatEl.appendChild(m);
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    async function sendToServer(payload){
+      const res = await fetch(base + '/ai_chat', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+      return res.json();
+    }
+
+    // heroAsk now appends to conversation and delegates to chatSend
+    async function heroAsk(){
+      const q = document.getElementById('hero-input').value.trim();
+      if(!q){ document.getElementById('new-person-name').focus(); return }
+      document.getElementById('hero-input').value = '';
+      // route through chatSend to preserve history
+      await chatSend(q);
+    }
+
+    // chatSend: optional text param; if omitted uses chat-input
+    async function chatSend(text){
+      let t = text || document.getElementById('chat-input').value.trim();
+      if(!t) return;
+      // append user
+      convo.push({role:'user', content:t});
+      renderMessage('user', t);
+      document.getElementById('chat-input').value = '';
+
+      // show assistant typing bubble
+      renderMessage('assistant', '⏳ Thinking...');
+      try{
+        // send full messages history to server
+        const messages = convo.map(m=>({role:m.role, content:m.content}));
+        const j = await sendToServer({messages, model: null});
+        // remove the typing bubble
+        const last = chatEl.lastChild;
+        if(last) chatEl.removeChild(last);
+
+        if(j.result){
+          convo.push({role:'assistant', content:j.result});
+          renderMessage('assistant', j.result);
+        } else if(j.error){
+          renderMessage('assistant', '❌ Error: '+j.error);
+        } else {
+          renderMessage('assistant', JSON.stringify(j, null, 2));
+        }
+      }catch(err){
+        const last = chatEl.lastChild; if(last) chatEl.removeChild(last);
+        renderMessage('assistant', '❌ Connection failed: '+ (err.message||err));
+      }
+    }
+
+    // auto-refresh list on load
+    listContacts();
+  </script>
+</body>
+</html>

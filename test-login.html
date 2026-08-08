@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Test</title>
+</head>
+<body>
+    <h1>Login Test</h1>
+    <button onclick="testLogin()">Test Login</button>
+    <pre id="result"></pre>
+
+    <script>
+        async function testLogin() {
+            const resultEl = document.getElementById('result');
+            resultEl.textContent = 'Testing...';
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'admin@replai.com',
+                        password: 'admin123'
+                    })
+                });
+
+                resultEl.textContent = 'Response Status: ' + response.status + '\n';
+                resultEl.textContent += 'Response OK: ' + response.ok + '\n\n';
+
+                const data = await response.json();
+                resultEl.textContent += 'Response Data:\n' + JSON.stringify(data, null, 2);
+
+                if (response.ok && data.success) {
+                    resultEl.textContent += '\n\n✅ LOGIN SUCCESS!';
+                    localStorage.setItem('sessionId', data.sessionId);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                } else {
+                    resultEl.textContent += '\n\n❌ LOGIN FAILED: ' + (data.error || 'Unknown error');
+                }
+            } catch (error) {
+                resultEl.textContent = '❌ ERROR: ' + error.message + '\n' + error.stack;
+            }
+        }
+    </script>
+</body>
+</html>

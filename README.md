@@ -53,10 +53,8 @@ PORT=3000
 
 1. Open admin panel
 2. Go to "Connect Platforms"
-3. Add your tokens:
-   - Telegram Bot Token
-   - Instagram Access Token
-   - WhatsApp Access Token
+3. Instagram now uses the Instagram Login flow with `INSTAGRAM_APP_ID`, `INSTAGRAM_APP_SECRET`, and `INSTAGRAM_REDIRECT_URI`
+4. Other platforms still use their existing tokens
 
 ## 🌍 Languages Supported:
 

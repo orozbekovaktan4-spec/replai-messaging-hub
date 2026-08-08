@@ -1,0 +1,4 @@
+{
+       "name": "ANTHROPIC_BASE_URL",
+       "value": "http://localhost:8082"
+   }

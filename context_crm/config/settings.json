@@ -1,0 +1,6 @@
+{
+  "provider": "demo",
+  "model": "demo",
+  "contacts_path": "./context_crm/contacts",
+  "logging_enabled": true
+}
