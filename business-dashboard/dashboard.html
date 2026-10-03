@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - REPLAI</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <div class="page-header">
+      <div>
+        <div class="page-title" id="greeting">Good morning</div>
+        <div class="page-subtitle" id="dateDisplay">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="page-content">
+
+      <!-- Stats Row -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-number" id="totalBookings">-</div>
+          <div class="stat-label">Total</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="completedBookings">-</div>
+          <div class="stat-label">Done</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="remainingBookings">-</div>
+          <div class="stat-label">Left</div>
+        </div>
+      </div>
+
+      <!-- Today's Appointments -->
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">📅 Today's Appointments</div>
+        </div>
+
+        <div class="card">
+          <div id="bookingsList">
+            <!-- Bookings will be loaded here -->
+            <div class="text-center text-muted" style="padding: 20px;">
+              Loading bookings...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Messages -->
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">💬 Recent Messages</div>
+          <a href="messages.html" class="section-action">View All</a>
+        </div>
+
+        <div id="messagesList">
+          <!-- Recent messages will be loaded here -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <a href="dashboard.html" class="nav-item active">
+        <span class="icon">🏠</span>
+        <span>Home</span>
+      </a>
+      <a href="bookings.html" class="nav-item">
+        <span class="icon">📅</span>
+        <span>Bookings</span>
+      </a>
+      <a href="messages.html" class="nav-item">
+        <span class="icon">💬</span>
+        <span>Messages</span>
+      </a>
+      <a href="settings.html" class="nav-item">
+        <span class="icon">⚙️</span>
+        <span>Settings</span>
+      </a>
+    </nav>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    let dashboardData = null;
+
+    // Initialize page
+    async function init() {
+      // Check authentication
+      const authenticated = await requireAuth();
+      if (!authenticated) return;
+
+      // Set greeting and date
+      const business = BusinessAuth.getBusiness();
+      const greeting = getGreeting();
+      const ownerName = business.ownerName || business.name || 'there';
+      const firstName = ownerName.split(' ')[0];
+
+      document.getElementById('greeting').textContent = `${greeting}, ${firstName}!`;
+      document.getElementById('dateDisplay').textContent = formatDateLong(todayStr());
+
+      // Load dashboard data
+      await loadDashboard();
+
+      // Start auto-refresh every 30 seconds
+      startAutoRefresh(loadDashboard, 30000);
+    }
+
+    // Load dashboard data
+    async function loadDashboard() {
+      try {
+        const data = await API.get('/api/business/dashboard');
+        dashboardData = data;
+
+        // Update stats
+        document.getElementById('totalBookings').textContent = data.stats.total || 0;
+        document.getElementById('completedBookings').textContent = data.stats.completed || 0;
+        document.getElementById('remainingBookings').textContent = data.stats.remaining || 0;
+
+        // Render bookings
+        renderBookings(data.todayBookings || []);
+
+        // Render recent messages
+        renderMessages(data.recentMessages || []);
+
+      } catch (err) {
+        handleError(err, 'Failed to load dashboard');
+      }
+    }
+
+    // Render bookings list
+    function renderBookings(bookings) {
+      const container = document.getElementById('bookingsList');
+
+      if (bookings.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">🎉</div>
+            <div class="empty-title">No bookings for today</div>
+            <div class="empty-text">Enjoy your day!</div>
+          </div>
+        `;
+        return;
+      }
+
+      // Sort by time
+      const sorted = bookings.sort((a, b) => {
+        const timeA = a.time || '00:00';
+        const timeB = b.time || '00:00';
+        return timeA.localeCompare(timeB);
+      });
+
+      const html = sorted.map(booking => {
+        const isCompleted = booking.status === 'completed';
+        const isCancelled = booking.status === 'cancelled';
+        const showActions = !isCompleted && !isCancelled;
+
+        return `
+          <div class="booking-item" data-id="${booking.id}">
+            <div class="booking-time">
+              ${formatTime(booking.time)}
+              <span class="booking-time-label">${booking.time}</span>
+            </div>
+            <div class="booking-info">
+              <div class="booking-name">${booking.customerName}</div>
+              <div class="booking-service">${booking.service}</div>
+              ${booking.customerPhone ? `<div class="booking-phone">${booking.customerPhone}</div>` : ''}
+            </div>
+            ${showActions ? `
+              <div class="booking-actions">
+                <button class="action-btn action-done" onclick="updateBookingStatus('${booking.id}', 'completed')" title="Mark as done">
+                  ✓
+                </button>
+                <button class="action-btn action-cancel" onclick="cancelBooking('${booking.id}')" title="Cancel">
+                  ✕
+                </button>
+              </div>
+            ` : `
+              <div style="margin-left: auto;">
+                ${getStatusBadge(booking.status)}
+              </div>
+            `}
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = html;
+    }
+
+    // Render recent messages
+    function renderMessages(messages) {
+      const container = document.getElementById('messagesList');
+
+      if (messages.length === 0) {
+        container.innerHTML = `
+          <div class="card">
+            <div class="empty-state" style="padding: 20px;">
+              <div class="empty-text">No recent messages</div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      const html = messages.slice(0, 3).map(msg => {
+        const emoji = getPlatformEmoji(msg.platform);
+        return `
+          <div class="message-item">
+            <div class="message-platform">${emoji}</div>
+            <div class="message-content">
+              <div class="message-header">
+                <div class="message-user">${msg.userName || 'Customer'}</div>
+                <div class="message-time">${formatTimestamp(msg.timestamp)}</div>
+              </div>
+              <div class="message-preview">${msg.userMessage}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = html;
+    }
+
+    // Update booking status (mark as done)
+    async function updateBookingStatus(bookingId, status) {
+      try {
+        const result = await API.patch(`/api/business/bookings/${bookingId}`, { status });
+
+        if (result.success) {
+          showToast(status === 'completed' ? 'Booking marked as done ✅' : 'Status updated', 'success');
+
+          // Reload dashboard
+          await loadDashboard();
+        } else {
+          showToast(result.error || 'Failed to update booking', 'error');
+        }
+      } catch (err) {
+        handleError(err, 'Failed to update booking');
+      }
+    }
+
+    // Cancel booking (with confirmation)
+    function cancelBooking(bookingId) {
+      confirmDialog(
+        'Are you sure you want to cancel this booking?',
+        async () => {
+          await updateBookingStatus(bookingId, 'cancelled');
+        }
+      );
+    }
+
+    // Make functions global for onclick handlers
+    window.updateBookingStatus = updateBookingStatus;
+    window.cancelBooking = cancelBooking;
+
+    // Initialize on load
+    init();
+  </script>
+
+</body>
+</html>

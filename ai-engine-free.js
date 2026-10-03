@@ -138,7 +138,7 @@ async function getGroqResponse(userMessage, history, language, userId) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile', // Free, very fast
+        model: 'openai/gpt-oss-20b', // Groq free model
         messages: messages,
         max_tokens: 200, // Shorter responses
         temperature: 0.3, // More focused and consistent
@@ -147,6 +147,19 @@ async function getGroqResponse(userMessage, history, language, userId) {
     });
 
     const data = await response.json();
+
+    // Check for API errors
+    if (data.error) {
+      console.error('[Groq] API Error:', data.error);
+      throw new Error(data.error.message || 'Groq API error');
+    }
+
+    // Check if response has expected format
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error('[Groq] Unexpected response format:', JSON.stringify(data));
+      throw new Error('Invalid response format from Groq');
+    }
+
     return data.choices[0].message.content;
   } catch (error) {
     console.error('[Groq] Error:', error.message);

@@ -329,11 +329,131 @@ updateInstagramConnectionFromEnv();
 // Old private API code removed - now using official OAuth flow
 // See INSTAGRAM-OAUTH-SETUP.md for documentation
 
+// Track which messages we already replied to (in-memory)
+const repliedMessages = new Set();
+
 async function pollInstagramDirectInbox() {
-  // Instagram is handled through official Meta webhooks. 
-  // No polling needed - messages arrive via webhook endpoint.
-  return { processed: 0, disabled: true, method: 'graph-api-webhook' };
+  try {
+    const accessToken = process.env.INSTAGRAM_ACCESS_TOKEN;
+    const userId = process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID || '27973124595617787';
+
+    if (!accessToken) {
+      return { processed: 0, error: 'No access token' };
+    }
+
+    // Step 1: Get all conversations
+    const convoRes = await fetch(
+      `https://graph.instagram.com/v23.0/${userId}/conversations?fields=id,updated_time&access_token=${accessToken}`
+    );
+    const convoData = await convoRes.json();
+
+    if (!convoData.data) {
+      console.error('[Instagram Poll] No conversations found:', JSON.stringify(convoData));
+      return { processed: 0, error: 'No conversations' };
+    }
+
+    let processed = 0;
+
+    // Step 2: Check recent conversations (last 5 only for speed)
+    const recentConvos = convoData.data.slice(0, 5);
+
+    for (const convo of recentConvos) {
+      // Step 3: Get messages in this conversation
+      const msgRes = await fetch(
+        `https://graph.instagram.com/v23.0/${convo.id}/messages?fields=id,message,from,created_time&access_token=${accessToken}`
+      );
+      const msgData = await msgRes.json();
+
+      if (!msgData.data || msgData.data.length === 0) continue;
+
+      // Step 4: Get the latest message
+      const latestMsg = msgData.data[0];
+
+      // Skip if already replied
+      if (repliedMessages.has(latestMsg.id)) continue;
+
+      // Skip if message is from us (our own replies)
+      if (latestMsg.from?.id === userId) continue;
+
+      // Skip if message is older than 5 minutes (avoid replying to old messages on startup)
+      const msgAge = Date.now() - new Date(latestMsg.created_time).getTime();
+      if (msgAge > 24 * 60 * 60 * 1000) {
+        repliedMessages.add(latestMsg.id); // mark old messages as seen
+        continue;
+      }
+
+      const userMessage = latestMsg.message;
+      const senderId = latestMsg.from?.id;
+
+      if (!userMessage || !senderId) continue;
+
+      console.log(`[Instagram Poll] New message from ${senderId}: "${userMessage}"`);
+
+      // Step 5: Generate AI response
+      const aiResponse = await getAIResponse(senderId.toString(), userMessage);
+
+      // Step 6: Send reply via Instagram API
+      const replyRes = await fetch(
+        `https://graph.instagram.com/v23.0/me/messages`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recipient: { id: senderId },
+            message: { text: aiResponse },
+            access_token: accessToken
+          })
+        }
+      );
+
+      const replyData = await replyRes.json();
+
+      if (replyData.message_id || replyData.recipient_id) {
+        console.log(`[Instagram Poll] ✅ Reply sent to ${senderId}`);
+        repliedMessages.add(latestMsg.id);
+        processed++;
+
+        // Log to chatLogs
+        chatLogs.unshift({
+          platform: 'instagram',
+          userId: senderId,
+          userMessage,
+          aiResponse,
+          timestamp: new Date().toISOString()
+        });
+        if (chatLogs.length > 100) chatLogs.pop();
+        updateMessageStats();
+
+      } else {
+        console.error(`[Instagram Poll] ❌ Failed to send reply:`, JSON.stringify(replyData));
+      }
+    }
+
+    return { processed };
+
+  } catch (error) {
+    console.error('[Instagram Poll] Error:', error.message);
+    return { processed: 0, error: error.message };
+  }
 }
+
+// Start polling every 30 seconds
+setInterval(async () => {
+  if (process.env.INSTAGRAM_ACCESS_TOKEN) {
+    const result = await pollInstagramDirectInbox();
+    if (result.processed > 0) {
+      console.log(`[Instagram Poll] Processed ${result.processed} new message(s)`);
+    }
+  }
+}, 30000);
+
+// Clean up old message IDs every hour to prevent memory leak
+setInterval(() => {
+  if (repliedMessages.size > 1000) {
+    const arr = [...repliedMessages];
+    arr.slice(0, 500).forEach(id => repliedMessages.delete(id));
+  }
+}, 60 * 60 * 1000);
 
 function upsertEnvValues(values) {
   const envPath = path.join(__dirname, '.env');
@@ -526,6 +646,154 @@ app.get('/api/auth/verify', (req, res) => {
     res.json({ valid: true, user: session });
   } else {
     res.json({ valid: false, reason: 'Session not found' });
+  }
+});
+
+// Google OAuth Routes
+app.get('/api/auth/google/config', (req, res) => {
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
+  res.json({
+    redirectUri,
+    clientId: process.env.GOOGLE_CLIENT_ID || null,
+    configured: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)
+  });
+});
+
+app.get('/api/auth/google', (req, res) => {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  if (!clientId) {
+    return res.redirect('/?error=google_not_configured');
+  }
+  
+  // Use explicit redirect URI or construct from request
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
+  const scope = 'email profile';
+  const state = `state_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+  
+  // Store state for verification
+  oauthStateStore.set(state, { timestamp: Date.now() });
+  
+  console.log(`[Google OAuth] Initiating auth with redirect_uri: ${redirectUri}`);
+  
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+    `client_id=${encodeURIComponent(clientId)}&` +
+    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+    `response_type=code&` +
+    `scope=${encodeURIComponent(scope)}&` +
+    `state=${encodeURIComponent(state)}&` +
+    `access_type=offline&` +
+    `prompt=select_account`;
+  
+  res.redirect(authUrl);
+});
+
+app.get('/api/auth/google/callback', async (req, res) => {
+  const { code, state, error } = req.query;
+  
+  if (error) {
+    console.error('[Google OAuth] Error:', error);
+    return res.redirect('/?error=google_auth_failed');
+  }
+  
+  if (!code) {
+    return res.redirect('/?error=no_code');
+  }
+  
+  // Verify state
+  if (!state || !oauthStateStore.has(state)) {
+    return res.redirect('/?error=invalid_state');
+  }
+  oauthStateStore.delete(state);
+  
+  try {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
+    
+    console.log(`[Google OAuth] Using redirect_uri for token exchange: ${redirectUri}`);
+    
+    // Exchange code for tokens
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code'
+      })
+    });
+    
+    const tokenData = await tokenResponse.json();
+    
+    if (!tokenResponse.ok) {
+      console.error('[Google OAuth] Token error:', tokenData);
+      return res.redirect('/?error=token_exchange_failed');
+    }
+    
+    // Get user info
+    const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
+    });
+    
+    const userData = await userResponse.json();
+    
+    if (!userResponse.ok) {
+      console.error('[Google OAuth] User info error:', userData);
+      return res.redirect('/?error=user_info_failed');
+    }
+    
+    const { email, name, picture } = userData;
+    
+    // Check if user exists
+    let user = getUserByEmail(email.toLowerCase());
+    
+    if (!user) {
+      // Create new user from Google account
+      user = {
+        email: email.toLowerCase(),
+        name: name || email.split('@')[0],
+        passwordHash: await bcrypt.hash(Math.random().toString(36), 10), // Random hash (not used)
+        googleId: userData.id,
+        picture: picture || null,
+        provider: 'google',
+        createdAt: new Date().toISOString()
+      };
+      addUser(user);
+      console.log(`✓ [Google OAuth] New user created: ${email}`);
+    } else {
+      // Update existing user with Google info if not already set
+      if (!user.googleId) {
+        const users = loadUsers();
+        const userIndex = users.findIndex(u => u.email === email.toLowerCase());
+        if (userIndex !== -1) {
+          users[userIndex].googleId = userData.id;
+          users[userIndex].picture = picture || users[userIndex].picture;
+          saveUsers(users);
+        }
+      }
+      console.log(`✓ [Google OAuth] User logged in: ${email}`);
+    }
+    
+    // Create session
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    sessions.set(sessionId, {
+      email: user.email,
+      name: user.name,
+      picture: user.picture || picture,
+      provider: 'google',
+      createdAt: new Date().toISOString(),
+      lastActivity: new Date().toISOString()
+    });
+    
+    saveSessions();
+    
+    // Redirect to admin with session
+    res.redirect(`/admin?sessionId=${sessionId}`);
+  } catch (error) {
+    console.error('[Google OAuth] Error:', error);
+    res.redirect('/?error=authentication_failed');
   }
 });
 
@@ -1548,6 +1816,644 @@ app.post('/webhook/salebot', async (req, res) => {
     res.status(500).json({ error: 'Error processing message' });
   }
 });
+
+// ========================================
+// BUSINESS OWNER DASHBOARD API ENDPOINTS
+// ========================================
+
+// --- BUSINESS STORAGE HELPERS ---
+const BUSINESSES_FILE = path.join(__dirname, 'businesses.json');
+const BUSINESS_SESSIONS_FILE = path.join(__dirname, 'businessSessions.json');
+
+function ensureBusinessesFile() {
+  if (!fs.existsSync(BUSINESSES_FILE)) {
+    fs.writeFileSync(BUSINESSES_FILE, JSON.stringify({ businesses: [] }, null, 2), 'utf8');
+  }
+}
+
+function readBusinessesStore() {
+  ensureBusinessesFile();
+  try {
+    const parsed = JSON.parse(fs.readFileSync(BUSINESSES_FILE, 'utf8'));
+    return { businesses: Array.isArray(parsed.businesses) ? parsed.businesses : [] };
+  } catch (error) {
+    console.error('[Business] Error reading businesses.json:', error.message);
+    return { businesses: [] };
+  }
+}
+
+function writeBusinessesStore(store) {
+  fs.writeFileSync(BUSINESSES_FILE, JSON.stringify({ businesses: store.businesses || [] }, null, 2), 'utf8');
+}
+
+function ensureBusinessSessionsFile() {
+  if (!fs.existsSync(BUSINESS_SESSIONS_FILE)) {
+    fs.writeFileSync(BUSINESS_SESSIONS_FILE, JSON.stringify({ sessions: [] }, null, 2), 'utf8');
+  }
+}
+
+function readBusinessSessions() {
+  ensureBusinessSessionsFile();
+  try {
+    const parsed = JSON.parse(fs.readFileSync(BUSINESS_SESSIONS_FILE, 'utf8'));
+    return new Map(Array.isArray(parsed.sessions) ? parsed.sessions : []);
+  } catch (error) {
+    console.error('[Business] Error reading businessSessions.json:', error.message);
+    return new Map();
+  }
+}
+
+function saveBusinessSessions(sessionsMap) {
+  const sessions = Array.from(sessionsMap.entries());
+  fs.writeFileSync(BUSINESS_SESSIONS_FILE, JSON.stringify({ sessions }, null, 2), 'utf8');
+}
+
+// Business sessions in memory
+const businessSessions = readBusinessSessions();
+
+// Save business sessions periodically (every 5 minutes)
+setInterval(() => {
+  saveBusinessSessions(businessSessions);
+}, 5 * 60 * 1000);
+
+// Business authentication middleware
+function requireBusinessAuth(req, res, next) {
+  const token = req.headers['x-business-token'];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Unauthorized - No token provided' });
+  }
+
+  const session = businessSessions.get(token);
+
+  if (!session) {
+    return res.status(401).json({ error: 'Unauthorized - Invalid token' });
+  }
+
+  // Check if session expired (24 hours)
+  const expiresAt = new Date(session.expiresAt).getTime();
+  if (Date.now() > expiresAt) {
+    businessSessions.delete(token);
+    saveBusinessSessions(businessSessions);
+    return res.status(401).json({ error: 'Unauthorized - Session expired' });
+  }
+
+  // Attach business info to request
+  req.businessId = session.businessId;
+  req.business = session.business;
+
+  next();
+}
+
+// Generate business session token
+function generateBusinessToken() {
+  return `bst_${Date.now()}_${Math.random().toString(36).slice(2, 15)}`;
+}
+
+// --- BUSINESS AUTH ENDPOINTS ---
+
+// Business owner login
+app.post('/api/business/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    const store = readBusinessesStore();
+    const business = store.businesses.find(b => b.email === email);
+
+    if (!business) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    if (!business.active) {
+      return res.status(403).json({ error: 'Account is suspended' });
+    }
+
+    // Verify password
+    const passwordMatch = await bcrypt.compare(password, business.passwordHash);
+
+    if (!passwordMatch) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Create session
+    const token = generateBusinessToken();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
+
+    businessSessions.set(token, {
+      businessId: business.id,
+      business: {
+        id: business.id,
+        name: business.name,
+        ownerName: business.ownerName,
+        email: business.email,
+        phone: business.phone,
+        address: business.address,
+        instagram: business.instagram,
+        city: business.city
+      },
+      createdAt: new Date().toISOString(),
+      expiresAt
+    });
+
+    saveBusinessSessions(businessSessions);
+
+    console.log(`[Business] Login successful: ${business.name} (${email})`);
+
+    res.json({
+      success: true,
+      token,
+      business: {
+        id: business.id,
+        name: business.name,
+        ownerName: business.ownerName
+      }
+    });
+  } catch (error) {
+    console.error('[Business] Login error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Verify business session
+app.get('/api/business/auth/verify', requireBusinessAuth, (req, res) => {
+  res.json({
+    valid: true,
+    business: req.business
+  });
+});
+
+// Business owner logout
+app.post('/api/business/auth/logout', (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (token && businessSessions.has(token)) {
+      businessSessions.delete(token);
+      saveBusinessSessions(businessSessions);
+      console.log('[Business] Logout successful');
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Business] Logout error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- BUSINESS DASHBOARD ENDPOINTS ---
+
+// Get dashboard data (today's bookings, stats, recent messages)
+app.get('/api/business/dashboard', requireBusinessAuth, (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const bookingsStore = readBookingsStore();
+
+    // Get today's bookings
+    const todayBookings = bookingsStore.bookings
+      .filter(b => b.date === today)
+      .sort((a, b) => {
+        const timeA = a.time || '00:00';
+        const timeB = b.time || '00:00';
+        return timeA.localeCompare(timeB);
+      });
+
+    // Calculate stats
+    const stats = {
+      total: todayBookings.length,
+      completed: todayBookings.filter(b => b.status === 'completed').length,
+      confirmed: todayBookings.filter(b => b.status === 'confirmed').length,
+      cancelled: todayBookings.filter(b => b.status === 'cancelled').length,
+      remaining: todayBookings.filter(b => b.status !== 'completed' && b.status !== 'cancelled').length
+    };
+
+    // Get recent messages (last 10)
+    const recentMessages = chatLogs.slice(0, 10).map(log => ({
+      platform: log.platform,
+      userId: log.userId,
+      userName: log.userName || 'Customer',
+      userMessage: log.userMessage,
+      aiResponse: log.aiResponse,
+      timestamp: log.timestamp
+    }));
+
+    res.json({
+      todayBookings,
+      stats,
+      recentMessages,
+      business: {
+        name: req.business.name,
+        ownerName: req.business.ownerName
+      }
+    });
+  } catch (error) {
+    console.error('[Business] Dashboard error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- BUSINESS BOOKINGS ENDPOINTS ---
+
+// Get bookings for a specific date
+app.get('/api/business/bookings', requireBusinessAuth, (req, res) => {
+  try {
+    const { date } = req.query;
+    const targetDate = date || new Date().toISOString().split('T')[0];
+
+    const bookingsStore = readBookingsStore();
+    const bookings = bookingsStore.bookings
+      .filter(b => b.date === targetDate)
+      .sort((a, b) => {
+        const timeA = a.time || '00:00';
+        const timeB = b.time || '00:00';
+        return timeA.localeCompare(timeB);
+      });
+
+    // Get available slots for today or future dates
+    const availableSlots = getAvailableSlotsFor(targetDate, null);
+
+    res.json({
+      bookings,
+      availableSlots,
+      date: targetDate
+    });
+  } catch (error) {
+    console.error('[Business] Get bookings error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Create new booking
+app.post('/api/business/bookings', requireBusinessAuth, async (req, res) => {
+  try {
+    const { customerName, customerPhone, service, date, time, notes } = req.body;
+
+    if (!customerName || !service || !date || !time) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const bookingsStore = readBookingsStore();
+
+    // Check if time slot is available
+    const existingBooking = bookingsStore.bookings.find(
+      b => b.date === date && b.time === time && b.status !== 'cancelled'
+    );
+
+    if (existingBooking) {
+      return res.status(400).json({ error: 'Time slot already booked' });
+    }
+
+    // Create new booking
+    const booking = {
+      id: generateBookingId(),
+      customerName,
+      customerPhone: customerPhone || '',
+      service,
+      date,
+      time,
+      notes: notes || '',
+      platform: 'business-dashboard',
+      userId: '',
+      status: 'confirmed',
+      createdAt: new Date().toISOString()
+    };
+
+    bookingsStore.bookings.push(booking);
+    writeBookingsStore(bookingsStore);
+
+    console.log(`[Business] New booking created: ${customerName} - ${service} on ${date} at ${time}`);
+
+    res.json({
+      success: true,
+      booking
+    });
+  } catch (error) {
+    console.error('[Business] Create booking error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update booking status
+app.patch('/api/business/bookings/:id', requireBusinessAuth, (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!status || !['confirmed', 'completed', 'cancelled'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+
+    const bookingsStore = readBookingsStore();
+    const booking = bookingsStore.bookings.find(b => b.id === id);
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    booking.status = status;
+
+    if (status === 'completed') {
+      booking.completedAt = new Date().toISOString();
+    } else if (status === 'cancelled') {
+      booking.cancelledAt = new Date().toISOString();
+    }
+
+    writeBookingsStore(bookingsStore);
+
+    console.log(`[Business] Booking ${id} status updated to: ${status}`);
+
+    res.json({
+      success: true,
+      booking
+    });
+  } catch (error) {
+    console.error('[Business] Update booking error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Delete booking
+app.delete('/api/business/bookings/:id', requireBusinessAuth, (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const bookingsStore = readBookingsStore();
+    const index = bookingsStore.bookings.findIndex(b => b.id === id);
+
+    if (index === -1) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    bookingsStore.bookings.splice(index, 1);
+    writeBookingsStore(bookingsStore);
+
+    console.log(`[Business] Booking ${id} deleted`);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Business] Delete booking error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- BUSINESS MESSAGES ENDPOINTS ---
+
+// Get chat messages/conversations
+app.get('/api/business/messages', requireBusinessAuth, (req, res) => {
+  try {
+    const { platform = 'all', limit = 50 } = req.query;
+
+    let messages = chatLogs;
+
+    // Filter by platform if specified
+    if (platform !== 'all') {
+      messages = messages.filter(msg => msg.platform === platform);
+    }
+
+    // Limit results
+    messages = messages.slice(0, parseInt(limit));
+
+    res.json({
+      messages: messages.map(log => ({
+        platform: log.platform,
+        userId: log.userId,
+        userName: log.userName || 'Customer',
+        userMessage: log.userMessage,
+        aiResponse: log.aiResponse,
+        timestamp: log.timestamp
+      }))
+    });
+  } catch (error) {
+    console.error('[Business] Get messages error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- BUSINESS SETTINGS ENDPOINTS ---
+
+// Get business settings
+app.get('/api/business/settings', requireBusinessAuth, (req, res) => {
+  try {
+    const businessData = getBusinessData();
+    const aiSettings = JSON.parse(fs.readFileSync(path.join(__dirname, 'ai-settings.json'), 'utf8'));
+
+    res.json({
+      business: req.business,
+      services: businessData.business.services || [],
+      hours: businessData.business.hours || {},
+      aiSettings: {
+        language: aiSettings.language || 'auto',
+        style: aiSettings.style || 'professional'
+      }
+    });
+  } catch (error) {
+    console.error('[Business] Get settings error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update business settings
+app.post('/api/business/settings', requireBusinessAuth, async (req, res) => {
+  try {
+    const { name, phone, address, hours, services, aiLanguage } = req.body;
+
+    // Update business info in businesses.json
+    const businessesStore = readBusinessesStore();
+    const business = businessesStore.businesses.find(b => b.id === req.businessId);
+
+    if (business) {
+      if (name) business.name = name;
+      if (phone) business.phone = phone;
+      if (address) business.address = address;
+
+      writeBusinessesStore(businessesStore);
+    }
+
+    // Update business-info.json (hours and services)
+    if (hours || services) {
+      const businessData = getBusinessData();
+
+      if (hours) {
+        businessData.business.hours = hours;
+      }
+
+      if (services) {
+        businessData.business.services = services;
+      }
+
+      fs.writeFileSync(
+        path.join(__dirname, 'business-info.json'),
+        JSON.stringify(businessData, null, 2),
+        'utf8'
+      );
+    }
+
+    // Update AI settings
+    if (aiLanguage) {
+      const aiSettings = JSON.parse(fs.readFileSync(path.join(__dirname, 'ai-settings.json'), 'utf8'));
+      aiSettings.language = aiLanguage;
+      fs.writeFileSync(
+        path.join(__dirname, 'ai-settings.json'),
+        JSON.stringify(aiSettings, null, 2),
+        'utf8'
+      );
+    }
+
+    console.log(`[Business] Settings updated for: ${req.business.name}`);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Business] Update settings error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- SUPER ADMIN BUSINESS MANAGEMENT ENDPOINTS ---
+
+// Get all businesses (super admin only)
+app.get('/api/admin/businesses', (req, res) => {
+  try {
+    const sessionId = req.headers['x-session-id'];
+    const session = sessions.get(sessionId);
+
+    if (!session) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const store = readBusinessesStore();
+    const today = new Date().toISOString().split('T')[0];
+
+    // Add stats for each business
+    const businessesWithStats = store.businesses.map(business => {
+      const bookingsStore = readBookingsStore();
+      const todayBookings = bookingsStore.bookings.filter(b => b.date === today);
+      const businessMessages = chatLogs.filter(log => log.timestamp?.startsWith(today));
+
+      return {
+        ...business,
+        stats: {
+          messagesToday: businessMessages.length,
+          bookingsToday: todayBookings.length
+        }
+      };
+    });
+
+    res.json({
+      businesses: businessesWithStats
+    });
+  } catch (error) {
+    console.error('[Admin] Get businesses error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Create new business (super admin only)
+app.post('/api/admin/businesses', async (req, res) => {
+  try {
+    const sessionId = req.headers['x-session-id'];
+    const session = sessions.get(sessionId);
+
+    if (!session) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { name, ownerName, email, password, phone, address, instagram, city } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Name, email, and password are required' });
+    }
+
+    const store = readBusinessesStore();
+
+    // Check if email already exists
+    if (store.businesses.find(b => b.email === email)) {
+      return res.status(400).json({ error: 'Email already exists' });
+    }
+
+    // Generate business ID
+    const businessId = `biz_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Create new business
+    const business = {
+      id: businessId,
+      name,
+      email,
+      passwordHash,
+      ownerName: ownerName || name,
+      phone: phone || '',
+      address: address || '',
+      instagram: instagram || '',
+      city: city || 'Bishkek',
+      createdAt: new Date().toISOString(),
+      active: true,
+      plan: 'free'
+    };
+
+    store.businesses.push(business);
+    writeBusinessesStore(store);
+
+    console.log(`[Admin] New business created: ${name} (${email})`);
+
+    res.json({
+      success: true,
+      business,
+      credentials: {
+        email,
+        password // Send back temp password (only shown once)
+      }
+    });
+  } catch (error) {
+    console.error('[Admin] Create business error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update business (super admin only)
+app.patch('/api/admin/businesses/:id', (req, res) => {
+  try {
+    const sessionId = req.headers['x-session-id'];
+    const session = sessions.get(sessionId);
+
+    if (!session) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { id } = req.params;
+    const { active, plan, name, phone, address } = req.body;
+
+    const store = readBusinessesStore();
+    const business = store.businesses.find(b => b.id === id);
+
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    // Update fields
+    if (typeof active === 'boolean') business.active = active;
+    if (plan) business.plan = plan;
+    if (name) business.name = name;
+    if (phone) business.phone = phone;
+    if (address) business.address = address;
+
+    writeBusinessesStore(store);
+
+    console.log(`[Admin] Business ${id} updated`);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Admin] Update business error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Serve business dashboard static files
+app.use('/business', express.static(path.join(__dirname, 'business-dashboard')));
 
 // Health check endpoint
 app.get('/health', (req, res) => {

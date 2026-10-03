@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bookings - REPLAI</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="flex-between" style="width: 100%;">
+        <button class="btn-icon" onclick="changeDate(-1)" style="border: none; background: var(--bg);">
+          ←
+        </button>
+        <div class="text-center">
+          <div class="page-title" id="dateDisplay">Today</div>
+          <div class="page-subtitle" id="dateSubtitle"></div>
+        </div>
+        <button class="btn-icon" onclick="changeDate(1)" style="border: none; background: var(--bg);">
+          →
+        </button>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="page-content">
+
+      <!-- Add Booking Button -->
+      <div style="margin-bottom: 16px;">
+        <button class="btn btn-primary" onclick="showAddBookingModal()">
+          + Add Booking
+        </button>
+      </div>
+
+      <!-- Bookings List -->
+      <div id="bookingsList">
+        <!-- Bookings will be loaded here -->
+        <div class="text-center text-muted" style="padding: 20px;">
+          Loading bookings...
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <a href="dashboard.html" class="nav-item">
+        <span class="icon">🏠</span>
+        <span>Home</span>
+      </a>
+      <a href="bookings.html" class="nav-item active">
+        <span class="icon">📅</span>
+        <span>Bookings</span>
+      </a>
+      <a href="messages.html" class="nav-item">
+        <span class="icon">💬</span>
+        <span>Messages</span>
+      </a>
+      <a href="settings.html" class="nav-item">
+        <span class="icon">⚙️</span>
+        <span>Settings</span>
+      </a>
+    </nav>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    let currentDate = todayStr();
+    let bookingsData = null;
+    let servicesData = [];
+
+    // Initialize page
+    async function init() {
+      // Check authentication
+      const authenticated = await requireAuth();
+      if (!authenticated) return;
+
+      // Set active nav
+      setActiveNav('bookings');
+
+      // Load settings to get services
+      await loadSettings();
+
+      // Load bookings for current date
+      await loadBookings();
+    }
+
+    // Load settings (to get services list)
+    async function loadSettings() {
+      try {
+        const data = await API.get('/api/business/settings');
+        servicesData = data.services || [];
+      } catch (err) {
+        console.error('Failed to load settings:', err);
+      }
+    }
+
+    // Load bookings for current date
+    async function loadBookings() {
+      try {
+        const data = await API.get(`/api/business/bookings?date=${currentDate}`);
+        bookingsData = data;
+
+        // Update date display
+        updateDateDisplay();
+
+        // Render bookings
+        renderBookings(data.bookings || [], data.availableSlots || []);
+
+      } catch (err) {
+        handleError(err, 'Failed to load bookings');
+      }
+    }
+
+    // Update date display
+    function updateDateDisplay() {
+      const today = todayStr();
+      const isToday = currentDate === today;
+
+      if (isToday) {
+        document.getElementById('dateDisplay').textContent = 'Today';
+      } else {
+        document.getElementById('dateDisplay').textContent = formatDate(currentDate);
+      }
+
+      document.getElementById('dateSubtitle').textContent = formatDateLong(currentDate);
+    }
+
+    // Change date (prev/next day)
+    async function changeDate(direction) {
+      const date = new Date(currentDate + 'T00:00:00');
+      date.setDate(date.getDate() + direction);
+
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      currentDate = `${year}-${month}-${day}`;
+
+      await loadBookings();
+    }
+
+    // Render bookings with timeline
+    function renderBookings(bookings, availableSlots) {
+      const container = document.getElementById('bookingsList');
+
+      if (bookings.length === 0) {
+        container.innerHTML = `
+          <div class="card">
+            <div class="empty-state">
+              <div class="empty-icon">📅</div>
+              <div class="empty-title">No bookings for this date</div>
+              <div class="empty-text">
+                ${availableSlots.length > 0 ?
+                  `${availableSlots.length} time slots available` :
+                  'No available slots (shop closed)'
+                }
+              </div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      // Sort by time
+      const sorted = bookings.sort((a, b) => {
+        const timeA = a.time || '00:00';
+        const timeB = b.time || '00:00';
+        return timeA.localeCompare(timeB);
+      });
+
+      const html = `
+        <div class="card">
+          ${sorted.map(booking => {
+            const isCompleted = booking.status === 'completed';
+            const isCancelled = booking.status === 'cancelled';
+            const showActions = !isCompleted && !isCancelled;
+
+            return `
+              <div class="booking-item" data-id="${booking.id}">
+                <div class="booking-time">
+                  ${formatTime(booking.time)}
+                  <span class="booking-time-label">${booking.time}</span>
+                </div>
+                <div class="booking-info">
+                  <div class="booking-name">${booking.customerName}</div>
+                  <div class="booking-service">${booking.service}</div>
+                  ${booking.customerPhone ? `<div class="booking-phone">${booking.customerPhone}</div>` : ''}
+                  ${booking.notes ? `<div class="booking-phone" style="margin-top: 4px;">Note: ${booking.notes}</div>` : ''}
+                </div>
+                ${showActions ? `
+                  <div class="booking-actions">
+                    <button class="action-btn action-done" onclick="updateBookingStatus('${booking.id}', 'completed')" title="Mark as done">
+                      ✓
+                    </button>
+                    <button class="action-btn action-cancel" onclick="cancelBooking('${booking.id}')" title="Cancel">
+                      ✕
+                    </button>
+                  </div>
+                ` : `
+                  <div style="margin-left: auto;">
+                    ${getStatusBadge(booking.status)}
+                  </div>
+                `}
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        ${availableSlots.length > 0 ? `
+          <div style="margin-top: 16px; padding: 12px; background: var(--bg); border-radius: var(--radius); text-align: center;">
+            <div style="font-size: 13px; color: var(--text-light); font-weight: 600;">
+              ${availableSlots.length} available slots
+            </div>
+            <div style="font-size: 12px; color: var(--text-lighter); margin-top: 4px;">
+              ${availableSlots.slice(0, 5).map(slot => formatTime(slot)).join(', ')}
+              ${availableSlots.length > 5 ? '...' : ''}
+            </div>
+          </div>
+        ` : ''}
+      `;
+
+      container.innerHTML = html;
+    }
+
+    // Show add booking modal
+    function showAddBookingModal() {
+      const serviceOptions = servicesData.map(s =>
+        `<option value="${s.name}">${s.name} - ${s.price} (${s.duration}min)</option>`
+      ).join('');
+
+      const modalHTML = `
+        <form id="addBookingForm">
+          <div class="form-group">
+            <label class="form-label">Customer Name <span class="required">*</span></label>
+            <input type="text" id="customerName" class="input" placeholder="Enter customer name" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            <input type="tel" id="customerPhone" class="input" placeholder="+996555123456">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Service <span class="required">*</span></label>
+            <select id="service" class="input" required>
+              <option value="">Select service</option>
+              ${serviceOptions}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Date <span class="required">*</span></label>
+            <input type="date" id="bookingDate" class="input" value="${currentDate}" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Time <span class="required">*</span></label>
+            <select id="bookingTime" class="input" required>
+              <option value="">Select time</option>
+              ${(bookingsData?.availableSlots || []).map(slot =>
+                `<option value="${slot}">${formatTime(slot)}</option>`
+              ).join('')}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Notes</label>
+            <textarea id="notes" class="input" placeholder="Optional notes" rows="3"></textarea>
+          </div>
+
+          <div id="formError" class="error-message hidden"></div>
+        </form>
+      `;
+
+      showModal(
+        'Add New Booking',
+        modalHTML,
+        [
+          {
+            text: 'Cancel',
+            className: 'btn btn-ghost',
+            onclick: closeModal
+          },
+          {
+            text: 'Add Booking',
+            className: 'btn btn-primary',
+            onclick: handleAddBooking
+          }
+        ]
+      );
+    }
+
+    // Handle add booking submission
+    async function handleAddBooking() {
+      const formError = document.getElementById('formError');
+      formError.classList.add('hidden');
+
+      const customerName = document.getElementById('customerName').value.trim();
+      const customerPhone = document.getElementById('customerPhone').value.trim();
+      const service = document.getElementById('service').value;
+      const date = document.getElementById('bookingDate').value;
+      const time = document.getElementById('bookingTime').value;
+      const notes = document.getElementById('notes').value.trim();
+
+      // Validate
+      if (!customerName || !service || !date || !time) {
+        formError.textContent = 'Please fill in all required fields';
+        formError.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        showLoading();
+
+        const result = await API.post('/api/business/bookings', {
+          customerName,
+          customerPhone,
+          service,
+          date,
+          time,
+          notes
+        });
+
+        hideLoading();
+
+        if (result.success) {
+          showToast('Booking added successfully! ✅', 'success');
+          closeModal();
+
+          // If booking was for current date, reload
+          if (date === currentDate) {
+            await loadBookings();
+          }
+        } else {
+          formError.textContent = result.error || 'Failed to add booking';
+          formError.classList.remove('hidden');
+        }
+      } catch (err) {
+        hideLoading();
+        formError.textContent = 'Failed to add booking. Please try again.';
+        formError.classList.remove('hidden');
+      }
+    }
+
+    // Update booking status
+    async function updateBookingStatus(bookingId, status) {
+      try {
+        const result = await API.patch(`/api/business/bookings/${bookingId}`, { status });
+
+        if (result.success) {
+          showToast(status === 'completed' ? 'Marked as done ✅' : 'Status updated', 'success');
+          await loadBookings();
+        } else {
+          showToast(result.error || 'Failed to update', 'error');
+        }
+      } catch (err) {
+        handleError(err, 'Failed to update booking');
+      }
+    }
+
+    // Cancel booking with confirmation
+    function cancelBooking(bookingId) {
+      confirmDialog(
+        'Cancel this booking?',
+        async () => {
+          await updateBookingStatus(bookingId, 'cancelled');
+        }
+      );
+    }
+
+    // Make functions global
+    window.changeDate = changeDate;
+    window.showAddBookingModal = showAddBookingModal;
+    window.handleAddBooking = handleAddBooking;
+    window.updateBookingStatus = updateBookingStatus;
+    window.cancelBooking = cancelBooking;
+
+    // Initialize
+    init();
+  </script>
+
+</body>
+</html>

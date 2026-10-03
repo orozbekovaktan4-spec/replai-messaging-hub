@@ -1,87 +1,55 @@
 {
   "business": {
-    "name": "Aida Beauty Salon",
-    "description": "Beauty salon offering professional haircuts, hair coloring, nail services, gel polish, and skincare treatments in Bishkek.",
+    "name": "Aziz Barber Shop",
+    "description": "Professional barber shop offering men's haircuts, beard grooming, and styling services in Bishkek.",
     "hours": {
       "monday": "09:00-20:00",
       "tuesday": "09:00-20:00",
       "wednesday": "09:00-20:00",
       "thursday": "09:00-20:00",
       "friday": "09:00-20:00",
-      "saturday": "09:00-20:00",
+      "saturday": "10:00-18:00",
       "sunday": "closed"
     },
     "services": [
       {
-        "name": "Women's haircut",
-        "description": "Professional women's haircut with consultation and styling recommendations.",
-        "price": "800 сом"
+        "name": "Haircut",
+        "description": "Classic men's haircut",
+        "price": "500 сом",
+        "duration": 30
       },
       {
-        "name": "Men's haircut",
-        "description": "Classic or modern men's haircut with finishing style.",
-        "price": "500 сом"
+        "name": "Beard trim",
+        "description": "Beard shaping and trim",
+        "price": "300 сом",
+        "duration": 20
       },
       {
-        "name": "Hair coloring",
-        "description": "Full hair coloring with professional products and color consultation.",
-        "price": "2500 сом"
+        "name": "Haircut + Beard",
+        "description": "Full grooming package",
+        "price": "700 сом",
+        "duration": 45
       },
       {
-        "name": "Manicure",
-        "description": "Classic manicure with nail shaping and cuticle care.",
-        "price": "1000 сом"
+        "name": "Kids haircut",
+        "description": "Haircut for kids under 12",
+        "price": "400 сом",
+        "duration": 25
       },
       {
-        "name": "Gel polish",
-        "description": "Long-lasting gel polish application with nail preparation.",
-        "price": "1200 сом"
-      },
-      {
-        "name": "Facial treatment",
-        "description": "Cleansing and moisturizing facial treatment for refreshed skin.",
-        "price": "1800 сом"
+        "name": "Head shave",
+        "description": "Full head shave",
+        "price": "400 сом",
+        "duration": 25
       }
     ],
+    "serviceDuration": 30,
     "contact": {
-      "phone": "+996 555 123456",
-      "email": "aida.salon@example.com",
-      "address": "Bishkek, Chuy Ave 100",
+      "phone": "+996555001001",
+      "email": "aziz@barber.com",
+      "address": "Bishkek, Chuy Ave 5",
       "website": ""
     },
-    "faqs": [
-      {
-        "question": "Как записаться на услугу?",
-        "answer": "Вы можете написать нам в чат или позвонить по номеру +996 555 123456. Укажите услугу, желаемую дату и время, имя и телефон."
-      },
-      {
-        "question": "Где посмотреть цены?",
-        "answer": "Цены указаны в списке услуг: женская стрижка 800 сом, мужская стрижка 500 сом, окрашивание 2500 сом, маникюр 1000 сом, гель-лак 1200 сом, уход за лицом 1800 сом."
-      },
-      {
-        "question": "Можно ли отменить или перенести запись?",
-        "answer": "Да, пожалуйста сообщите нам минимум за 3 часа до визита, чтобы мы смогли предложить время другому клиенту."
-      },
-      {
-        "question": "Есть ли парковка рядом?",
-        "answer": "Да, рядом с салоном на проспекте Чуй есть городская парковка. Обычно места доступны в первой половине дня."
-      },
-      {
-        "question": "Какие способы оплаты вы принимаете?",
-        "answer": "Мы принимаем наличные, банковские карты и переводы через популярные мобильные кошельки."
-      },
-      {
-        "question": "Сколько длится женская стрижка?",
-        "answer": "Женская стрижка обычно занимает 45-60 минут, в зависимости от длины волос и желаемого результата."
-      },
-      {
-        "question": "Можно прийти без записи?",
-        "answer": "Да, если есть свободный мастер. Но мы рекомендуем записываться заранее, особенно на вечер и субботу."
-      },
-      {
-        "question": "Где находится салон?",
-        "answer": "Мы находимся по адресу: Бишкек, проспект Чуй 100. Ориентир: центр города, удобный вход с проспекта."
-      }
-    ]
+    "faqs": []
   }
 }

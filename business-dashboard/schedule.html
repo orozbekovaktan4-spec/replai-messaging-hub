@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Schedule - REPLAI</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="page-title">⏰ Schedule</div>
+    </div>
+
+    <!-- Content -->
+    <div class="page-content">
+
+      <!-- Working Hours Section -->
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Working Hours</div>
+        </div>
+
+        <div class="card" id="workingHoursCard">
+          <div class="text-center text-muted" style="padding: 20px;">
+            Loading schedule...
+          </div>
+        </div>
+      </div>
+
+      <!-- Services Section -->
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Services</div>
+          <button class="btn btn-sm btn-primary" onclick="showAddServiceModal()">+ Add</button>
+        </div>
+
+        <div id="servicesList">
+          <!-- Services will be loaded here -->
+        </div>
+      </div>
+
+      <!-- Save Button -->
+      <div style="margin-top: 24px;">
+        <button class="btn btn-primary" id="saveBtn" onclick="saveSchedule()">
+          Save Changes
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <a href="dashboard.html" class="nav-item">
+        <span class="icon">🏠</span>
+        <span>Home</span>
+      </a>
+      <a href="bookings.html" class="nav-item">
+        <span class="icon">📅</span>
+        <span>Bookings</span>
+      </a>
+      <a href="messages.html" class="nav-item">
+        <span class="icon">💬</span>
+        <span>Messages</span>
+      </a>
+      <a href="settings.html" class="nav-item">
+        <span class="icon">⚙️</span>
+        <span>Settings</span>
+      </a>
+    </nav>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    let settingsData = null;
+    let hoursData = {};
+    let servicesData = [];
+
+    const DAYS = [
+      { key: 'monday', label: 'Monday' },
+      { key: 'tuesday', label: 'Tuesday' },
+      { key: 'wednesday', label: 'Wednesday' },
+      { key: 'thursday', label: 'Thursday' },
+      { key: 'friday', label: 'Friday' },
+      { key: 'saturday', label: 'Saturday' },
+      { key: 'sunday', label: 'Sunday' }
+    ];
+
+    // Initialize page
+    async function init() {
+      const authenticated = await requireAuth();
+      if (!authenticated) return;
+
+      setActiveNav('settings');
+      await loadSettings();
+    }
+
+    // Load settings
+    async function loadSettings() {
+      try {
+        const data = await API.get('/api/business/settings');
+        settingsData = data;
+        hoursData = data.hours || {};
+        servicesData = data.services || [];
+
+        renderWorkingHours();
+        renderServices();
+      } catch (err) {
+        handleError(err, 'Failed to load settings');
+      }
+    }
+
+    // Render working hours editor
+    function renderWorkingHours() {
+      const container = document.getElementById('workingHoursCard');
+
+      const html = DAYS.map(day => {
+        const hours = hoursData[day.key] || 'closed';
+        const isClosed = hours.toLowerCase() === 'closed';
+        const [open, close] = isClosed ? ['09:00', '18:00'] : hours.split('-');
+
+        return `
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border);">
+            <div style="flex: 1;">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input
+                  type="checkbox"
+                  id="day_${day.key}"
+                  ${!isClosed ? 'checked' : ''}
+                  onchange="toggleDay('${day.key}')"
+                  style="width: 18px; height: 18px; cursor: pointer;"
+                >
+                <span style="font-weight: 600; font-size: 15px;">${day.label}</span>
+              </label>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;" id="times_${day.key}">
+              ${!isClosed ? `
+                <input
+                  type="time"
+                  id="open_${day.key}"
+                  value="${open}"
+                  class="input"
+                  style="width: 100px; padding: 8px;"
+                >
+                <span style="color: var(--text-light);">to</span>
+                <input
+                  type="time"
+                  id="close_${day.key}"
+                  value="${close}"
+                  class="input"
+                  style="width: 100px; padding: 8px;"
+                >
+              ` : `
+                <span style="color: var(--text-light); font-size: 14px;">Closed</span>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = html;
+    }
+
+    // Toggle day open/closed
+    function toggleDay(dayKey) {
+      const checkbox = document.getElementById(`day_${dayKey}`);
+      const timesContainer = document.getElementById(`times_${dayKey}`);
+
+      if (checkbox.checked) {
+        // Open - show time inputs
+        timesContainer.innerHTML = `
+          <input
+            type="time"
+            id="open_${dayKey}"
+            value="09:00"
+            class="input"
+            style="width: 100px; padding: 8px;"
+          >
+          <span style="color: var(--text-light);">to</span>
+          <input
+            type="time"
+            id="close_${dayKey}"
+            value="18:00"
+            class="input"
+            style="width: 100px; padding: 8px;"
+          >
+        `;
+      } else {
+        // Closed
+        timesContainer.innerHTML = `
+          <span style="color: var(--text-light); font-size: 14px;">Closed</span>
+        `;
+      }
+    }
+
+    // Render services list
+    function renderServices() {
+      const container = document.getElementById('servicesList');
+
+      if (servicesData.length === 0) {
+        container.innerHTML = `
+          <div class="card">
+            <div class="empty-state">
+              <div class="empty-text">No services added yet</div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      const html = servicesData.map((service, index) => `
+        <div class="card" style="margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="flex: 1;">
+              <div style="font-weight: 600; font-size: 15px; color: var(--primary); margin-bottom: 4px;">
+                ${service.name}
+              </div>
+              <div style="font-size: 13px; color: var(--text-light);">
+                ${service.price} • ${service.duration} min
+              </div>
+              ${service.description ? `
+                <div style="font-size: 13px; color: var(--text-lighter); margin-top: 4px;">
+                  ${service.description}
+                </div>
+              ` : ''}
+            </div>
+            <button
+              class="btn btn-sm btn-ghost"
+              onclick="removeService(${index})"
+              style="padding: 8px 12px;"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      `).join('');
+
+      container.innerHTML = html;
+    }
+
+    // Show add service modal
+    function showAddServiceModal() {
+      const modalHTML = `
+        <form id="addServiceForm">
+          <div class="form-group">
+            <label class="form-label">Service Name <span class="required">*</span></label>
+            <input type="text" id="serviceName" class="input" placeholder="e.g., Haircut" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <input type="text" id="serviceDescription" class="input" placeholder="Brief description (optional)">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Price <span class="required">*</span></label>
+            <input type="text" id="servicePrice" class="input" placeholder="e.g., 500 сом" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Duration (minutes) <span class="required">*</span></label>
+            <input type="number" id="serviceDuration" class="input" placeholder="e.g., 30" min="5" step="5" required>
+          </div>
+
+          <div id="formError" class="error-message hidden"></div>
+        </form>
+      `;
+
+      showModal(
+        'Add Service',
+        modalHTML,
+        [
+          {
+            text: 'Cancel',
+            className: 'btn btn-ghost',
+            onclick: closeModal
+          },
+          {
+            text: 'Add Service',
+            className: 'btn btn-primary',
+            onclick: handleAddService
+          }
+        ]
+      );
+    }
+
+    // Handle add service
+    function handleAddService() {
+      const formError = document.getElementById('formError');
+      formError.classList.add('hidden');
+
+      const name = document.getElementById('serviceName').value.trim();
+      const description = document.getElementById('serviceDescription').value.trim();
+      const price = document.getElementById('servicePrice').value.trim();
+      const duration = parseInt(document.getElementById('serviceDuration').value);
+
+      if (!name || !price || !duration) {
+        formError.textContent = 'Please fill in all required fields';
+        formError.classList.remove('hidden');
+        return;
+      }
+
+      // Add to services array
+      servicesData.push({
+        name,
+        description,
+        price,
+        duration
+      });
+
+      renderServices();
+      closeModal();
+      showToast('Service added! Remember to save changes.', 'success');
+    }
+
+    // Remove service
+    function removeService(index) {
+      confirmDialog(
+        'Remove this service?',
+        () => {
+          servicesData.splice(index, 1);
+          renderServices();
+          showToast('Service removed. Remember to save changes.', 'warning');
+        }
+      );
+    }
+
+    // Save schedule (hours + services)
+    async function saveSchedule() {
+      const saveBtn = document.getElementById('saveBtn');
+      setLoading(saveBtn, true);
+
+      // Collect working hours
+      const hours = {};
+      DAYS.forEach(day => {
+        const checkbox = document.getElementById(`day_${day.key}`);
+        if (checkbox.checked) {
+          const openInput = document.getElementById(`open_${day.key}`);
+          const closeInput = document.getElementById(`close_${day.key}`);
+          if (openInput && closeInput) {
+            hours[day.key] = `${openInput.value}-${closeInput.value}`;
+          }
+        } else {
+          hours[day.key] = 'closed';
+        }
+      });
+
+      try {
+        const result = await API.post('/api/business/settings', {
+          hours,
+          services: servicesData
+        });
+
+        if (result.success) {
+          showToast('Schedule saved successfully! ✅', 'success');
+        } else {
+          showToast(result.error || 'Failed to save', 'error');
+        }
+      } catch (err) {
+        handleError(err, 'Failed to save schedule');
+      } finally {
+        setLoading(saveBtn, false);
+      }
+    }
+
+    // Make functions global
+    window.toggleDay = toggleDay;
+    window.showAddServiceModal = showAddServiceModal;
+    window.handleAddService = handleAddService;
+    window.removeService = removeService;
+    window.saveSchedule = saveSchedule;
+
+    // Initialize
+    init();
+  </script>
+
+</body>
+</html>

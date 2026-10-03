@@ -3,5 +3,10 @@ node_modules/
 users.json
 sessions.json
 bookings.json
-*.log
+businesses.json
+businessSessions.json
+ig-session.json
 .DS_Store
+*.log
+ngrok
+freellmapi/

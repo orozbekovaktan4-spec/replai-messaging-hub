@@ -1,6 +1,7 @@
 {
   "provider": "groq",
-  "style": "professional",
+  "style": "friendly",
   "language": "auto",
+  "adminLanguage": "en",
   "maxLength": "medium"
 }
