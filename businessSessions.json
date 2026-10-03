@@ -1,0 +1,22 @@
+{
+  "sessions": [
+    [
+      "bst_1790730965551_k0yxqx00p7",
+      {
+        "businessId": "biz_001",
+        "business": {
+          "id": "biz_001",
+          "name": "Aziz Barber Shop",
+          "ownerName": "Aziz Karimov",
+          "email": "aziz@barber.com",
+          "phone": "+996555001001",
+          "address": "Bishkek, Chuy Ave 5",
+          "instagram": "@azizbarber",
+          "city": "Bishkek"
+        },
+        "createdAt": "2026-09-30T01:16:05.553Z",
+        "expiresAt": "2026-10-01T01:16:05.551Z"
+      }
+    ]
+  ]
+}
