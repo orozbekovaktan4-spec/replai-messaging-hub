@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Lint & Format Check",
+      "trigger": "PreCommit",
+      "action": {
+        "type": "command",
+        "command": "node -c server-new.js && node -c ai-engine-free.js"
+      }
+    }
+  ]
+}

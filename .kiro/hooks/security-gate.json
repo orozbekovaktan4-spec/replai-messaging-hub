@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Security Check - Block Secrets",
+      "trigger": "PostFileSave",
+      "matcher": "\\.(js|html|json)$",
+      "action": {
+        "type": "command",
+        "command": "bash -c 'if grep -E \"(AKIA|sk_live_|password.*=|API_KEY.*=)\" \"$1\"; then echo \"Secrets detected\"; exit 2; fi; exit 0' _ \"$1\""
+      }
+    }
+  ]
+}
