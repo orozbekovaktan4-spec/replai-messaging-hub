@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { getAIResponse } from './ai-engine-free.js';
 
 // Load environment variables
@@ -81,6 +82,49 @@ function updateInstagramConnectionFromEnv() {
     userId: process.env.INSTAGRAM_IG_USER_ID || null,
     expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null
   };
+}
+
+// WhatsApp & Meta Webhook Signature Validation
+function validateMetaSignature(req, appSecret) {
+  const signature = req.get('X-Hub-Signature-256');
+  if (!signature) {
+    console.warn('[Meta] No signature provided');
+    return false;
+  }
+  
+  try {
+    const payload = JSON.stringify(req.body);
+    const expectedSignature = 'sha256=' + 
+      crypto.createHmac('sha256', appSecret)
+        .update(payload)
+        .digest('hex');
+    
+    const isValid = signature === expectedSignature;
+    if (!isValid) {
+      console.warn('[Meta] Invalid signature - expected:', expectedSignature.slice(0, 20) + '...', 'got:', signature.slice(0, 20) + '...');
+    }
+    return isValid;
+  } catch (error) {
+    console.error('[Meta] Signature validation error:', error.message);
+    return false;
+  }
+}
+
+// Track processed message IDs to prevent duplicates
+const processedMessages = new Set();
+const MAX_PROCESSED_MESSAGES = 5000;
+
+function markMessageProcessed(messageId) {
+  processedMessages.add(messageId);
+  // Keep memory bounded
+  if (processedMessages.size > MAX_PROCESSED_MESSAGES) {
+    const first = Array.from(processedMessages)[0];
+    processedMessages.delete(first);
+  }
+}
+
+function isMessageProcessed(messageId) {
+  return processedMessages.has(messageId);
 }
 
 // Middleware configuration
@@ -1376,16 +1420,49 @@ app.post('/api/admin/instagram/oauth/refresh', async (req, res) => {
 
 app.post('/api/admin/connect/whatsapp', async (req, res) => {
   try {
-    const { token, phone } = req.body;
-    if (!token || !phone) return res.status(400).json({ error: 'Token and phone are required' });
+    const { token, phone_id } = req.body;
+    
+    if (!token) return res.status(400).json({ error: 'Access token is required' });
+    if (!phone_id) return res.status(400).json({ error: 'Phone number ID is required' });
 
+    // Validate token by making test API call
+    console.log('[whatsapp] Validating credentials...');
+    try {
+      const testUrl = facebookGraphUrl(`${phone_id}?fields=id,display_phone_number`);
+      const testRes = await fetch(testUrl, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      const testData = await testRes.json();
+      
+      if (!testRes.ok || testData.error) {
+        const errorMsg = testData.error?.message || 'Invalid token or phone ID';
+        console.error('[whatsapp] Validation failed:', errorMsg);
+        return res.status(401).json({ error: errorMsg, code: testData.error?.code });
+      }
+      
+      console.log('[whatsapp] ✓ Credentials validated');
+      console.log('[whatsapp] Phone number:', testData.display_phone_number);
+    } catch (error) {
+      console.error('[whatsapp] Validation error:', error.message);
+      return res.status(400).json({ error: 'Failed to validate credentials' });
+    }
+
+    // Save credentials
     upsertEnvValues({
       WHATSAPP_ACCESS_TOKEN: token,
-      WHATSAPP_PHONE_ID: phone
+      WHATSAPP_PHONE_ID: phone_id
     });
-    platformConnections.whatsapp = { connected: true, token, phone };
-    res.json({ success: true, message: 'WhatsApp connected' });
+    
+    platformConnections.whatsapp = { 
+      connected: true, 
+      token, 
+      phone_id 
+    };
+    
+    res.json({ success: true, message: 'WhatsApp connected successfully' });
   } catch (error) {
+    console.error('[WhatsApp Connect] Error:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -1590,24 +1667,52 @@ async function sendResponseToPlatform(platform, userId, message) {
         return { ok: false, platform, error };
       }
     } else if (platform === 'whatsapp' && platformConnections.whatsapp.connected) {
-      const whatsappUrl = facebookGraphUrl(`${platformConnections.whatsapp.phone}/messages`);
-      const response = await fetch(whatsappUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${platformConnections.whatsapp.token}`
-        },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp',
-          to: userId,
-          text: { body: message }
-        })
-      });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        return { ok: false, platform, status: response.status, error: errorData.error?.message || 'WhatsApp send failed' };
+      const whatsappPhoneId = platformConnections.whatsapp.phone_id;
+      const whatsappToken = platformConnections.whatsapp.token;
+      
+      if (!whatsappPhoneId || !whatsappToken) {
+        const error = 'WhatsApp not properly configured (missing phone_id or token)';
+        console.error('[whatsapp]', error);
+        return { ok: false, platform, error };
       }
-      return { ok: true, platform };
+      
+      const whatsappUrl = facebookGraphUrl(`${whatsappPhoneId}/messages`);
+      
+      try {
+        const response = await fetch(whatsappUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${whatsappToken}`
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            to: String(userId),  // Phone number with country code
+            type: 'text',
+            text: { body: String(message).slice(0, 1024) }  // Meta max 1024 chars
+          })
+        });
+        
+        const responseData = await response.json().catch(() => ({}));
+        
+        if (!response.ok) {
+          const errorMsg = responseData.error?.message || 'Unknown error';
+          const errorCode = responseData.error?.code;
+          console.error('[whatsapp] Message send failed:', {
+            status: response.status,
+            code: errorCode,
+            message: errorMsg,
+            to: userId
+          });
+          return { ok: false, platform, status: response.status, error: errorMsg, code: errorCode };
+        }
+        
+        console.log(`[whatsapp] ✓ Message sent to ${userId}`);
+        return { ok: true, platform, response: responseData };
+      } catch (error) {
+        console.error('[whatsapp] Send error:', error.message);
+        return { ok: false, platform, error: error.message };
+      }
     }
     return { ok: false, platform, error: `${platform} is not connected` };
   } catch (error) {
@@ -1687,12 +1792,27 @@ app.post('/webhook/:platform', async (req, res) => {
     // Log raw webhook data for debugging
     console.log(`[Webhook:${platform}] Received:`, JSON.stringify(body).substring(0, 500));
 
-    let userMessage, userId, userName;
+    let userMessage, userId, userName, messageId;
+
+    // Validate WhatsApp signature (Meta API)
+    if (platform === 'whatsapp') {
+      const appSecret = process.env.INSTAGRAM_APP_SECRET;
+      if (!appSecret) {
+        console.error('[whatsapp] INSTAGRAM_APP_SECRET not configured');
+        return res.sendStatus(500);
+      }
+      
+      if (!validateMetaSignature(req, appSecret)) {
+        console.warn('[whatsapp] Invalid signature - rejecting request');
+        return res.sendStatus(403);
+      }
+    }
 
     if (platform === 'telegram') {
       userMessage = body.message?.text;
       userId = body.message?.from?.id;
       userName = body.message?.from?.first_name;
+      messageId = `tg_${body.message?.message_id}`;
     } else if (platform === 'instagram') {
       // Instagram Graph API webhook structure
       const entry = body.entry?.[0];
@@ -1706,9 +1826,11 @@ app.post('/webhook/:platform', async (req, res) => {
       if (messaging?.message) {
         userMessage = messaging.message.text;
         userId = messaging.sender?.id;
+        messageId = `ig_${messaging.message.mid}`;
       } else if (messaging?.postback) {
         userMessage = messaging.postback.payload;
         userId = messaging.sender?.id;
+        messageId = `ig_pb_${messaging.timestamp}`;
       }
 
       // Also check for direct webhook format
@@ -1718,14 +1840,43 @@ app.post('/webhook/:platform', async (req, res) => {
           const msg = change.value.messages[0];
           userMessage = msg.text?.body || msg.text?.text;
           userId = msg.from;
+          messageId = `ig_${msg.id}`;
         }
       }
     } else if (platform === 'whatsapp') {
-      userMessage = body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.text?.body;
-      userId = body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from;
+      // Extract from Meta WhatsApp Cloud API format
+      const entry = body.entry?.[0];
+      const change = entry?.changes?.[0];
+      const value = change?.value;
+      
+      const message = value?.messages?.[0];
+      if (!message) {
+        // Webhook verification or status update (ACK)
+        console.log('[whatsapp] Webhook event received (no message)');
+        return res.sendStatus(200);
+      }
+      
+      messageId = `wa_${message.id}`;
+      userMessage = message.text?.body;
+      userId = message.from;
+      
+      // Status update - skip processing
+      if (value?.statuses?.[0] && !message) {
+        console.log('[whatsapp] Status update received, skipping');
+        return res.sendStatus(200);
+      }
+    }
+
+    // Deduplication: Check if we've already processed this message
+    if (messageId && isMessageProcessed(messageId)) {
+      console.log(`[${platform}] Duplicate message (${messageId}), skipping`);
+      return res.sendStatus(200);
     }
 
     if (userMessage && userId) {
+      // Mark as processed
+      if (messageId) markMessageProcessed(messageId);
+      
       console.log(`[${platform}] ${userId}: "${userMessage}"`);
 
       const aiResponse = await getAIResponse(userId.toString(), userMessage);
