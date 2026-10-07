@@ -1,0 +1,31 @@
+{
+  "whatsapp": {
+    "platform": "whatsapp",
+    "connected": false,
+    "connectedAt": null,
+    "lastActivity": null,
+    "metadata": {}
+  },
+  "instagram": {
+    "platform": "instagram",
+    "connected": false,
+    "connectedAt": null,
+    "lastActivity": null,
+    "metadata": {}
+  },
+  "telegram": {
+    "platform": "telegram",
+    "connected": false,
+    "connectedAt": null,
+    "lastActivity": null,
+    "metadata": {}
+  },
+  "widget": {
+    "platform": "widget",
+    "connected": false,
+    "connectedAt": "2026-10-06T08:37:54.415Z",
+    "lastActivity": "2026-10-06T08:37:58.056Z",
+    "metadata": {},
+    "apiKey": null
+  }
+}

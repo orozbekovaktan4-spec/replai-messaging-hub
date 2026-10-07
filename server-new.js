@@ -7,6 +7,8 @@ import fs from 'fs';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { getAIResponse } from './ai-engine-free.js';
+import { connectionManager } from './connection-manager.js';
+import { analyticsManager } from './analytics-manager.js';
 
 // Load environment variables
 dotenv.config();
@@ -91,14 +93,15 @@ function validateMetaSignature(req, appSecret) {
     console.warn('[Meta] No signature provided');
     return false;
   }
-  
+
   try {
-    const payload = JSON.stringify(req.body);
-    const expectedSignature = 'sha256=' + 
+    // Use raw body captured by verify function
+    const payload = req.rawBody || JSON.stringify(req.body);
+    const expectedSignature = 'sha256=' +
       crypto.createHmac('sha256', appSecret)
         .update(payload)
         .digest('hex');
-    
+
     const isValid = signature === expectedSignature;
     if (!isValid) {
       console.warn('[Meta] Invalid signature - expected:', expectedSignature.slice(0, 20) + '...', 'got:', signature.slice(0, 20) + '...');
@@ -128,7 +131,12 @@ function isMessageProcessed(messageId) {
 }
 
 // Middleware configuration
-app.use(express.json());
+// Capture raw body for webhook signature validation
+app.use(express.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf.toString('utf8');
+  }
+}));
 app.use(express.urlencoded({ extended: true })); // Added to read Twilio incoming webhook data properly
 
 // Memory storage for connections, logs, and statistics
@@ -357,7 +365,7 @@ const platformConnections = {
   whatsapp: {
     connected: Boolean(process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_ID),
     token: process.env.WHATSAPP_ACCESS_TOKEN || null,
-    phone: process.env.WHATSAPP_PHONE_ID || null
+    phone_id: process.env.WHATSAPP_PHONE_ID || null
   },
   tiktok: {
     connected: Boolean(process.env.TIKTOK_ACCESS_TOKEN),
@@ -468,6 +476,26 @@ async function pollInstagramDirectInbox() {
         if (chatLogs.length > 100) chatLogs.pop();
         updateMessageStats();
 
+        // Track incoming message in analytics
+        analyticsManager.trackMessage({
+          platform: 'instagram',
+          direction: 'incoming',
+          userId: senderId,
+          messageText: userMessage,
+          conversationId: convo.id
+        });
+
+        // Track outgoing AI response in analytics
+        analyticsManager.trackMessage({
+          platform: 'instagram',
+          direction: 'outgoing',
+          userId: senderId,
+          messageText: aiResponse,
+          aiResponse: aiResponse,
+          aiResponseSuccess: true,
+          conversationId: convo.id
+        });
+
       } else {
         console.error(`[Instagram Poll] ❌ Failed to send reply:`, JSON.stringify(replyData));
       }
@@ -520,8 +548,13 @@ function upsertEnvValues(values) {
 
 // --- CORE WEB INTERFACE ROUTES ---
 
-// Serve login page as main page - BEFORE static middleware
+// Serve public landing page as main page (for Meta verification)
 app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'landing.html'));
+});
+
+// Serve login page at /login
+app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'login.html'));
 });
 
@@ -863,6 +896,13 @@ app.get('/admin', (req, res) => {
   res.send(html);
 });
 
+// Serve connections UI JavaScript
+app.get('/connections-ui.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.sendFile(path.join(__dirname, 'connections-ui.js'));
+});
+
 // Test endpoint to verify server is working
 app.get('/admin-test', (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -921,6 +961,26 @@ app.post('/webhook/twilio', async (req, res) => {
     if (chatLogs.length > 100) chatLogs.pop();
 
     updateMessageStats();
+
+    // Track incoming message in analytics
+    analyticsManager.trackMessage({
+      platform: 'whatsapp',
+      direction: 'incoming',
+      userId: fromNumber,
+      messageText: incomingMsg,
+      conversationId: fromNumber
+    });
+
+    // Track outgoing AI response in analytics
+    analyticsManager.trackMessage({
+      platform: 'whatsapp',
+      direction: 'outgoing',
+      userId: fromNumber,
+      messageText: aiResponse,
+      aiResponse: aiResponse,
+      aiResponseSuccess: true,
+      conversationId: fromNumber
+    });
 
     console.log(`[Twilio] Sent reply to ${fromNumber}`);
     res.status(200).send('OK');
@@ -1173,21 +1233,200 @@ app.get('/api/admin/connect/whatsapp/qr', async (req, res) => {
   res.json({ qr: `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}` });
 });
 
+// ============================================
+// ENHANCED TELEGRAM CONNECTION ENDPOINTS
+// ============================================
+
+/**
+ * POST /api/admin/telegram/connect
+ * Connect Telegram bot with token validation
+ */
+app.post('/api/admin/telegram/connect', async (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        error: 'Bot token is required',
+        hint: 'Get your bot token from @BotFather on Telegram'
+      });
+    }
+
+    console.log('[Telegram] Connecting with bot token...');
+    
+    const connector = connectionManager.getConnector('telegram');
+    const connectionState = await connector.connect(token);
+    
+    // Update in-memory state
+    platformConnections.telegram = {
+      connected: true,
+      token: token,
+      botUsername: connectionState.metadata.botUsername,
+      botName: connectionState.metadata.botFirstName
+    };
+    
+    console.log('[Telegram] ✓ Connected successfully');
+    console.log('[Telegram] Bot: @' + connectionState.metadata.botUsername);
+    
+    res.json({
+      success: true,
+      message: 'Telegram bot connected successfully',
+      bot: {
+        username: connectionState.metadata.botUsername,
+        name: connectionState.metadata.botFirstName,
+        id: connectionState.metadata.botId
+      }
+    });
+  } catch (error) {
+    console.error('[Telegram Connect] Error:', error.message);
+    
+    // Provide helpful error messages
+    let hint = '';
+    if (error.message.includes('Invalid')) {
+      hint = 'Please check your bot token format. It should look like: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz';
+    } else if (error.message.includes('Unauthorized') || error.message.includes('Not Found')) {
+      hint = 'The bot token is invalid or the bot was deleted. Get a new token from @BotFather.';
+    } else {
+      hint = 'Please verify your bot token and try again.';
+    }
+    
+    res.status(400).json({
+      success: false,
+      error: error.message,
+      hint: hint
+    });
+  }
+});
+
+/**
+ * POST /api/admin/telegram/validate
+ * Validate Telegram bot token (for wizard step-by-step validation)
+ */
+app.post('/api/admin/telegram/validate', async (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    if (!token) {
+      return res.status(400).json({
+        valid: false,
+        error: 'Bot token is required'
+      });
+    }
+
+    console.log('[Telegram] Validating bot token...');
+    
+    const connector = connectionManager.getConnector('telegram');
+    const validation = await connector.validateToken(token);
+    
+    if (!validation.valid) {
+      return res.json({
+        valid: false,
+        error: validation.error,
+        hint: 'Make sure you copied the full token from @BotFather'
+      });
+    }
+    
+    console.log('[Telegram] ✓ Token is valid');
+    console.log('[Telegram] Bot: @' + validation.bot.username);
+    
+    res.json({
+      valid: true,
+      bot: {
+        id: validation.bot.id,
+        username: validation.bot.username,
+        firstName: validation.bot.first_name,
+        canJoinGroups: validation.bot.can_join_groups,
+        canReadAllGroupMessages: validation.bot.can_read_all_group_messages,
+        supportsInlineQueries: validation.bot.supports_inline_queries
+      }
+    });
+  } catch (error) {
+    console.error('[Telegram Validate] Error:', error.message);
+    res.status(500).json({
+      valid: false,
+      error: 'Failed to validate token: ' + error.message
+    });
+  }
+});
+
+/**
+ * GET /api/admin/telegram/status
+ * Get current Telegram connection status
+ */
+app.get('/api/admin/telegram/status', async (req, res) => {
+  try {
+    const connector = connectionManager.getConnector('telegram');
+    const state = connector.getConnectionState();
+    
+    if (!state.connected) {
+      return res.json({
+        connected: false,
+        message: 'No Telegram bot connected'
+      });
+    }
+    
+    // Validate current connection
+    const validation = await connector.validate();
+    
+    res.json({
+      connected: validation.valid,
+      bot: validation.valid ? {
+        username: validation.botUsername,
+        name: validation.botName
+      } : null,
+      error: validation.valid ? null : validation.reason
+    });
+  } catch (error) {
+    console.error('[Telegram Status] Error:', error.message);
+    res.status(500).json({
+      connected: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/admin/telegram/disconnect
+ * Disconnect Telegram bot
+ */
+app.post('/api/admin/telegram/disconnect', async (req, res) => {
+  try {
+    const connector = connectionManager.getConnector('telegram');
+    await connector.disconnect();
+    
+    platformConnections.telegram = { connected: false };
+    
+    console.log('[Telegram] Disconnected');
+    
+    res.json({
+      success: true,
+      message: 'Telegram bot disconnected successfully'
+    });
+  } catch (error) {
+    console.error('[Telegram Disconnect] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Legacy endpoint for backward compatibility
 app.post('/api/admin/connect/telegram', async (req, res) => {
   try {
     const { token } = req.body;
     if (!token) return res.status(400).json({ error: 'Token is required' });
 
-    const envPath = path.join(__dirname, '.env');
-    let envContent = fs.readFileSync(envPath, 'utf8');
-
-    if (envContent.includes('TELEGRAM_BOT_TOKEN=')) {
-      envContent = envContent.replace(/TELEGRAM_BOT_TOKEN=.*/g, `TELEGRAM_BOT_TOKEN=${token}`);
-    } else {
-      envContent += `\nTELEGRAM_BOT_TOKEN=${token}`;
-    }
-    fs.writeFileSync(envPath, envContent, 'utf8');
-    platformConnections.telegram = { connected: true, token };
+    const connector = connectionManager.getConnector('telegram');
+    const connectionState = await connector.connect(token);
+    
+    platformConnections.telegram = {
+      connected: true,
+      token: token,
+      botUsername: connectionState.metadata.botUsername
+    };
+    
     res.json({ success: true, message: 'Telegram connected' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -1245,56 +1484,331 @@ app.post('/api/admin/instagram/connect-token', async (req, res) => {
   }
 });
 
-app.get('/api/admin/instagram/oauth/auth-url', (req, res) => {
+// ============================================
+// ENHANCED INSTAGRAM OAUTH ENDPOINTS
+// ============================================
+
+/**
+ * GET /api/admin/instagram/oauth/start
+ * Initiate Instagram OAuth flow (enhanced with connection manager)
+ */
+app.get('/api/admin/instagram/oauth/start', (req, res) => {
   try {
-    const appId = process.env.INSTAGRAM_APP_ID;
-    const redirectUri = getInstagramRedirectUri(req);
-
-    if (!appId) {
-      return res.status(400).json({ error: 'INSTAGRAM_APP_ID not configured' });
-    }
-
-    const state = `ig_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
-    oauthStateStore.set(state, { createdAt: Date.now() });
-    const authUrl = `${INSTAGRAM_OAUTH_AUTH_URL}?client_id=${encodeURIComponent(appId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(INSTAGRAM_DEFAULT_SCOPES)}&state=${encodeURIComponent(state)}`;
-    res.json({ authUrl });
+    console.log('[Instagram OAuth] Starting OAuth flow...');
+    
+    const connector = connectionManager.getConnector('instagram');
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    const authUrl = connector.getAuthUrl(baseUrl);
+    
+    console.log('[Instagram OAuth] Auth URL generated');
+    
+    res.json({
+      success: true,
+      authUrl,
+      instructions: 'Open this URL in a popup to connect your Instagram Business account.'
+    });
   } catch (error) {
-    console.error('[Instagram OAuth] Error generating auth URL:', error.message);
-    res.status(500).json({ error: 'Failed to generate auth URL' });
+    console.error('[Instagram OAuth Start] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      hint: error.message.includes('FACEBOOK_APP_ID') ? 
+        'Please configure FACEBOOK_APP_ID in your .env file' : 
+        'Please check your Instagram configuration'
+    });
   }
 });
 
+// Legacy endpoint for backward compatibility
+app.get('/api/admin/instagram/oauth/auth-url', (req, res) => {
+  try {
+    const connector = connectionManager.getConnector('instagram');
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const authUrl = connector.getAuthUrl(baseUrl);
+    res.json({ authUrl });
+  } catch (error) {
+    console.error('[Instagram OAuth] Error generating auth URL:', error.message);
+    res.status(500).json({ error: 'Failed to generate auth URL: ' + error.message });
+  }
+});
+
+/**
+ * GET /api/admin/instagram/oauth/callback
+ * Handle Instagram OAuth callback (enhanced with better error handling)
+ */
 app.get('/api/admin/instagram/oauth/callback', async (req, res) => {
   try {
     const { code, state, error, error_description } = req.query;
     
+    console.log('[Instagram OAuth Callback] Received callback');
+    
+    // Handle OAuth errors
     if (error) {
-      console.error('[Instagram OAuth] Callback error:', error, error_description);
-      return res.status(400).send('OAuth callback failed');
-    }
-
-    if (!code) {
-      return res.status(400).send('Authorization code missing');
-    }
-
-    if (!state || !oauthStateStore.has(String(state))) {
-      return res.status(400).send('Invalid or missing state');
-    }
-    oauthStateStore.delete(String(state));
-
-    res.send(`
-      <html>
+      console.error('[Instagram OAuth] Error:', error, error_description);
+      return res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Instagram Connection Failed</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+              margin: 0;
+              background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            }
+            .container {
+              background: white;
+              padding: 48px;
+              border-radius: 16px;
+              box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+              text-align: center;
+              max-width: 500px;
+            }
+            .icon { font-size: 64px; margin-bottom: 24px; }
+            h1 { color: #ef4444; margin: 0 0 16px 0; font-size: 28px; }
+            p { color: #64748b; line-height: 1.6; margin-bottom: 24px; }
+            .error-code {
+              background: #fee;
+              padding: 12px;
+              border-radius: 8px;
+              font-family: monospace;
+              font-size: 14px;
+              color: #dc2626;
+              margin-bottom: 24px;
+            }
+            button {
+              background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+              color: white;
+              border: none;
+              padding: 14px 32px;
+              border-radius: 12px;
+              font-size: 16px;
+              font-weight: 600;
+              cursor: pointer;
+            }
+          </style>
+        </head>
         <body>
+          <div class="container">
+            <div class="icon">❌</div>
+            <h1>Connection Failed</h1>
+            <p>Instagram authorization was not successful.</p>
+            <div class="error-code">${error}: ${error_description || 'Unknown error'}</div>
+            <button onclick="window.close()">Close Window</button>
+          </div>
           <script>
-            window.opener.postMessage({ code: ${JSON.stringify(String(code))} }, window.location.origin);
-            window.close();
+            setTimeout(() => {
+              if (window.opener) {
+                window.opener.postMessage({ 
+                  type: 'instagram_oauth_error', 
+                  error: '${error}',
+                  description: '${error_description || ''}' 
+                }, '*');
+              }
+              window.close();
+            }, 5000);
           </script>
         </body>
+        </html>
+      `);
+    }
+    
+    if (!code || !state) {
+      return res.status(400).send('<h1>Invalid callback</h1><p>Missing code or state</p>');
+    }
+    
+    // Exchange code for tokens using connection manager
+    console.log('[Instagram OAuth] Exchanging authorization code...');
+    const connector = connectionManager.getConnector('instagram');
+    const connectionState = await connector.handleCallback(code, state);
+    
+    console.log('[Instagram OAuth] ✓ Connection successful');
+    console.log('[Instagram OAuth] Username: @' + connectionState.metadata.username);
+    
+    // Update in-memory platform connections
+    platformConnections.instagram = {
+      connected: true,
+      username: connectionState.metadata.username,
+      accessToken: connectionState.accessToken,
+      userId: connectionState.metadata.instagramId,
+      expiresAt: connectionState.expiresAt
+    };
+    
+    // Send success page
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Instagram Connected!</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+          }
+          .container {
+            background: white;
+            padding: 48px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+            animation: slideIn 0.4s ease;
+          }
+          @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          .icon { font-size: 64px; margin-bottom: 24px; }
+          h1 { color: #10b981; margin: 0 0 16px 0; font-size: 28px; }
+          p { color: #64748b; line-height: 1.6; }
+          .details {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 24px 0;
+            text-align: left;
+          }
+          .details-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+          }
+          .details-row:last-child { border-bottom: none; }
+          .label { font-weight: 600; color: #475569; }
+          .value { color: #f5576c; font-weight: 600; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="icon">✅</div>
+          <h1>Instagram Connected!</h1>
+          <p>Your Instagram Business account has been successfully connected.</p>
+          <div class="details">
+            <div class="details-row">
+              <span class="label">Username:</span>
+              <span class="value">@${connectionState.metadata.username}</span>
+            </div>
+            <div class="details-row">
+              <span class="label">Followers:</span>
+              <span class="value">${connectionState.metadata.followersCount || 'N/A'}</span>
+            </div>
+            <div class="details-row">
+              <span class="label">Token Expires:</span>
+              <span class="value">${new Date(connectionState.expiresAt).toLocaleDateString()}</span>
+            </div>
+          </div>
+          <p style="color: #94a3b8; font-size: 14px;">This window will close automatically...</p>
+        </div>
+        <script>
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'instagram_oauth_success',
+              data: ${JSON.stringify(connectionState.metadata)}
+            }, '*');
+          }
+          setTimeout(() => window.close(), 3000);
+        </script>
+      </body>
       </html>
     `);
+    
   } catch (error) {
-    console.error('[Instagram OAuth] Callback error:', error.message);
-    res.status(500).send('OAuth callback failed');
+    console.error('[Instagram OAuth Callback] Error:', error.message);
+    
+    // Send detailed error page
+    res.status(500).send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Connection Error</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          }
+          .container {
+            background: white;
+            padding: 48px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+          }
+          .icon { font-size: 64px; margin-bottom: 24px; }
+          h1 { color: #ef4444; margin: 0 0 16px 0; }
+          .error {
+            background: #fee;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            color: #dc2626;
+            margin: 24px 0;
+            text-align: left;
+          }
+          .hint {
+            background: #fef3c7;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #92400e;
+            margin-bottom: 24px;
+          }
+          button {
+            background: #0061ff;
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="icon">❌</div>
+          <h1>Connection Error</h1>
+          <p>Failed to complete Instagram connection.</p>
+          <div class="error">${error.message}</div>
+          ${error.message.includes('No Facebook Pages') ? `
+            <div class="hint">
+              💡 Make sure your Instagram account is:<br>
+              1. Converted to a Business account<br>
+              2. Connected to a Facebook Page<br>
+              3. The Facebook Page is managed by you
+            </div>
+          ` : ''}
+          <button onclick="window.close()">Close Window</button>
+        </div>
+        <script>
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'instagram_oauth_error',
+              error: '${error.message}'
+            }, '*');
+          }
+        </script>
+      </body>
+      </html>
+    `);
   }
 });
 
@@ -1371,51 +1885,128 @@ app.post('/api/instagram/poll', async (req, res) => {
   res.json({ success: !result.error, ...result });
 });
 
-// Token refresh endpoint for long-lived tokens
+// Token refresh endpoint for long-lived tokens (enhanced)
 app.post('/api/admin/instagram/oauth/refresh', async (req, res) => {
   try {
-    const currentToken = process.env.INSTAGRAM_ACCESS_TOKEN;
-
-    if (!currentToken) {
-      return res.status(400).json({ error: 'No Instagram token found to refresh' });
-    }
-
-    if (!process.env.INSTAGRAM_APP_SECRET) {
-      return res.status(400).json({ error: 'Instagram App secret not configured' });
-    }
-
-    const refreshUrl = `${INSTAGRAM_GRAPH_REFRESH_URL}?grant_type=ig_refresh_token&access_token=${encodeURIComponent(currentToken)}`;
-    const refreshResponse = await fetch(refreshUrl);
-    const refreshData = await refreshResponse.json();
-
-    if (!refreshData.access_token) {
-      console.error('[Instagram OAuth] Token refresh failed:', refreshData);
-      return res.status(400).json({ error: refreshData.error?.message || 'Failed to refresh token. You may need to reconnect.' });
-    }
-
-    const newToken = refreshData.access_token;
-    const expiresIn = refreshData.expires_in || 5183944; // ~60 days
-    const expirationDate = new Date(Date.now() + expiresIn * 1000);
-
-    // Update token in .env
-    upsertEnvValues({
-      INSTAGRAM_ACCESS_TOKEN: newToken,
-      INSTAGRAM_TOKEN_EXPIRES_AT: expirationDate.toISOString()
+    console.log('[Instagram] Refreshing access token...');
+    
+    const connector = connectionManager.getConnector('instagram');
+    const result = await connector.refresh();
+    
+    // Update in-memory state
+    const state = connector.getConnectionState();
+    platformConnections.instagram = {
+      connected: true,
+      username: state.metadata.username,
+      accessToken: state.accessToken,
+      userId: state.metadata.instagramId,
+      expiresAt: state.expiresAt
+    };
+    
+    console.log('[Instagram] ✓ Token refreshed successfully');
+    console.log('[Instagram] New expiration:', new Date(result.expiresAt).toLocaleString());
+    
+    res.json({
+      success: true,
+      message: 'Token refreshed successfully',
+      expiresAt: result.expiresAt
     });
+  } catch (error) {
+    console.error('[Instagram Refresh] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      hint: error.message.includes('No connection') ? 
+        'Please reconnect your Instagram account' : 
+        'Token refresh failed. You may need to reconnect.'
+    });
+  }
+});
 
-    updateInstagramConnectionFromEnv();
-    console.log('[Instagram OAuth] ✓ Token refreshed successfully');
-    console.log('[Instagram OAuth] ✓ New expiration:', expirationDate.toLocaleString());
+/**
+ * POST /api/admin/instagram/validate
+ * Validate current Instagram connection
+ */
+app.post('/api/admin/instagram/validate', async (req, res) => {
+  try {
+    const connector = connectionManager.getConnector('instagram');
+    const validation = await connector.validate();
+    res.json(validation);
+  } catch (error) {
+    console.error('[Instagram Validate] Error:', error.message);
+    res.status(500).json({ valid: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/admin/instagram/disconnect
+ * Disconnect Instagram
+ */
+app.post('/api/admin/instagram/disconnect', async (req, res) => {
+  try {
+    const connector = connectionManager.getConnector('instagram');
+    await connector.disconnect();
+    
+    platformConnections.instagram = { connected: false };
+    
+    res.json({ success: true, message: 'Instagram disconnected successfully' });
+  } catch (error) {
+    console.error('[Instagram Disconnect] Error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/admin/instagram/toggle-bot
+ * Enable or disable Instagram auto-replies
+ */
+app.post('/api/admin/instagram/toggle-bot', async (req, res) => {
+  try {
+    const { enabled } = req.body;
+
+    // Update environment variable
+    process.env.INSTAGRAM_BOT_ENABLED = enabled ? 'true' : 'false';
+
+    // Update .env file for persistence
+    const envPath = path.join(__dirname, '.env');
+    let envContent = fs.readFileSync(envPath, 'utf8');
+
+    if (envContent.includes('INSTAGRAM_BOT_ENABLED=')) {
+      envContent = envContent.replace(
+        /INSTAGRAM_BOT_ENABLED=.*/,
+        `INSTAGRAM_BOT_ENABLED=${enabled ? 'true' : 'false'}`
+      );
+    } else {
+      envContent += `\nINSTAGRAM_BOT_ENABLED=${enabled ? 'true' : 'false'}\n`;
+    }
+
+    fs.writeFileSync(envPath, envContent);
+
+    console.log(`[Instagram] Bot ${enabled ? 'enabled' : 'disabled'}`);
 
     res.json({
       success: true,
-      expiresAt: expirationDate.toISOString(),
-      message: 'Token refreshed successfully'
+      enabled,
+      message: `Instagram bot ${enabled ? 'enabled' : 'disabled'} successfully`
     });
   } catch (error) {
-    console.error('[Instagram OAuth] Refresh error:', error.message);
-    res.status(500).json({ error: 'Failed to refresh token: ' + error.message });
+    console.error('[Instagram Toggle] Error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
   }
+});
+
+/**
+ * GET /api/admin/instagram/bot-status
+ * Get current Instagram bot status
+ */
+app.get('/api/admin/instagram/bot-status', (req, res) => {
+  const enabled = process.env.INSTAGRAM_BOT_ENABLED !== 'false';
+  res.json({ enabled });
+});
+
+app.post('/api/instagram/poll', async (req, res) => {
+  const result = await pollInstagramDirectInbox();
+  res.json({ success: !result.error, ...result });
 });
 
 app.post('/api/admin/connect/whatsapp', async (req, res) => {
@@ -1487,6 +2078,459 @@ app.post('/api/admin/connect/whatsapp/settings', async (req, res) => {
   }
 });
 
+// ============================================
+// NEW OAUTH ENDPOINTS - WHATSAPP
+// ============================================
+
+/**
+ * GET /api/admin/whatsapp/oauth/start
+ * Initiate WhatsApp OAuth flow with QR code popup
+ */
+app.get('/api/admin/whatsapp/oauth/start', async (req, res) => {
+  try {
+    console.log('[WhatsApp OAuth] Starting OAuth flow...');
+    
+    const connector = connectionManager.getConnector('whatsapp');
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    const authUrl = connector.getAuthUrl(baseUrl);
+    
+    console.log('[WhatsApp OAuth] Auth URL generated');
+    
+    res.json({
+      success: true,
+      authUrl,
+      instructions: 'Open this URL in a popup window. Scan QR code with WhatsApp mobile app to connect.'
+    });
+  } catch (error) {
+    console.error('[WhatsApp OAuth Start] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/admin/whatsapp/oauth/callback
+ * Handle WhatsApp OAuth callback after user authorizes
+ */
+app.get('/api/admin/whatsapp/oauth/callback', async (req, res) => {
+  try {
+    const { code, state, error, error_description } = req.query;
+    
+    console.log('[WhatsApp OAuth Callback] Received callback');
+    
+    // Handle OAuth errors
+    if (error) {
+      console.error('[WhatsApp OAuth] Error:', error, error_description);
+      return res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>WhatsApp Connection Failed</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+              margin: 0;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+            .container {
+              background: white;
+              padding: 48px;
+              border-radius: 16px;
+              box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+              text-align: center;
+              max-width: 500px;
+            }
+            .icon {
+              font-size: 64px;
+              margin-bottom: 24px;
+            }
+            h1 {
+              color: #ef4444;
+              margin: 0 0 16px 0;
+              font-size: 28px;
+            }
+            p {
+              color: #64748b;
+              line-height: 1.6;
+              margin-bottom: 24px;
+            }
+            .error-code {
+              background: #fee;
+              padding: 12px;
+              border-radius: 8px;
+              font-family: monospace;
+              font-size: 14px;
+              color: #dc2626;
+              margin-bottom: 24px;
+            }
+            button {
+              background: linear-gradient(135deg, #60efff 0%, #0061ff 100%);
+              color: white;
+              border: none;
+              padding: 14px 32px;
+              border-radius: 12px;
+              font-size: 16px;
+              font-weight: 600;
+              cursor: pointer;
+              transition: all 0.2s;
+            }
+            button:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 10px 20px rgba(0,97,255,0.3);
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="icon">❌</div>
+            <h1>Connection Failed</h1>
+            <p>WhatsApp authorization was not successful.</p>
+            <div class="error-code">${error}: ${error_description || 'Unknown error'}</div>
+            <button onclick="window.close()">Close Window</button>
+          </div>
+          <script>
+            setTimeout(() => {
+              if (window.opener) {
+                window.opener.postMessage({ 
+                  type: 'whatsapp_oauth_error', 
+                  error: '${error}',
+                  description: '${error_description || ''}' 
+                }, '*');
+              }
+              window.close();
+            }, 5000);
+          </script>
+        </body>
+        </html>
+      `);
+    }
+    
+    if (!code || !state) {
+      return res.status(400).send('<h1>Invalid callback</h1><p>Missing code or state</p>');
+    }
+    
+    // Exchange code for tokens
+    console.log('[WhatsApp OAuth] Exchanging authorization code...');
+    const connector = connectionManager.getConnector('whatsapp');
+    const connectionState = await connector.handleCallback(code, state);
+    
+    console.log('[WhatsApp OAuth] ✓ Connection successful');
+    console.log('[WhatsApp OAuth] Phone:', connectionState.metadata.phoneNumber);
+    
+    // Update in-memory platform connections
+    platformConnections.whatsapp = {
+      connected: true,
+      token: connectionState.accessToken,
+      phone_id: connectionState.metadata.phoneNumberId,
+      phoneNumber: connectionState.metadata.phoneNumber,
+      verifiedName: connectionState.metadata.verifiedName
+    };
+    
+    // Send success page
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>WhatsApp Connected!</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #60efff 0%, #0061ff 100%);
+          }
+          .container {
+            background: white;
+            padding: 48px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+            animation: slideIn 0.4s ease;
+          }
+          @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          .icon {
+            font-size: 64px;
+            margin-bottom: 24px;
+          }
+          h1 {
+            color: #10b981;
+            margin: 0 0 16px 0;
+            font-size: 28px;
+          }
+          p {
+            color: #64748b;
+            line-height: 1.6;
+          }
+          .details {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 24px 0;
+            text-align: left;
+          }
+          .details-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+          }
+          .details-row:last-child {
+            border-bottom: none;
+          }
+          .label {
+            font-weight: 600;
+            color: #475569;
+          }
+          .value {
+            color: #0061ff;
+            font-weight: 600;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="icon">✅</div>
+          <h1>WhatsApp Connected!</h1>
+          <p>Your WhatsApp Business account has been successfully connected.</p>
+          <div class="details">
+            <div class="details-row">
+              <span class="label">Phone:</span>
+              <span class="value">${connectionState.metadata.phoneNumber}</span>
+            </div>
+            <div class="details-row">
+              <span class="label">Name:</span>
+              <span class="value">${connectionState.metadata.verifiedName}</span>
+            </div>
+          </div>
+          <p style="color: #94a3b8; font-size: 14px;">This window will close automatically...</p>
+        </div>
+        <script>
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'whatsapp_oauth_success',
+              data: ${JSON.stringify(connectionState.metadata)}
+            }, '*');
+          }
+          setTimeout(() => window.close(), 3000);
+        </script>
+      </body>
+      </html>
+    `);
+    
+  } catch (error) {
+    console.error('[WhatsApp OAuth Callback] Error:', error.message);
+    res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
+  }
+});
+
+/**
+ * POST /api/admin/whatsapp/validate
+ * Validate current WhatsApp connection
+ */
+app.post('/api/admin/whatsapp/validate', async (req, res) => {
+  try {
+    const connector = connectionManager.getConnector('whatsapp');
+    const validation = await connector.validate();
+    res.json(validation);
+  } catch (error) {
+    console.error('[WhatsApp Validate] Error:', error.message);
+    res.status(500).json({ valid: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/admin/whatsapp/oauth/exchange
+ * Exchange FB SDK authorization code for WhatsApp Business access token
+ * This is for Embedded Signup v4 with Facebook JavaScript SDK
+ */
+app.post('/api/admin/whatsapp/oauth/exchange', async (req, res) => {
+  try {
+    const { code, signupData } = req.body;
+    
+    if (!code) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Authorization code is required' 
+      });
+    }
+    
+    console.log('[WhatsApp Exchange] Exchanging authorization code...');
+    console.log('[WhatsApp Exchange] Signup data:', signupData);
+    
+    // Exchange code for long-lived access token
+    const redirectUri = `${req.protocol}://${req.get('host')}/api/admin/whatsapp/oauth/callback`;
+    
+    const tokenResponse = await axios.get('https://graph.facebook.com/v21.0/oauth/access_token', {
+      params: {
+        client_id: process.env.FACEBOOK_APP_ID,
+        client_secret: process.env.FACEBOOK_APP_SECRET,
+        code: code,
+        redirect_uri: redirectUri
+      }
+    });
+    
+    const accessToken = tokenResponse.data.access_token;
+    console.log('[WhatsApp Exchange] ✓ Got access token');
+    
+    // Get WABA ID and phone number ID from signup data or fetch from API
+    let wabaId = signupData?.waba_id;
+    let phoneNumberId = signupData?.phone_number_id;
+    let businessId = signupData?.business_id;
+    
+    // If we don't have signup data, try to fetch it using the token
+    if (!wabaId || !phoneNumberId) {
+      console.log('[WhatsApp Exchange] Fetching WABA info from Graph API...');
+      
+      try {
+        // Get the user's businesses
+        const businessesResponse = await axios.get('https://graph.facebook.com/v21.0/me/businesses', {
+          params: {
+            access_token: accessToken
+          }
+        });
+        
+        if (businessesResponse.data.data && businessesResponse.data.data.length > 0) {
+          businessId = businessesResponse.data.data[0].id;
+          console.log('[WhatsApp Exchange] Business ID:', businessId);
+          
+          // Get WhatsApp Business Accounts for this business
+          const wabaResponse = await axios.get(`https://graph.facebook.com/v21.0/${businessId}/owned_whatsapp_business_accounts`, {
+            params: {
+              access_token: accessToken
+            }
+          });
+          
+          if (wabaResponse.data.data && wabaResponse.data.data.length > 0) {
+            wabaId = wabaResponse.data.data[0].id;
+            console.log('[WhatsApp Exchange] WABA ID:', wabaId);
+            
+            // Get phone numbers for this WABA
+            const phonesResponse = await axios.get(`https://graph.facebook.com/v21.0/${wabaId}/phone_numbers`, {
+              params: {
+                access_token: accessToken
+              }
+            });
+            
+            if (phonesResponse.data.data && phonesResponse.data.data.length > 0) {
+              phoneNumberId = phonesResponse.data.data[0].id;
+              console.log('[WhatsApp Exchange] Phone Number ID:', phoneNumberId);
+            }
+          }
+        }
+      } catch (fetchError) {
+        console.error('[WhatsApp Exchange] Error fetching WABA info:', fetchError.response?.data || fetchError.message);
+      }
+    }
+    
+    if (!phoneNumberId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Could not retrieve phone number ID. Please ensure you completed the signup flow.'
+      });
+    }
+    
+    // Get phone number details
+    let phoneNumber = '';
+    let verifiedName = '';
+    let displayName = '';
+    
+    try {
+      const phoneDetailsResponse = await axios.get(`https://graph.facebook.com/v21.0/${phoneNumberId}`, {
+        params: {
+          access_token: accessToken,
+          fields: 'id,verified_name,display_phone_number,quality_rating'
+        }
+      });
+      
+      phoneNumber = phoneDetailsResponse.data.display_phone_number || '';
+      verifiedName = phoneDetailsResponse.data.verified_name || '';
+      displayName = phoneDetailsResponse.data.display_phone_number || phoneNumber;
+      
+      console.log('[WhatsApp Exchange] Phone details:');
+      console.log('  - Number:', phoneNumber);
+      console.log('  - Verified Name:', verifiedName);
+      console.log('  - Quality Rating:', phoneDetailsResponse.data.quality_rating);
+    } catch (detailsError) {
+      console.error('[WhatsApp Exchange] Error fetching phone details:', detailsError.response?.data || detailsError.message);
+    }
+    
+    // Save connection state
+    const connector = connectionManager.getConnector('whatsapp');
+    await connector.connect({
+      accessToken,
+      wabaId,
+      phoneNumberId,
+      phoneNumber,
+      verifiedName,
+      businessId
+    });
+    
+    // Update in-memory platform connections
+    platformConnections.whatsapp = {
+      connected: true,
+      token: accessToken,
+      phone_id: phoneNumberId,
+      waba_id: wabaId,
+      phoneNumber: phoneNumber,
+      verifiedName: verifiedName,
+      displayName: displayName
+    };
+    
+    console.log('[WhatsApp Exchange] ✓ Connection saved successfully');
+    
+    res.json({
+      success: true,
+      message: 'WhatsApp connected successfully',
+      connection: {
+        phoneNumber: phoneNumber,
+        verifiedName: verifiedName,
+        phoneNumberId: phoneNumberId,
+        wabaId: wabaId
+      }
+    });
+    
+  } catch (error) {
+    console.error('[WhatsApp Exchange] Error:', error.response?.data || error.message);
+    res.status(500).json({
+      success: false,
+      error: error.response?.data?.error?.message || error.message,
+      details: error.response?.data
+    });
+  }
+});
+
+/**
+ * POST /api/admin/whatsapp/disconnect
+ * Disconnect WhatsApp
+ */
+app.post('/api/admin/whatsapp/disconnect', async (req, res) => {
+  try {
+    const connector = connectionManager.getConnector('whatsapp');
+    await connector.disconnect();
+    
+    platformConnections.whatsapp = { connected: false };
+    
+    res.json({ success: true, message: 'WhatsApp disconnected successfully' });
+  } catch (error) {
+    console.error('[WhatsApp Disconnect] Error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 app.post('/api/admin/connect/tiktok', async (req, res) => {
   try {
     const { token } = req.body;
@@ -1505,6 +2549,163 @@ app.post('/api/admin/connect/tiktok', async (req, res) => {
     res.json({ success: true, message: 'TikTok connected' });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// WEB WIDGET ENDPOINTS
+// ============================================
+
+/**
+ * POST /api/admin/widget/enable
+ * Enable web widget with custom settings
+ */
+app.post('/api/admin/widget/enable', async (req, res) => {
+  try {
+    const { theme, position, greeting, color } = req.body;
+    
+    console.log('[Widget] Enabling web widget...');
+    
+    const connector = connectionManager.getConnector('widget');
+    const connectionState = await connector.enable({
+      theme: theme || 'light',
+      position: position || 'bottom-right',
+      greeting: greeting || 'Hi! How can we help you today?',
+      color: color || '#0061ff'
+    });
+    
+    console.log('[Widget] ✓ Widget enabled');
+    console.log('[Widget] API Key:', connectionState.apiKey.substring(0, 20) + '...');
+    
+    res.json({
+      success: true,
+      message: 'Web widget enabled successfully',
+      apiKey: connectionState.apiKey,
+      embedCode: connectionState.metadata.embedCode,
+      settings: connectionState.metadata.settings
+    });
+  } catch (error) {
+    console.error('[Widget Enable] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/admin/widget/status
+ * Get widget connection status and embed code
+ */
+app.get('/api/admin/widget/status', async (req, res) => {
+  try {
+    const connector = connectionManager.getConnector('widget');
+    const validation = await connector.validate();
+    
+    if (!validation.valid) {
+      return res.json({
+        enabled: false,
+        message: validation.reason
+      });
+    }
+    
+    const state = connector.getConnectionState();
+    
+    res.json({
+      enabled: true,
+      apiKey: validation.apiKey,
+      embedCode: validation.embedCode,
+      settings: state.metadata.settings
+    });
+  } catch (error) {
+    console.error('[Widget Status] Error:', error.message);
+    res.status(500).json({
+      enabled: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/admin/widget/refresh
+ * Regenerate widget API key
+ */
+app.post('/api/admin/widget/refresh', async (req, res) => {
+  try {
+    const connector = connectionManager.getConnector('widget');
+    const result = await connector.refresh();
+    
+    console.log('[Widget] ✓ API key refreshed');
+    
+    res.json({
+      success: true,
+      message: 'API key regenerated successfully',
+      newApiKey: result.newApiKey,
+      embedCode: result.embedCode
+    });
+  } catch (error) {
+    console.error('[Widget Refresh] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/admin/widget/disconnect
+ * Disable web widget
+ */
+app.post('/api/admin/widget/disconnect', async (req, res) => {
+  try {
+    const connector = connectionManager.getConnector('widget');
+    await connector.disconnect();
+    
+    console.log('[Widget] Disabled');
+    
+    res.json({
+      success: true,
+      message: 'Web widget disabled successfully'
+    });
+  } catch (error) {
+    console.error('[Widget Disconnect] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ============================================
+// UNIFIED CONNECTION STATUS
+// ============================================
+
+/**
+ * GET /api/admin/connections/all
+ * Get status of all platform connections
+ */
+app.get('/api/admin/connections/all', async (req, res) => {
+  try {
+    const connections = connectionManager.getAllConnections();
+    
+    // Validate all connections
+    const validations = await connectionManager.validateAll();
+    
+    // Combine state and validation
+    const result = {};
+    for (const [platform, state] of Object.entries(connections)) {
+      result[platform] = {
+        ...state,
+        validation: validations[platform]
+      };
+    }
+    
+    res.json(result);
+  } catch (error) {
+    console.error('[Connections All] Error:', error.message);
+    res.status(500).json({
+      error: error.message
+    });
   }
 });
 
@@ -1603,6 +2804,95 @@ app.get('/api/admin/stats', (req, res) => {
 });
 app.get('/api/admin/chat-logs', (req, res) => res.json(chatLogs));
 
+// ============================================
+// ANALYTICS API ENDPOINTS
+// ============================================
+
+/**
+ * GET /api/analytics/hourly
+ * Returns hourly message counts for last 24 hours
+ */
+app.get('/api/analytics/hourly', (req, res) => {
+  try {
+    const data = analyticsManager.getHourlyData();
+    res.json(data);
+  } catch (error) {
+    console.error('[Analytics API] Hourly error:', error.message);
+    res.status(500).json({ error: 'Failed to get hourly data' });
+  }
+});
+
+/**
+ * GET /api/analytics/platforms
+ * Returns platform distribution for donut chart
+ */
+app.get('/api/analytics/platforms', (req, res) => {
+  try {
+    const data = analyticsManager.getPlatformDistribution();
+    res.json(data);
+  } catch (error) {
+    console.error('[Analytics API] Platforms error:', error.message);
+    res.status(500).json({ error: 'Failed to get platform data' });
+  }
+});
+
+/**
+ * GET /api/analytics/daily
+ * Returns daily message counts for last 7 days
+ */
+app.get('/api/analytics/daily', (req, res) => {
+  try {
+    const data = analyticsManager.getDailyData();
+    res.json(data);
+  } catch (error) {
+    console.error('[Analytics API] Daily error:', error.message);
+    res.status(500).json({ error: 'Failed to get daily data' });
+  }
+});
+
+/**
+ * GET /api/analytics/summary
+ * Returns summary statistics
+ */
+app.get('/api/analytics/summary', (req, res) => {
+  try {
+    const data = analyticsManager.getSummary();
+    res.json(data);
+  } catch (error) {
+    console.error('[Analytics API] Summary error:', error.message);
+    res.status(500).json({ error: 'Failed to get summary' });
+  }
+});
+
+/**
+ * POST /api/analytics/generate-test-data
+ * Generate test data for development (200 messages across all platforms)
+ */
+app.post('/api/analytics/generate-test-data', (req, res) => {
+  try {
+    const count = req.body.count || 200;
+    const result = analyticsManager.generateTestData(count);
+    res.json(result);
+  } catch (error) {
+    console.error('[Analytics API] Generate test data error:', error.message);
+    res.status(500).json({ error: 'Failed to generate test data' });
+  }
+});
+
+/**
+ * POST /api/analytics/clear
+ * Clear all analytics data (for testing)
+ */
+app.post('/api/analytics/clear', (req, res) => {
+  try {
+    const result = analyticsManager.clearData();
+    res.json(result);
+  } catch (error) {
+    console.error('[Analytics API] Clear data error:', error.message);
+    res.status(500).json({ error: 'Failed to clear data' });
+  }
+});
+
 // --- MULTI-PLATFORM MESSAGING BACKEND INTERFACING ---
 
 async function sendResponseToPlatform(platform, userId, message) {
@@ -1620,6 +2910,13 @@ async function sendResponseToPlatform(platform, userId, message) {
       }
       return { ok: true, platform };
     } else if ((platform === 'instagram-unofficial' || platform === 'instagram')) {
+      // Check if Instagram bot is enabled
+      const botEnabled = process.env.INSTAGRAM_BOT_ENABLED !== 'false';
+      if (!botEnabled) {
+        console.log('[instagram] Bot is disabled, not sending reply');
+        return { ok: false, platform, error: 'Instagram bot is disabled' };
+      }
+
       // Instagram DMs should use the official Instagram Messaging API. The old
       // private API path is intentionally not used because it triggers 467 blocks.
       const igAccessToken = process.env.INSTAGRAM_ACCESS_TOKEN;

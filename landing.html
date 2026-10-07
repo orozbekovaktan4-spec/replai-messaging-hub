@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="REPLAI - AI-Powered Messaging Automation for WhatsApp, Instagram, and Telegram. Automate customer conversations 24/7.">
+    <title>REPLAI - AI-Powered Messaging Automation</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+            line-height: 1.6; 
+            color: #1e293b;
+        }
+        header { 
+            background: linear-gradient(135deg, #0061ff 0%, #60efff 100%); 
+            color: white; 
+            padding: 80px 20px; 
+            text-align: center; 
+        }
+        header h1 { font-size: 48px; margin-bottom: 20px; font-weight: 700; }
+        header p { font-size: 20px; opacity: 0.95; max-width: 600px; margin: 0 auto; }
+        nav { 
+            background: #1e293b; 
+            padding: 15px; 
+            text-align: center; 
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        nav a { 
+            color: white; 
+            text-decoration: none; 
+            margin: 0 20px; 
+            font-weight: 500; 
+            transition: color 0.3s;
+        }
+        nav a:hover { color: #60efff; }
+        section { 
+            max-width: 1000px; 
+            margin: 60px auto; 
+            padding: 0 20px; 
+        }
+        h2 { 
+            font-size: 32px; 
+            margin-bottom: 20px; 
+            color: #1e293b; 
+            font-weight: 700;
+        }
+        h3 { 
+            font-size: 20px; 
+            margin-top: 30px; 
+            color: #0061ff; 
+            font-weight: 600;
+        }
+        .features { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+            gap: 30px; 
+            margin: 40px 0; 
+        }
+        .feature { 
+            padding: 30px; 
+            border: 2px solid #e2e8f0; 
+            border-radius: 12px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .feature:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,97,255,0.1);
+        }
+        .feature h3 { color: #0061ff; margin-bottom: 10px; margin-top: 0; }
+        footer { 
+            background: #1e293b; 
+            color: white; 
+            text-align: center; 
+            padding: 40px 20px; 
+            margin-top: 80px; 
+        }
+        .contact-info { 
+            background: #f1f5f9; 
+            padding: 30px; 
+            border-radius: 12px; 
+            margin: 30px 0; 
+        }
+        .contact-info p { margin: 10px 0; }
+        ul, ol { margin: 15px 0 15px 30px; line-height: 2; }
+        a { color: #0061ff; }
+        .btn {
+            display: inline-block;
+            background: white;
+            color: #0061ff;
+            padding: 15px 40px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 30px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255,255,255,0.3);
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="#home">Home</a>
+        <a href="#about">About</a>
+        <a href="#privacy">Privacy</a>
+        <a href="#terms">Terms</a>
+        <a href="#contact">Contact</a>
+    </nav>
+
+    <header id="home">
+        <h1>🤖 REPLAI</h1>
+        <p>AI-Powered Messaging Automation for Your Business</p>
+        <p style="margin-top: 20px; font-size: 16px;">Automate customer conversations on WhatsApp, Instagram & Telegram</p>
+        <a href="/admin" class="btn">Get Started →</a>
+    </header>
+
+    <section id="about">
+        <h2>About REPLAI</h2>
+        <p><strong>REPLAI</strong> is an AI-powered messaging automation platform that helps businesses respond to customer messages automatically across WhatsApp, Instagram, and Telegram.</p>
+        
+        <div class="features">
+            <div class="feature">
+                <h3>📱 Multi-Platform</h3>
+                <p>Connect WhatsApp, Instagram, Telegram, and more from one dashboard.</p>
+            </div>
+            <div class="feature">
+                <h3>🤖 AI-Powered</h3>
+                <p>Intelligent responses using advanced AI technology for natural conversations.</p>
+            </div>
+            <div class="feature">
+                <h3>⚡ Real-Time</h3>
+                <p>Instant responses 24/7 to keep your customers engaged.</p>
+            </div>
+            <div class="feature">
+                <h3>📊 Analytics</h3>
+                <p>Track messages, response rates, and customer interactions in real-time.</p>
+            </div>
+            <div class="feature">
+                <h3>🔒 Secure</h3>
+                <p>Enterprise-grade security with end-to-end encryption.</p>
+            </div>
+            <div class="feature">
+                <h3>💰 Cost-Effective</h3>
+                <p>Save time and money with automated customer service.</p>
+            </div>
+        </div>
+
+        <h2 style="margin-top: 60px;">How It Works</h2>
+        <ol>
+            <li><strong>Connect Your Accounts</strong> - Link your WhatsApp, Instagram, and Telegram business accounts securely through our dashboard</li>
+            <li><strong>Configure AI Settings</strong> - Customize your business information, response style, and AI behavior to match your brand</li>
+            <li><strong>Go Live</strong> - AI starts responding to customer messages automatically across all platforms</li>
+            <li><strong>Monitor & Improve</strong> - Track conversations, analytics, and continuously improve response quality</li>
+        </ol>
+
+        <div class="contact-info" style="margin-top: 40px;">
+            <h3 style="color: #0061ff; margin-top: 0;">Company Information</h3>
+            <p><strong>Legal Name:</strong> Replai</p>
+            <p><strong>Founded:</strong> 2026</p>
+            <p><strong>Location:</strong> Bishkek, Kyrgyzstan</p>
+            <p><strong>Business Type:</strong> Technology Provider - AI Messaging Automation</p>
+            <p><strong>Service:</strong> B2B SaaS Platform for AI-powered customer communication</p>
+        </div>
+    </section>
+
+    <section id="privacy">
+        <h2>Privacy Policy</h2>
+        <p><em>Last Updated: October 6, 2026</em></p>
+        
+        <h3>1. Information We Collect</h3>
+        <p>REPLAI collects and processes the following information to provide our AI messaging automation services:</p>
+        <ul>
+            <li>Customer messages sent to your business accounts on WhatsApp, Instagram, and Telegram</li>
+            <li>Message metadata (timestamps, platform, sender identifiers)</li>
+            <li>Business account connection credentials and authentication tokens</li>
+            <li>Analytics data (message volume, response times, conversation metrics)</li>
+            <li>User account information (email, business name, contact details)</li>
+        </ul>
+
+        <h3>2. How We Use Your Data</h3>
+        <p>We use collected data exclusively for the following purposes:</p>
+        <ul>
+            <li>Process customer messages and generate AI-powered responses</li>
+            <li>Improve AI response quality, accuracy, and naturalness</li>
+            <li>Provide analytics and business insights through our dashboard</li>
+            <li>Maintain, improve, and develop our services</li>
+            <li>Ensure platform security and prevent abuse</li>
+            <li>Comply with legal obligations</li>
+        </ul>
+
+        <h3>3. Data Storage and Security</h3>
+        <p>We implement industry-standard security measures to protect your data:</p>
+        <ul>
+            <li>All data transmitted via HTTPS/TLS encryption</li>
+            <li>Message data stored securely with encryption at rest</li>
+            <li>Access controls and authentication for all platform access</li>
+            <li>Regular security audits and updates</li>
+            <li>Data retention: Messages retained for 90 days, then automatically deleted</li>
+        </ul>
+
+        <h3>4. Data Sharing and Third Parties</h3>
+        <p><strong>We do not sell or share your customer data with third parties for marketing purposes.</strong></p>
+        <p>Data is only shared with:</p>
+        <ul>
+            <li>AI service providers (OpenAI, Groq) for response generation</li>
+            <li>Messaging platform APIs (WhatsApp, Instagram, Telegram) for message delivery</li>
+            <li>Cloud infrastructure providers (Render.com) for hosting</li>
+            <li>Legal authorities when required by law</li>
+        </ul>
+
+        <h3>5. Your Rights (GDPR Compliance)</h3>
+        <p>You have the right to:</p>
+        <ul>
+            <li><strong>Access:</strong> Request a copy of your data</li>
+            <li><strong>Rectification:</strong> Correct inaccurate data</li>
+            <li><strong>Erasure:</strong> Request deletion of your data</li>
+            <li><strong>Export:</strong> Download your data in machine-readable format</li>
+            <li><strong>Opt-out:</strong> Disable data collection at any time</li>
+            <li><strong>Object:</strong> Object to data processing</li>
+        </ul>
+
+        <h3>6. Cookies and Tracking</h3>
+        <p>We use essential cookies for:</p>
+        <ul>
+            <li>Authentication and session management</li>
+            <li>Platform functionality</li>
+            <li>Security protection</li>
+        </ul>
+        <p>We do not use advertising or tracking cookies.</p>
+
+        <h3>7. Children's Privacy</h3>
+        <p>Our service is not intended for children under 13. We do not knowingly collect data from children.</p>
+
+        <h3>8. International Data Transfers</h3>
+        <p>Your data may be processed in servers located in the EU, US, and other regions. We ensure adequate protection through standard contractual clauses.</p>
+
+        <h3>9. Changes to Privacy Policy</h3>
+        <p>We will notify you of material changes via email or platform notification.</p>
+
+        <h3>10. Contact for Privacy Concerns</h3>
+        <p><strong>Email:</strong> orozbekovaktan4@gmail.com</p>
+        <p><strong>Phone:</strong> +996554239996</p>
+        <p><strong>Address:</strong> 7 mcr 26/.2, Bishkek, Chu 720000, Kyrgyzstan</p>
+    </section>
+
+    <section id="terms">
+        <h2>Terms of Service</h2>
+        <p><em>Last Updated: October 6, 2026</em></p>
+
+        <h3>1. Service Description</h3>
+        <p>REPLAI provides AI-powered messaging automation services for WhatsApp, Instagram, Telegram, and other messaging platforms. Our service generates automated responses to customer messages using artificial intelligence technology.</p>
+
+        <h3>2. Eligibility</h3>
+        <p>To use REPLAI, you must:</p>
+        <ul>
+            <li>Be at least 18 years old</li>
+            <li>Represent a legitimate business</li>
+            <li>Have authority to bind your business to these terms</li>
+            <li>Comply with all applicable laws in your jurisdiction</li>
+        </ul>
+
+        <h3>3. Account Registration</h3>
+        <p>You agree to:</p>
+        <ul>
+            <li>Provide accurate, current, and complete information</li>
+            <li>Maintain the security of your account credentials</li>
+            <li>Notify us immediately of unauthorized access</li>
+            <li>Be responsible for all activity under your account</li>
+        </ul>
+
+        <h3>4. Acceptable Use Policy</h3>
+        <p>You agree to use REPLAI only for legitimate business purposes. <strong>Prohibited uses include:</strong></p>
+        <ul>
+            <li>Sending spam or unsolicited messages</li>
+            <li>Illegal activities or fraud</li>
+            <li>Harassment, abuse, or threatening behavior</li>
+            <li>Impersonation or misrepresentation</li>
+            <li>Violation of platform policies (WhatsApp Business Policy, Meta Community Standards, Telegram Terms)</li>
+            <li>Distributing malware or viruses</li>
+            <li>Scraping or unauthorized data collection</li>
+            <li>Circumventing rate limits or security measures</li>
+        </ul>
+
+        <h3>5. Your Responsibilities</h3>
+        <p>You are responsible for:</p>
+        <ul>
+            <li>Complying with all applicable laws and regulations (GDPR, CCPA, etc.)</li>
+            <li>Following Meta's Business Policies and Community Standards</li>
+            <li>Following Telegram Terms of Service</li>
+            <li>Monitoring AI responses for accuracy and appropriateness</li>
+            <li>Obtaining necessary consents from your customers</li>
+            <li>Maintaining backups of important data</li>
+            <li>Responding to customer complaints and disputes</li>
+        </ul>
+
+        <h3>6. Platform Integration</h3>
+        <p>REPLAI integrates with third-party platforms (WhatsApp, Instagram, Telegram). You acknowledge that:</p>
+        <ul>
+            <li>These platforms have their own terms of service</li>
+            <li>Platform availability affects our service</li>
+            <li>We are not responsible for platform changes or restrictions</li>
+            <li>Your accounts may be restricted by platforms for policy violations</li>
+        </ul>
+
+        <h3>7. Service Availability</h3>
+        <p>We strive to maintain high availability but do not guarantee uninterrupted service. We may:</p>
+        <ul>
+            <li>Perform scheduled maintenance with advance notice</li>
+            <li>Implement emergency maintenance without notice</li>
+            <li>Suspend service for violations or security concerns</li>
+        </ul>
+
+        <h3>8. Intellectual Property</h3>
+        <p>You retain ownership of your content. By using REPLAI, you grant us a license to process your content to provide our services.</p>
+        <p>REPLAI and its technology are protected by copyright and intellectual property laws.</p>
+
+        <h3>9. Payment Terms</h3>
+        <p>If applicable:</p>
+        <ul>
+            <li>Fees are billed according to your selected plan</li>
+            <li>All fees are non-refundable unless required by law</li>
+            <li>We may change pricing with 30 days notice</li>
+            <li>You're responsible for all taxes</li>
+        </ul>
+
+        <h3>10. Limitation of Liability</h3>
+        <p><strong>REPLAI is provided "as is" without warranties.</strong> We are not liable for:</p>
+        <ul>
+            <li>Lost revenue, profits, or business opportunities</li>
+            <li>Customer disputes or relationship damage</li>
+            <li>Platform account restrictions or bans</li>
+            <li>AI response errors or inaccuracies</li>
+            <li>Data loss (maintain your own backups)</li>
+            <li>Third-party platform issues</li>
+        </ul>
+        <p><strong>Maximum liability limited to fees paid in the last 12 months.</strong></p>
+
+        <h3>11. Indemnification</h3>
+        <p>You agree to indemnify REPLAI against claims arising from your use of the service, violation of terms, or violation of third-party rights.</p>
+
+        <h3>12. Termination</h3>
+        <p>We may suspend or terminate your account for:</p>
+        <ul>
+            <li>Violation of these terms</li>
+            <li>Non-payment</li>
+            <li>Illegal activity</li>
+            <li>Platform policy violations</li>
+        </ul>
+        <p>You may terminate anytime by closing your account.</p>
+
+        <h3>13. Dispute Resolution</h3>
+        <p>Disputes will be governed by the laws of Kyrgyzstan. Both parties agree to good-faith negotiation before litigation.</p>
+
+        <h3>14. Changes to Terms</h3>
+        <p>We reserve the right to modify these terms at any time. Material changes will be notified 30 days in advance. Continued use after changes constitutes acceptance.</p>
+
+        <h3>15. Contact</h3>
+        <p>For questions about these terms:</p>
+        <p><strong>Email:</strong> orozbekovaktan4@gmail.com</p>
+        <p><strong>Phone:</strong> +996554239996</p>
+    </section>
+
+    <section id="contact">
+        <h2>Contact Us</h2>
+        <div class="contact-info">
+            <h3 style="color: #0061ff; margin-top: 0;">Get in Touch</h3>
+            <p><strong>Email:</strong> orozbekovaktan4@gmail.com</p>
+            <p><strong>Phone:</strong> +996 554 239 996</p>
+            <p><strong>Address:</strong> 7 mcr 26/.2, Bishkek, Chu 720000, Kyrgyzstan</p>
+            <p><strong>Business Hours:</strong> Monday-Friday, 9:00 AM - 6:00 PM (GMT+6)</p>
+        </div>
+
+        <p style="margin-top: 30px;">For business inquiries, technical support, partnership opportunities, or privacy concerns, please reach out via email or phone. We typically respond within 24 hours.</p>
+        
+        <h3>Business Inquiries</h3>
+        <p>Interested in enterprise solutions, partnerships, or custom integrations? Contact us for a consultation.</p>
+
+        <h3>Technical Support</h3>
+        <p>Experiencing issues? Email us with your account details and problem description for prompt assistance.</p>
+
+        <h3>Privacy Concerns</h3>
+        <p>Questions about data handling? Our team is available to address privacy and security questions.</p>
+    </section>
+
+    <footer>
+        <p style="font-size: 24px; margin-bottom: 10px;">🤖 REPLAI</p>
+        <p>&copy; 2026 REPLAI. All rights reserved.</p>
+        <p style="margin-top: 10px; opacity: 0.8;">AI-Powered Messaging Automation Platform</p>
+        <p style="margin-top: 10px; font-size: 14px;">Bishkek, Kyrgyzstan</p>
+        <p style="margin-top: 20px;">
+            <a href="#privacy" style="color: #60efff; margin: 0 15px; text-decoration: none;">Privacy Policy</a>
+            <a href="#terms" style="color: #60efff; margin: 0 15px; text-decoration: none;">Terms of Service</a>
+            <a href="#contact" style="color: #60efff; margin: 0 15px; text-decoration: none;">Contact</a>
+            <a href="/admin" style="color: #60efff; margin: 0 15px; text-decoration: none;">Admin Login</a>
+        </p>
+    </footer>
+</body>
+</html>

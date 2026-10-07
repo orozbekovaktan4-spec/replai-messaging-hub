@@ -5,6 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>REPLAI - AI Messaging Hub</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Facebook JavaScript SDK for WhatsApp Embedded Signup -->
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
+    <script>
+        // Initialize Facebook SDK
+        window.fbAsyncInit = function() {
+            FB.init({
+                appId: '2031381430802139', // Your Facebook App ID
+                autoLogAppEvents: true,
+                xfbml: true,
+                version: 'v21.0' // Latest Graph API version
+            });
+            console.log('[FB SDK] Initialized successfully');
+        };
+    </script>
+    
     <style>
         /* Theme Variables */
         :root[data-theme="light"] {
@@ -1065,6 +1081,52 @@
         .booking-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         .booking-status { padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); }
 
+        /* Toggle Switch Styles */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 26px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            transition: 0.3s;
+            border-radius: 26px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #10b981;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(22px);
+        }
+
     </style>
 </head>
 <body>
@@ -1083,7 +1145,7 @@
         (function() {
             // Check for session from URL (OAuth redirect)
             const urlParams = new URLSearchParams(window.location.search);
-            const sessionFromUrl = urlParams.get('session');
+            const sessionFromUrl = urlParams.get('session') || urlParams.get('sessionId');
             
             if (sessionFromUrl) {
                 localStorage.setItem('sessionId', sessionFromUrl);
@@ -1242,9 +1304,13 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
             <span data-i18n="menuDashboard">Dashboard</span>
         </div>
+        <div class="menu-item" onclick="showSection('connections')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="21.17" y1="8" x2="12" y2="8"></line><line x1="3.95" y1="6.06" x2="8.54" y2="14"></line><line x1="10.88" y1="21.94" x2="15.46" y2="14"></line></svg>
+            <span data-i18n="menuConnections">Connections</span>
+        </div>
         <div class="menu-item" onclick="showSection('platforms')">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-            <span data-i18n="menuPlatforms">Connect Platforms</span>
+            <span data-i18n="menuPlatforms">Setup Platforms</span>
         </div>
         <div class="menu-item" onclick="showSection('business')">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
@@ -1340,6 +1406,176 @@
                 <canvas id="dailyTrendChart"></canvas>
             </div>
 
+        </div>
+
+        <!-- Connections Section (Unified Dashboard - Fusion AI Style) -->
+        <div id="connections-section" class="content-section">
+            <div class="card">
+                <h2>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 8px;"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="21.17" y1="8" x2="12" y2="8"></line><line x1="3.95" y1="6.06" x2="8.54" y2="14"></line><line x1="10.88" y1="21.94" x2="15.46" y2="14"></line></svg>
+                    Connected Channels
+                </h2>
+                <p style="color: var(--text-secondary); margin-bottom: 24px;">Manage all your messaging platforms in one place</p>
+
+                <!-- Connection Cards Grid -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-top: 24px;">
+                    
+                    <!-- WhatsApp Connection Card -->
+                    <div id="whatsapp-connection-card" class="platform-card" style="flex-direction: column; align-items: stretch; padding: 24px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div class="platform-icon" style="background: linear-gradient(135deg, rgba(37, 211, 102, 0.1) 0%, rgba(37, 211, 102, 0.05) 100%);">
+                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#25d366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                                </div>
+                                <div>
+                                    <h3 style="margin: 0; font-size: 16px; font-weight: 600;">WhatsApp Business</h3>
+                                    <span id="whatsapp-conn-status" class="platform-status disconnected" style="margin-top: 4px;">Disconnected</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="whatsapp-conn-details" style="display: none; background: var(--bg-secondary); padding: 12px; border-radius: 8px; margin-bottom: 12px; font-size: 13px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                <span style="color: var(--text-secondary);">Phone:</span>
+                                <span id="whatsapp-phone" style="font-weight: 600; color: var(--text-primary);">-</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-secondary);">Verified Name:</span>
+                                <span id="whatsapp-verified-name" style="font-weight: 600; color: var(--text-primary);">-</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button id="whatsapp-connect-btn" class="btn" onclick="connectWhatsAppOAuth()" style="flex: 1; background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 6px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                                Connect
+                            </button>
+                            <button id="whatsapp-disconnect-btn" class="btn btn-secondary" onclick="disconnectWhatsApp()" style="display: none;">Disconnect</button>
+                        </div>
+                    </div>
+
+                    <!-- Instagram Connection Card -->
+                    <div id="instagram-connection-card" class="platform-card" style="flex-direction: column; align-items: stretch; padding: 24px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div class="platform-icon" style="background: linear-gradient(135deg, rgba(225,48,108,0.15) 0%, rgba(131,58,180,0.15) 100%);">
+                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="stroke: url(#igGrad2);">
+                                        <defs>
+                                            <linearGradient id="igGrad2" x1="0%" y1="100%" x2="100%" y2="0%">
+                                                <stop offset="0%" stop-color="#f09433"/>
+                                                <stop offset="50%" stop-color="#dc2743"/>
+                                                <stop offset="100%" stop-color="#bc1888"/>
+                                            </linearGradient>
+                                        </defs>
+                                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Instagram</h3>
+                                    <span id="instagram-conn-status" class="platform-status disconnected" style="margin-top: 4px;">Disconnected</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="instagram-conn-details" style="display: none; background: var(--bg-secondary); padding: 12px; border-radius: 8px; margin-bottom: 12px; font-size: 13px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                <span style="color: var(--text-secondary);">Username:</span>
+                                <span id="instagram-username" style="font-weight: 600; color: var(--text-primary);">-</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-secondary);">Token Expires:</span>
+                                <span id="instagram-expires" style="font-weight: 600; color: var(--text-primary);">-</span>
+                            </div>
+                        </div>
+                        <!-- Instagram Bot Toggle -->
+                        <div id="instagram-bot-toggle-section" style="display: none; background: var(--bg-secondary); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div>
+                                    <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">Auto-Reply Bot</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary);">Enable/disable automatic AI responses to Instagram DMs</div>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="instagram-bot-toggle" onchange="toggleInstagramBot(this.checked)">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button id="instagram-connect-main-btn" class="btn" onclick="connectInstagramOAuth()" style="flex: 1; background: linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%);">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 6px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                                Connect
+                            </button>
+                            <button id="instagram-refresh-btn" class="btn" onclick="refreshInstagramToken()" style="display: none; background: #ffa500;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                            </button>
+                            <button id="instagram-disconnect-main-btn" class="btn btn-secondary" onclick="disconnectInstagram()" style="display: none;">Disconnect</button>
+                        </div>
+                    </div>
+
+                    <!-- Telegram Connection Card -->
+                    <div id="telegram-connection-card" class="platform-card" style="flex-direction: column; align-items: stretch; padding: 24px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div class="platform-icon" style="background: linear-gradient(135deg, rgba(0, 136, 204, 0.1) 0%, rgba(0, 136, 204, 0.05) 100%);">
+                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0088cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg>
+                                </div>
+                                <div>
+                                    <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Telegram</h3>
+                                    <span id="telegram-conn-status" class="platform-status disconnected" style="margin-top: 4px;">Disconnected</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="telegram-conn-details" style="display: none; background: var(--bg-secondary); padding: 12px; border-radius: 8px; margin-bottom: 12px; font-size: 13px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                <span style="color: var(--text-secondary);">Bot:</span>
+                                <span id="telegram-bot-username" style="font-weight: 600; color: var(--text-primary);">-</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-secondary);">Name:</span>
+                                <span id="telegram-bot-name" style="font-weight: 600; color: var(--text-primary);">-</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button id="telegram-connect-main-btn" class="btn" onclick="openTelegramWizard()" style="flex: 1; background: linear-gradient(135deg, #0088cc 0%, #006699 100%);">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 6px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                                Connect Bot
+                            </button>
+                            <button id="telegram-disconnect-main-btn" class="btn btn-secondary" onclick="disconnectTelegram()" style="display: none;">Disconnect</button>
+                        </div>
+                    </div>
+
+                    <!-- Web Widget Connection Card -->
+                    <div id="widget-connection-card" class="platform-card" style="flex-direction: column; align-items: stretch; padding: 24px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div class="platform-icon" style="background: linear-gradient(135deg, rgba(96, 239, 255, 0.1) 0%, rgba(0, 97, 255, 0.1) 100%);">
+                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0061ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                                </div>
+                                <div>
+                                    <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Web Widget</h3>
+                                    <span id="widget-conn-status" class="platform-status disconnected" style="margin-top: 4px;">Disabled</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="widget-conn-details" style="display: none; background: var(--bg-secondary); padding: 12px; border-radius: 8px; margin-bottom: 12px; font-size: 13px;">
+                            <div style="margin-bottom: 8px;">
+                                <span style="color: var(--text-secondary); display: block; margin-bottom: 4px;">Embed Code:</span>
+                                <textarea id="widget-embed-code" readonly style="width: 100%; min-height: 60px; font-family: monospace; font-size: 11px; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-primary); resize: none;"></textarea>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button id="widget-enable-btn" class="btn" onclick="enableWebWidget()" style="flex: 1; background: linear-gradient(135deg, #60efff 0%, #0061ff 100%);">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 6px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                                Enable Widget
+                            </button>
+                            <button id="widget-copy-btn" class="btn" onclick="copyWidgetCode()" style="display: none; background: #10b981;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            </button>
+                            <button id="widget-disable-btn" class="btn btn-secondary" onclick="disableWebWidget()" style="display: none;">Disable</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
         </div>
 
         <!-- Platforms Section -->
@@ -1855,7 +2091,7 @@
                                  '12PM', '1PM', '2PM', '3PM', '4PM', '5PM', '6PM', '7PM', '8PM', '9PM', '10PM', '11PM'],
                         datasets: [{
                             label: tr('chartMessages'),
-                            data: [2, 1, 0, 0, 1, 3, 8, 15, 22, 28, 25, 20, 18, 24, 30, 35, 32, 28, 25, 20, 15, 10, 8, 5],
+                            data: new Array(24).fill(0), // Start with zeros, will be filled with real data
                             backgroundColor: 'rgba(0, 97, 255, 0.6)',
                             borderColor: '#0061ff',
                             borderWidth: 2,
@@ -1896,10 +2132,10 @@
                 platformChart = new Chart(platformCtx, {
                     type: 'doughnut',
                     data: {
-                        labels: [tr('chartInstagram'), tr('chartTelegram'), tr('chartWhatsApp')],
+                        labels: ['WhatsApp', 'Instagram', 'Telegram', 'Widget'],
                         datasets: [{
-                            data: [45, 30, 25],
-                            backgroundColor: ['#E4405F', '#0088cc', '#25D366'],
+                            data: [0, 0, 0, 0], // Start with zeros, will be filled with real data
+                            backgroundColor: ['#25D366', '#E4405F', '#0088cc', '#60efff'],
                             borderWidth: 0
                         }]
                     },
@@ -1940,7 +2176,7 @@
                         labels: last7Days,
                         datasets: [{
                             label: tr('chartMessages'),
-                            data: [45, 52, 48, 65, 70, 68, 75],
+                            data: new Array(7).fill(0), // Start with zeros, will be filled with real data
                             borderColor: '#0061ff',
                             backgroundColor: 'rgba(0, 97, 255, 0.1)',
                             borderWidth: 3,
@@ -1982,89 +2218,63 @@
             }
         }
 
-        // Update charts with real data from chat logs
+        // Update charts with real data from analytics API
         async function updateChartsWithRealData() {
             try {
-                const response = await fetch('/api/admin/chat-logs');
-                const logs = await response.json();
+                // Fetch summary stats
+                const summaryResponse = await fetch('/api/analytics/summary');
+                const summary = await summaryResponse.json();
                 
-                // Also update the stats numbers
-                const statsResponse = await fetch('/api/admin/stats');
-                const stats = await statsResponse.json();
-                if (stats) {
+                if (summary) {
                     const totalEl = document.getElementById('total-messages');
                     const todayEl = document.getElementById('today-messages');
                     const platformsEl = document.getElementById('connected-platforms');
-                    if (totalEl) totalEl.textContent = stats.totalMessages || 0;
-                    if (todayEl) todayEl.textContent = stats.todayMessages || 0;
-                    if (platformsEl) platformsEl.textContent = stats.connectedPlatforms || 0;
-                }
-                
-                if (!logs || logs.length === 0) return;
-                
-                // Calculate peak hours (0-23)
-                const hourCounts = new Array(24).fill(0);
-                logs.forEach(log => {
-                    const hour = new Date(log.timestamp).getHours();
-                    hourCounts[hour]++;
-                });
-                
-                // Calculate platform distribution
-                const platformCounts = {};
-                logs.forEach(log => {
-                    const platform = log.platform;
-                    platformCounts[platform] = (platformCounts[platform] || 0) + 1;
-                });
-                
-                // Calculate daily trend (last 7 days)
-                const dailyCounts = {};
-                const today = new Date();
-                for (let i = 6; i >= 0; i--) {
-                    const date = new Date(today);
-                    date.setDate(date.getDate() - i);
-                    const dateKey = date.toISOString().split('T')[0];
-                    dailyCounts[dateKey] = 0;
-                }
-                
-                logs.forEach(log => {
-                    const dateKey = log.timestamp.split('T')[0];
-                    if (dailyCounts.hasOwnProperty(dateKey)) {
-                        dailyCounts[dateKey]++;
+                    
+                    if (totalEl) totalEl.textContent = summary.totalMessages || 0;
+                    if (todayEl) todayEl.textContent = summary.todayMessages || 0;
+                    
+                    // Get connected platforms count from /api/admin/stats
+                    const statsResponse = await fetch('/api/admin/stats');
+                    const stats = await statsResponse.json();
+                    if (stats && platformsEl) {
+                        platformsEl.textContent = stats.connectedPlatforms || 0;
                     }
-                });
-                
-                // Update Peak Hours Chart
-                if (peakHoursChart) {
-                    peakHoursChart.data.datasets[0].data = hourCounts;
-                    peakHoursChart.update();
                 }
                 
-                // Update Platform Chart
-                if (platformChart) {
-                    const platforms = Object.keys(platformCounts);
-                    const counts = Object.values(platformCounts);
-                    platformChart.data.labels = platforms.map(p => 
-                        p === 'telegram' ? tr('chartTelegram') :
-                        p === 'instagram' ? tr('chartInstagram') :
-                        p === 'whatsapp' ? tr('chartWhatsApp') : p
-                    );
-                    platformChart.data.datasets[0].data = counts;
-                    platformChart.update();
+                // Fetch hourly data for 24-hour bar chart
+                const hourlyResponse = await fetch('/api/analytics/hourly');
+                const hourlyData = await hourlyResponse.json();
+                
+                if (hourlyData && peakHoursChart) {
+                    peakHoursChart.data.labels = hourlyData.labels;
+                    peakHoursChart.data.datasets[0].data = hourlyData.data;
+                    peakHoursChart.update('none'); // 'none' = no animation for smoother updates
                 }
                 
-                // Update Daily Trend Chart
-                if (dailyTrendChart) {
-                    const labels = Object.keys(dailyCounts).map(date => {
-                        const d = new Date(date);
-                        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    });
-                    dailyTrendChart.data.labels = labels;
-                    dailyTrendChart.data.datasets[0].data = Object.values(dailyCounts);
-                    dailyTrendChart.update();
+                // Fetch platform distribution for donut chart
+                const platformsResponse = await fetch('/api/analytics/platforms');
+                const platformsData = await platformsResponse.json();
+                
+                if (platformsData && platformChart) {
+                    platformChart.data.labels = platformsData.labels;
+                    platformChart.data.datasets[0].data = platformsData.data;
+                    platformChart.update('none');
                 }
+                
+                // Fetch daily data for 7-day trend line chart
+                const dailyResponse = await fetch('/api/analytics/daily');
+                const dailyData = await dailyResponse.json();
+                
+                if (dailyData && dailyTrendChart) {
+                    dailyTrendChart.data.labels = dailyData.labels;
+                    dailyTrendChart.data.datasets[0].data = dailyData.data;
+                    dailyTrendChart.update('none');
+                }
+                
+                console.log('[Analytics] Charts updated with real-time data');
                 
             } catch (error) {
-                console.error('Error updating charts:', error);
+                console.error('[Analytics] Error updating charts:', error);
             }
         }
 
@@ -3059,11 +3269,10 @@
             const setup = document.getElementById(platform + '-setup');
             setup.style.display = setup.style.display === 'none' ? 'block' : 'none';
         }
-        // WhatsApp Wizard Functions
+        // WhatsApp Wizard Functions (Updated for Embedded Signup v4)
         function openWhatsAppWizard() {
-            const overlay = document.getElementById('whatsapp-wizard-overlay');
-            overlay.style.display = 'flex';
-            waGoToStep(1);
+            // Use new Embedded Signup flow instead of old wizard
+            launchWhatsAppSignup();
         }
 
         function closeWhatsAppWizard() {
@@ -3347,9 +3556,43 @@
                 if (data.connected) {
                     var username = data.username || data.graphApiUsername || 'Instagram';
                     setPlatformConnected('instagram', '@' + username);
+                    // Show and load bot toggle
+                    document.getElementById('instagram-bot-toggle-section').style.display = 'block';
+                    loadInstagramBotStatus();
                 }
             } catch (error) {
                 console.warn('Could not load Instagram status', error);
+            }
+        }
+
+        async function loadInstagramBotStatus() {
+            try {
+                const res = await fetch('/api/admin/instagram/bot-status');
+                const data = await res.json();
+                document.getElementById('instagram-bot-toggle').checked = data.enabled;
+            } catch (error) {
+                console.warn('Could not load Instagram bot status', error);
+            }
+        }
+
+        async function toggleInstagramBot(enabled) {
+            try {
+                const res = await fetch('/api/admin/instagram/toggle-bot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showSuccess(data.message);
+                    console.log('[Instagram Bot] ' + (enabled ? 'Enabled' : 'Disabled'));
+                } else {
+                    alert('Failed to toggle Instagram bot: ' + data.error);
+                    document.getElementById('instagram-bot-toggle').checked = !enabled;
+                }
+            } catch (error) {
+                alert('Error toggling Instagram bot: ' + error.message);
+                document.getElementById('instagram-bot-toggle').checked = !enabled;
             }
         }
 
@@ -3601,5 +3844,8 @@
             }
         });
     </script>
+    
+    <!-- Unified Connections Dashboard JavaScript -->
+    <script src="/connections-ui.js"></script>
 </body>
 </html>
