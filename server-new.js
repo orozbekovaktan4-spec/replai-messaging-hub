@@ -1,4 +1,5 @@
 import express from 'express';
+import fetch from 'node-fetch';
 import twilio from 'twilio';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -395,8 +396,20 @@ async function pollInstagramDirectInbox() {
 
     // Step 1: Get all conversations
     const convoRes = await fetch(
-      `https://graph.instagram.com/v23.0/${userId}/conversations?fields=id,updated_time&access_token=${accessToken}`
+      `https://graph.instagram.com/v23.0/${userId}/conversations?fields=id,updated_time&access_token=${accessToken}`,
+      {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+        }
+      }
     );
+    
+    if (!convoRes.ok) {
+      const errorText = await convoRes.text();
+      console.error('[Instagram Poll] Fetch failed:', convoRes.status, errorText);
+      return { processed: 0, error: `HTTP ${convoRes.status}: ${errorText}` };
+    }
+    
     const convoData = await convoRes.json();
 
     if (!convoData.data) {
@@ -505,6 +518,7 @@ async function pollInstagramDirectInbox() {
 
   } catch (error) {
     console.error('[Instagram Poll] Error:', error.message);
+    console.error('[Instagram Poll] Error details:', error);
     return { processed: 0, error: error.message };
   }
 }
@@ -551,6 +565,11 @@ function upsertEnvValues(values) {
 // Serve public landing page as main page (for Meta verification)
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'landing.html'));
+});
+
+// Serve business info page for Meta verification
+app.get('/business-info', (req, res) => {
+  res.sendFile(path.join(__dirname, 'business-info.html'));
 });
 
 // Serve login page at /login
