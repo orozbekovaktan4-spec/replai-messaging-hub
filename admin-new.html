@@ -8,6 +8,22 @@
     
     <!-- Facebook JavaScript SDK for WhatsApp Embedded Signup -->
     <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
+    
+    <!-- Block Mobile Access -->
+    <script>
+        // Detect mobile devices
+        function isMobileDevice() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+                || window.innerWidth <= 768;
+        }
+        
+        // Block mobile access immediately
+        if (isMobileDevice()) {
+            document.write('<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Desktop Only</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:linear-gradient(135deg,#0A1628 0%,#1e293b 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px}.container{max-width:500px}.icon{font-size:80px;margin-bottom:20px}h1{font-size:28px;margin-bottom:15px}p{font-size:18px;color:#94a3b8;line-height:1.6}</style></head><body><div class="container"><div class="icon">🖥️</div><h1>Desktop Only</h1><p>Admin panel is only accessible from desktop browsers.</p><p style="margin-top:20px;font-size:16px">Please use a computer to access the admin panel.</p></div></body></html>');
+            document.close();
+        }
+    </script>
+    
     <script>
         // Initialize Facebook SDK
         window.fbAsyncInit = function() {
@@ -1481,9 +1497,13 @@
                                 <span style="color: var(--text-secondary);">Username:</span>
                                 <span id="instagram-username" style="font-weight: 600; color: var(--text-primary);">-</span>
                             </div>
-                            <div style="display: flex; justify-content: space-between;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
                                 <span style="color: var(--text-secondary);">Token Expires:</span>
                                 <span id="instagram-expires" style="font-weight: 600; color: var(--text-primary);">-</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-secondary);">AI Status:</span>
+                                <span id="instagram-ai-status" style="font-weight: 600; color: #10B981;">Active</span>
                             </div>
                         </div>
                         <!-- Instagram Bot Toggle -->
@@ -1503,6 +1523,10 @@
                             <button id="instagram-connect-main-btn" class="btn" onclick="connectInstagramOAuth()" style="flex: 1; background: linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%);">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 6px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
                                 Connect
+                            </button>
+                            <button id="instagram-settings-btn" class="btn" onclick="window.location.href='/instagram/settings'" style="display: none; background: #6B7280;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 6px;"><circle cx="12" cy="12" r="3"></circle><path d="M12 1v6m0 6v6m-6-6h6m6 0h6"></path></svg>
+                                Settings
                             </button>
                             <button id="instagram-refresh-btn" class="btn" onclick="refreshInstagramToken()" style="display: none; background: #ffa500;">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
@@ -1976,61 +2000,6 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <script>
-        // Theme Management
-        function setTheme(theme) {
-            const html = document.documentElement;
-            const themeButtons = document.querySelectorAll('.theme-btn');
-
-            // Remove active class from all buttons
-            themeButtons.forEach(btn => btn.classList.remove('active'));
-
-            // Add active class to selected button
-            document.querySelector(`[data-theme="${theme}"]`).classList.add('active');
-
-            if (theme === 'auto') {
-                // Detect system preference
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                html.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
-                localStorage.setItem('replai-theme', 'auto');
-            } else {
-                html.setAttribute('data-theme', theme);
-                localStorage.setItem('replai-theme', theme);
-            }
-        }
-
-        // Load saved theme on page load
-        function loadTheme() {
-            const savedTheme = localStorage.getItem('replai-theme') || 'light';
-            setTheme(savedTheme);
-        }
-
-        // Listen for system theme changes when auto is selected
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-            const currentTheme = localStorage.getItem('replai-theme');
-            if (currentTheme === 'auto') {
-                document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
-            }
-        });
-
-        // Initialize theme on page load
-        window.addEventListener('DOMContentLoaded', loadTheme);
-
-        // Onboarding Wizard
-        let currentOnboardingStep = 1;
-
-        function checkOnboarding() {
-            // Onboarding disabled - always hide it
-            const overlay = document.getElementById('onboarding');
-            overlay.style.display = 'none';
-            document.body.classList.remove('onboarding-active');
-        }
-
-        function nextOnboardingStep() {
-            const currentStep = document.querySelector(`.onboarding-step[data-step="${currentOnboardingStep}"]`);
-            currentStep.classList.remove('active');
 
             currentOnboardingStep++;
 
@@ -3559,9 +3528,33 @@
                     // Show and load bot toggle
                     document.getElementById('instagram-bot-toggle-section').style.display = 'block';
                     loadInstagramBotStatus();
+
+                    // Show Settings button when connected
+                    document.getElementById('instagram-settings-btn').style.display = 'block';
+
+                    // Load AI status from settings
+                    loadInstagramAIStatus();
                 }
             } catch (error) {
                 console.warn('Could not load Instagram status', error);
+            }
+        }
+
+        async function loadInstagramAIStatus() {
+            try {
+                const res = await fetch('/api/instagram/settings');
+                const data = await res.json();
+                const aiStatusEl = document.getElementById('instagram-ai-status');
+
+                if (data.settings && data.settings.enabled) {
+                    aiStatusEl.textContent = 'Active';
+                    aiStatusEl.style.color = '#10B981';
+                } else {
+                    aiStatusEl.textContent = 'Inactive';
+                    aiStatusEl.style.color = '#EF4444';
+                }
+            } catch (error) {
+                console.warn('Could not load Instagram AI status', error);
             }
         }
 
@@ -3843,6 +3836,7 @@
                 closeMobileMenu();
             }
         });
+
     </script>
     
     <!-- Unified Connections Dashboard JavaScript -->

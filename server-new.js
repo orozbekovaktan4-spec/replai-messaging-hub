@@ -10,6 +10,8 @@ import crypto from 'crypto';
 import { getAIResponse } from './ai-engine-free.js';
 import { connectionManager } from './connection-manager.js';
 import { analyticsManager } from './analytics-manager.js';
+// Database imports (Prisma)
+import * as db from './db.js';
 
 // Load environment variables
 dotenv.config();
@@ -201,10 +203,27 @@ function saveUsers(users) {
   }
 }
 
-// Get user by email
-function getUserByEmail(email) {
+// Get user by email (checks both admin users and businesses database)
+async function getUserByEmail(email) {
+  // First check admin users (for super admin)
   const users = loadUsers();
-  return users.find(u => u.email === email);
+  const user = users.find(u => u.email === email);
+  if (user) return user;
+
+  // Then check businesses database (for business owners)
+  const business = await db.findBusinessByEmail(email);
+  if (business) {
+    // Return in user format
+    return {
+      email: business.email,
+      name: business.ownerName || business.name,
+      passwordHash: business.password,
+      businessId: business.id,
+      type: 'business'
+    };
+  }
+
+  return null;
 }
 
 // Add new user
@@ -385,6 +404,200 @@ updateInstagramConnectionFromEnv();
 // Track which messages we already replied to (in-memory)
 const repliedMessages = new Set();
 
+// Helper: Find matching rule based on trigger keywords
+function findMatchingRule(rules, messageText) {
+  if (!rules || rules.length === 0) return null;
+
+  const text = messageText.toLowerCase();
+
+  // Sort rules: specific triggers first, empty trigger last
+  const sorted = rules.sort((a, b) => {
+    if (!a.trigger && b.trigger) return 1;
+    if (a.trigger && !b.trigger) return -1;
+    return 0;
+  });
+
+  for (const rule of sorted) {
+    // Empty trigger = match all
+    if (!rule.trigger) return rule;
+
+    // Check if any keyword matches
+    const keywords = rule.trigger.split(',').map(k => k.trim().toLowerCase());
+    if (keywords.some(keyword => text.includes(keyword))) {
+      return rule;
+    }
+  }
+
+  return null;
+}
+
+// Helper: Send Instagram DM
+async function sendInstagramDM(senderId, message, accessToken) {
+  const response = await fetch(
+    `https://graph.instagram.com/v23.0/me/messages`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        recipient: { id: senderId },
+        message: { text: message },
+        access_token: accessToken
+      })
+    }
+  );
+
+  return await response.json();
+}
+
+// Helper: Reply to Instagram comment
+async function replyToInstagramComment(commentId, message, accessToken) {
+  const response = await fetch(
+    `https://graph.instagram.com/v23.0/${commentId}/replies`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: message,
+        access_token: accessToken
+      })
+    }
+  );
+
+  return await response.json();
+}
+
+// Main message processor with rules
+async function processInstagramMessage(business, message, isComment = false) {
+  const settings = business.instagram?.settings;
+  const accessToken = business.instagram?.accessToken || process.env.INSTAGRAM_ACCESS_TOKEN;
+
+  // Check if AI is enabled
+  if (!settings?.enabled) {
+    console.log('[Instagram Process] AI is disabled, skipping');
+    return;
+  }
+
+  // Check if this message type is enabled
+  if (isComment && !settings.comments) {
+    console.log('[Instagram Process] Comments disabled, skipping');
+    return;
+  }
+  if (!isComment && !settings.directMessages) {
+    console.log('[Instagram Process] DMs disabled, skipping');
+    return;
+  }
+
+  // Find matching rule
+  const matchedRule = findMatchingRule(settings.rules, message.text);
+
+  if (!matchedRule) {
+    console.log('[Instagram Process] No rule matched, skipping');
+    return;
+  }
+
+  console.log(`[Instagram Process] Rule matched: ${matchedRule.responseType} (trigger: "${matchedRule.trigger || 'all'}")`);
+
+  // Generate response based on rule type
+  let response;
+
+  switch (matchedRule.responseType) {
+    case 'ai_generated':
+      response = await getAIResponse(message.senderId.toString(), message.text);
+      break;
+
+    case 'template':
+      response = matchedRule.template || 'Thank you for your message!';
+      break;
+
+    case 'extended_prompt':
+      // Get AI response with additional context
+      const businessInfo = {
+        name: business.name || 'Business',
+        services: business.services || [],
+        hours: business.hours || {}
+      };
+
+      // Build extended prompt
+      const extendedContext = `
+${matchedRule.context || ''}
+
+Business Info:
+- Name: ${businessInfo.name}
+- Services: ${businessInfo.services.map(s => s.name).join(', ')}
+      `.trim();
+
+      // Call AI with extended context (pass as system message)
+      response = await getAIResponse(
+        message.senderId.toString(),
+        message.text,
+        null, // businessId
+        extendedContext // additionalContext
+      );
+      break;
+
+    default:
+      response = await getAIResponse(message.senderId.toString(), message.text);
+  }
+
+  // Send response based on message type
+  if (isComment) {
+    await handleCommentResponse(business, message, response, settings, accessToken);
+  } else {
+    // Direct message
+    await sendInstagramDM(message.senderId, response, accessToken);
+
+    console.log(`[Instagram Process] ✅ DM reply sent to ${message.senderId}`);
+  }
+
+  // Track analytics
+  analyticsManager.trackMessage({
+    platform: 'instagram',
+    direction: 'incoming',
+    userId: message.senderId,
+    messageText: message.text
+  });
+
+  analyticsManager.trackMessage({
+    platform: 'instagram',
+    direction: 'outgoing',
+    userId: message.senderId,
+    messageText: response,
+    aiResponse: response,
+    aiResponseSuccess: true
+  });
+}
+
+// Handle comment responses with funnel
+async function handleCommentResponse(business, comment, aiResponse, settings, accessToken) {
+  const { commentToDM } = settings;
+
+  if (!commentToDM.enabled) {
+    // Just reply to comment (no funnel)
+    await replyToInstagramComment(comment.id, aiResponse, accessToken);
+    console.log(`[Instagram Process] ✅ Comment reply sent`);
+    return;
+  }
+
+  // Comment-to-DM funnel
+  if (commentToDM.replyInComments) {
+    await replyToInstagramComment(
+      comment.id,
+      commentToDM.commentTemplate || 'Sent you a DM! 💬',
+      accessToken
+    );
+    console.log(`[Instagram Process] ✅ Comment template posted`);
+  }
+
+  if (commentToDM.sendDM) {
+    const dmText = commentToDM.dmType === 'ai_generated'
+      ? aiResponse
+      : (commentToDM.dmTemplate || 'Hi! Thanks for your comment.');
+
+    await sendInstagramDM(comment.senderId, dmText, accessToken);
+    console.log(`[Instagram Process] ✅ DM sent via funnel`);
+  }
+}
+
 async function pollInstagramDirectInbox() {
   try {
     const accessToken = process.env.INSTAGRAM_ACCESS_TOKEN;
@@ -392,6 +605,19 @@ async function pollInstagramDirectInbox() {
 
     if (!accessToken) {
       return { processed: 0, error: 'No access token' };
+    }
+
+    // Load business settings from database
+    const businesses = await db.getAllBusinesses();
+    const business = businesses[0];
+
+    if (!business) {
+      return { processed: 0, error: 'No business configured' };
+    }
+
+    // Check if AI is enabled
+    if (!business.instagram?.settings?.enabled) {
+      return { processed: 0, skipped: 'AI disabled' };
     }
 
     // Step 1: Get all conversations
@@ -403,13 +629,13 @@ async function pollInstagramDirectInbox() {
         }
       }
     );
-    
+
     if (!convoRes.ok) {
       const errorText = await convoRes.text();
       console.error('[Instagram Poll] Fetch failed:', convoRes.status, errorText);
       return { processed: 0, error: `HTTP ${convoRes.status}: ${errorText}` };
     }
-    
+
     const convoData = await convoRes.json();
 
     if (!convoData.data) {
@@ -440,7 +666,7 @@ async function pollInstagramDirectInbox() {
       // Skip if message is from us (our own replies)
       if (latestMsg.from?.id === userId) continue;
 
-      // Skip if message is older than 5 minutes (avoid replying to old messages on startup)
+      // Skip if message is older than 24 hours (avoid replying to old messages on startup)
       const msgAge = Date.now() - new Date(latestMsg.created_time).getTime();
       if (msgAge > 24 * 60 * 60 * 1000) {
         repliedMessages.add(latestMsg.id); // mark old messages as seen
@@ -454,64 +680,26 @@ async function pollInstagramDirectInbox() {
 
       console.log(`[Instagram Poll] New message from ${senderId}: "${userMessage}"`);
 
-      // Step 5: Generate AI response
-      const aiResponse = await getAIResponse(senderId.toString(), userMessage);
+      // Process message with rules system
+      await processInstagramMessage(business, {
+        id: latestMsg.id,
+        text: userMessage,
+        senderId: senderId
+      }, false); // isComment = false
 
-      // Step 6: Send reply via Instagram API
-      const replyRes = await fetch(
-        `https://graph.instagram.com/v23.0/me/messages`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            recipient: { id: senderId },
-            message: { text: aiResponse },
-            access_token: accessToken
-          })
-        }
-      );
+      repliedMessages.add(latestMsg.id);
+      processed++;
 
-      const replyData = await replyRes.json();
-
-      if (replyData.message_id || replyData.recipient_id) {
-        console.log(`[Instagram Poll] ✅ Reply sent to ${senderId}`);
-        repliedMessages.add(latestMsg.id);
-        processed++;
-
-        // Log to chatLogs
-        chatLogs.unshift({
-          platform: 'instagram',
-          userId: senderId,
-          userMessage,
-          aiResponse,
-          timestamp: new Date().toISOString()
-        });
-        if (chatLogs.length > 100) chatLogs.pop();
-        updateMessageStats();
-
-        // Track incoming message in analytics
-        analyticsManager.trackMessage({
-          platform: 'instagram',
-          direction: 'incoming',
-          userId: senderId,
-          messageText: userMessage,
-          conversationId: convo.id
-        });
-
-        // Track outgoing AI response in analytics
-        analyticsManager.trackMessage({
-          platform: 'instagram',
-          direction: 'outgoing',
-          userId: senderId,
-          messageText: aiResponse,
-          aiResponse: aiResponse,
-          aiResponseSuccess: true,
-          conversationId: convo.id
-        });
-
-      } else {
-        console.error(`[Instagram Poll] ❌ Failed to send reply:`, JSON.stringify(replyData));
-      }
+      // Log to chatLogs
+      chatLogs.unshift({
+        platform: 'instagram',
+        userId: senderId,
+        userMessage,
+        aiResponse: '(processed by rules)',
+        timestamp: new Date().toISOString()
+      });
+      if (chatLogs.length > 100) chatLogs.pop();
+      updateMessageStats();
     }
 
     return { processed };
@@ -563,7 +751,13 @@ function upsertEnvValues(values) {
 // --- CORE WEB INTERFACE ROUTES ---
 
 // Serve public landing page as main page (for Meta verification)
+// Serve new landing page as main page
 app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'landing-new.html'));
+});
+
+// Old landing for reference
+app.get('/landing-old', (req, res) => {
   res.sendFile(path.join(__dirname, 'landing.html'));
 });
 
@@ -575,6 +769,131 @@ app.get('/business-info', (req, res) => {
 // Serve login page at /login
 app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'login.html'));
+});
+
+// Instagram prerequisites page
+app.get('/instagram/prerequisites', (req, res) => {
+  res.sendFile(path.join(__dirname, 'instagram-prerequisites.html'));
+});
+
+// Instagram settings page
+app.get('/instagram/settings', (req, res) => {
+  res.sendFile(path.join(__dirname, 'instagram-settings.html'));
+});
+
+// Get Instagram settings (API)
+app.get('/api/instagram/settings', async (req, res) => {
+  try {
+    const businesses = await db.getAllBusinesses();
+    const business = businesses[0]; // For now, using first business
+
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    const response = {
+      connected: business.instagram?.connected || false,
+      username: business.instagram?.username || null,
+      settings: business.instagram?.settings || {
+        enabled: false,
+        directMessages: true,
+        comments: true,
+        rules: [
+          {
+            id: 'rule_default',
+            trigger: '',
+            responseType: 'ai_generated',
+            template: '',
+            context: ''
+          }
+        ],
+        commentToDM: {
+          enabled: false,
+          replyInComments: true,
+          commentTemplate: 'Отправил вам в DM! 💬',
+          sendDM: true,
+          dmType: 'ai_generated',
+          dmTemplate: ''
+        }
+      }
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('[Instagram Settings] Error loading settings:', error);
+    res.status(500).json({ error: 'Failed to load settings' });
+  }
+});
+
+// Update Instagram settings (API)
+app.put('/api/instagram/settings', async (req, res) => {
+  try {
+    const { enabled, directMessages, comments, rules, commentToDM } = req.body;
+
+    const businesses = await db.getAllBusinesses();
+    const business = businesses[0]; // For now, using first business
+
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    // Initialize instagram object if it doesn't exist
+    if (!business.instagram) {
+      business.instagram = {};
+    }
+
+    // Update settings
+    const updatedInstagram = {
+      ...business.instagram,
+      settings: {
+        enabled,
+        directMessages,
+        comments,
+        rules,
+        commentToDM
+      }
+    };
+
+    // Save to database
+    await db.updateBusiness(business.id, { instagram: updatedInstagram });
+
+    console.log('[Instagram Settings] Settings updated:', {
+      enabled,
+      rulesCount: rules.length,
+      funnelEnabled: commentToDM.enabled
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Instagram Settings] Error saving settings:', error);
+    res.status(500).json({ error: 'Failed to save settings' });
+  }
+});
+
+// Disconnect Instagram
+app.post('/api/instagram/disconnect', async (req, res) => {
+  try {
+    const businesses = await db.getAllBusinesses();
+    const business = businesses[0];
+
+    if (business && business.instagram) {
+      await db.updateBusiness(business.id, {
+        instagram: {
+          connected: false,
+          accessToken: null,
+          username: null,
+          settings: null
+        }
+      });
+
+      console.log('[Instagram] Disconnected');
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Instagram] Error disconnecting:', error);
+    res.status(500).json({ error: 'Failed to disconnect' });
+  }
 });
 
 // Authentication endpoints
@@ -600,7 +919,8 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     // Check if user already exists
-    if (getUserByEmail(email)) {
+    const existingUser = await getUserByEmail(email);
+    if (existingUser) {
       return res.status(409).json({ error: 'An account with this email already exists' });
     }
 
@@ -666,7 +986,7 @@ app.post('/api/auth/login', async (req, res) => {
     loginAttempts.set(clientIp, attemptData);
 
     // Look up user
-    const user = getUserByEmail(email.toLowerCase());
+    const user = await getUserByEmail(email.toLowerCase());
     
     if (!user) {
       return res.status(401).json({ error: 'Invalid email or password' });
@@ -899,20 +1219,35 @@ app.get('/privacy-policy', (req, res) => {
 });
 
 // Admin route (same as main page)
+// ========================================
+// ADMIN PANEL ROUTES
+// ========================================
+
+// Super Admin Panel - manages all businesses
 app.get('/admin', (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  
+
   // Read file and inject version tag to bust cache
-  const filePath = path.join(__dirname, 'admin-new.html');
+  const filePath = path.join(__dirname, 'admin-super.html');
   let html = fs.readFileSync(filePath, 'utf8');
-  
+
   // Add version meta tag to force browser refresh
   html = html.replace('<head>', `<head>\n    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">\n    <meta http-equiv="Pragma" content="no-cache">\n    <meta http-equiv="Expires" content="0">`);
-  
+
   res.send(html);
+});
+
+// Business Owner Panel - manages own business
+app.get('/business', (req, res) => {
+  res.redirect('/business-dashboard/');
+});
+
+// Legacy route - redirect to business panel
+app.get('/admin-new.html', (req, res) => {
+  res.redirect('/business');
 });
 
 // Serve connections UI JavaScript
@@ -3134,6 +3469,28 @@ app.post('/webhook/:platform', async (req, res) => {
       const entry = body.entry?.[0];
       const messaging = entry?.messaging?.[0] || entry?.standby?.[0];
 
+      // Check for comments
+      if (body.object === 'instagram' && entry?.changes?.[0]?.field === 'comments') {
+        const change = entry.changes[0];
+        const comment = change.value;
+
+        console.log('[Instagram Webhook] Comment received:', JSON.stringify(comment).substring(0, 200));
+
+        // Process comment through rules system
+        const businesses = await db.getAllBusinesses();
+    const business = businesses[0];
+
+        if (business && comment.text) {
+          await processInstagramMessage(business, {
+            id: comment.id,
+            text: comment.text,
+            senderId: comment.from?.id || comment.from
+          }, true); // isComment = true
+        }
+
+        return res.sendStatus(200);
+      }
+
       if (messaging?.message?.is_echo) {
         console.log('[instagram] Ignoring echo message from this business account.');
         return res.sendStatus(200);
@@ -3298,19 +3655,20 @@ function ensureBusinessesFile() {
   }
 }
 
-function readBusinessesStore() {
-  ensureBusinessesFile();
+// Database functions - replaced with Prisma calls
+async function readBusinessesStore() {
   try {
-    const parsed = JSON.parse(fs.readFileSync(BUSINESSES_FILE, 'utf8'));
-    return { businesses: Array.isArray(parsed.businesses) ? parsed.businesses : [] };
+    const businesses = await db.getAllBusinesses();
+    return { businesses };
   } catch (error) {
-    console.error('[Business] Error reading businesses.json:', error.message);
+    console.error('[DB] Error reading businesses:', error.message);
     return { businesses: [] };
   }
 }
 
-function writeBusinessesStore(store) {
-  fs.writeFileSync(BUSINESSES_FILE, JSON.stringify({ businesses: store.businesses || [] }, null, 2), 'utf8');
+async function writeBusinessesStore(store) {
+  // This function is deprecated - individual businesses are saved via db.updateBusiness()
+  console.warn('[DB] writeBusinessesStore() is deprecated. Updates happen via Prisma automatically.');
 }
 
 function ensureBusinessSessionsFile() {
@@ -3388,8 +3746,8 @@ app.post('/api/business/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const store = readBusinessesStore();
-    const business = store.businesses.find(b => b.email === email);
+    const businesses = await db.getAllBusinesses();
+    const business = businesses.find(b => b.email === email);
 
     if (!business) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -3728,7 +4086,7 @@ app.post('/api/business/settings', requireBusinessAuth, async (req, res) => {
     const { name, phone, address, hours, services, aiLanguage } = req.body;
 
     // Update business info in businesses.json
-    const businessesStore = readBusinessesStore();
+    const businesses = await db.getAllBusinesses();
     const business = businessesStore.businesses.find(b => b.id === req.businessId);
 
     if (business) {
@@ -3736,7 +4094,7 @@ app.post('/api/business/settings', requireBusinessAuth, async (req, res) => {
       if (phone) business.phone = phone;
       if (address) business.address = address;
 
-      writeBusinessesStore(businessesStore);
+      // Data saved automatically via Prisma
     }
 
     // Update business-info.json (hours and services)
@@ -3781,7 +4139,7 @@ app.post('/api/business/settings', requireBusinessAuth, async (req, res) => {
 // --- SUPER ADMIN BUSINESS MANAGEMENT ENDPOINTS ---
 
 // Get all businesses (super admin only)
-app.get('/api/admin/businesses', (req, res) => {
+app.get('/api/admin/businesses', async (req, res) => {
   try {
     const sessionId = req.headers['x-session-id'];
     const session = sessions.get(sessionId);
@@ -3790,11 +4148,11 @@ app.get('/api/admin/businesses', (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const store = readBusinessesStore();
+    const businesses = await db.getAllBusinesses();
     const today = new Date().toISOString().split('T')[0];
 
     // Add stats for each business
-    const businessesWithStats = store.businesses.map(business => {
+    const businessesWithStats = businesses.map(business => {
       const bookingsStore = readBookingsStore();
       const todayBookings = bookingsStore.bookings.filter(b => b.date === today);
       const businessMessages = chatLogs.filter(log => log.timestamp?.startsWith(today));
@@ -3833,10 +4191,10 @@ app.post('/api/admin/businesses', async (req, res) => {
       return res.status(400).json({ error: 'Name, email, and password are required' });
     }
 
-    const store = readBusinessesStore();
+    const businesses = await db.getAllBusinesses();
 
     // Check if email already exists
-    if (store.businesses.find(b => b.email === email)) {
+    if (businesses.find(b => b.email === email)) {
       return res.status(400).json({ error: 'Email already exists' });
     }
 
@@ -3862,8 +4220,8 @@ app.post('/api/admin/businesses', async (req, res) => {
       plan: 'free'
     };
 
-    store.businesses.push(business);
-    writeBusinessesStore(store);
+    businesses.push(business);
+    // Data saved automatically via Prisma
 
     console.log(`[Admin] New business created: ${name} (${email})`);
 
@@ -3882,7 +4240,7 @@ app.post('/api/admin/businesses', async (req, res) => {
 });
 
 // Update business (super admin only)
-app.patch('/api/admin/businesses/:id', (req, res) => {
+app.patch('/api/admin/businesses/:id', async (req, res) => {
   try {
     const sessionId = req.headers['x-session-id'];
     const session = sessions.get(sessionId);
@@ -3894,8 +4252,8 @@ app.patch('/api/admin/businesses/:id', (req, res) => {
     const { id } = req.params;
     const { active, plan, name, phone, address } = req.body;
 
-    const store = readBusinessesStore();
-    const business = store.businesses.find(b => b.id === id);
+    const businesses = await db.getAllBusinesses();
+    const business = businesses.find(b => b.id === id);
 
     if (!business) {
       return res.status(404).json({ error: 'Business not found' });
@@ -3907,8 +4265,7 @@ app.patch('/api/admin/businesses/:id', (req, res) => {
     if (name) business.name = name;
     if (phone) business.phone = phone;
     if (address) business.address = address;
-
-    writeBusinessesStore(store);
+    // Data saved automatically via Prisma
 
     console.log(`[Admin] Business ${id} updated`);
 
@@ -3916,6 +4273,607 @@ app.patch('/api/admin/businesses/:id', (req, res) => {
   } catch (error) {
     console.error('[Admin] Update business error:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ========================================
+// BUSINESSES MANAGEMENT ADMIN APIS
+// ========================================
+
+// Get all businesses with filtering and search
+app.get('/api/admin/businesses', async (req, res) => {
+  try {
+    const { search, filter, sort, order, page, limit } = req.query;
+
+    let businesses = await db.getAllBusinesses();
+    businesses = businesses || [];
+
+    // Add statistics for each business
+    businesses = businesses.map(business => {
+      const messageCount = (business.conversations || []).reduce((total, conv) => {
+        return total + (conv.messages || []).length;
+      }, 0);
+
+      const lastActivity = (business.conversations || []).reduce((latest, conv) => {
+        const convMessages = conv.messages || [];
+        if (convMessages.length > 0) {
+          const lastMsg = convMessages[convMessages.length - 1];
+          const msgTime = new Date(lastMsg.timestamp || 0).getTime();
+          return Math.max(latest, msgTime);
+        }
+        return latest;
+      }, 0);
+
+      return {
+        id: business.id,
+        name: business.name || 'Unnamed Business',
+        ownerName: business.ownerName || business.owner_name || 'Unknown',
+        ownerEmail: business.ownerEmail || business.owner_email || 'N/A',
+        phone: business.phone || business.contact?.phone || 'N/A',
+        country: business.country || 'Kyrgyzstan',
+        registrationDate: business.registrationDate || business.createdAt || new Date().toISOString(),
+        lastActivity: lastActivity ? new Date(lastActivity).toISOString() : null,
+        channels: {
+          instagram: {
+            connected: business.instagram?.connected || false,
+            username: business.instagram?.username || null
+          },
+          whatsapp: {
+            connected: business.whatsapp?.connected || false,
+            username: business.whatsapp?.phone_number || null
+          },
+          telegram: {
+            connected: business.telegram?.connected || false,
+            username: business.telegram?.bot_username || null
+          }
+        },
+        messageCount: messageCount,
+        status: business.active !== false ? 'active' : 'inactive',
+        plan: business.plan || 'free'
+      };
+    });
+
+    // Apply search filter
+    if (search) {
+      const searchLower = search.toLowerCase();
+      businesses = businesses.filter(b =>
+        b.name.toLowerCase().includes(searchLower) ||
+        b.ownerEmail.toLowerCase().includes(searchLower) ||
+        b.ownerName.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Apply connection filter
+    if (filter && filter !== 'all') {
+      businesses = businesses.filter(b => {
+        const connectedCount = Object.values(b.channels).filter(ch => ch.connected).length;
+        if (filter === 'connected') return connectedCount === 3;
+        if (filter === 'partially') return connectedCount > 0 && connectedCount < 3;
+        if (filter === 'disconnected') return connectedCount === 0;
+        return true;
+      });
+    }
+
+    // Apply sorting
+    const sortField = sort || 'registrationDate';
+    const sortOrder = order || 'desc';
+    businesses.sort((a, b) => {
+      let aVal = a[sortField];
+      let bVal = b[sortField];
+
+      if (sortField === 'name' || sortField === 'ownerName') {
+        aVal = (aVal || '').toLowerCase();
+        bVal = (bVal || '').toLowerCase();
+        return sortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      }
+
+      if (sortField === 'registrationDate' || sortField === 'lastActivity') {
+        aVal = new Date(aVal || 0).getTime();
+        bVal = new Date(bVal || 0).getTime();
+      }
+
+      return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+    });
+
+    // Pagination
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 10;
+    const startIdx = (pageNum - 1) * limitNum;
+    const endIdx = startIdx + limitNum;
+    const paginatedBusinesses = businesses.slice(startIdx, endIdx);
+
+    res.json({
+      success: true,
+      data: paginatedBusinesses,
+      total: businesses.length,
+      page: pageNum,
+      pages: Math.ceil(businesses.length / limitNum)
+    });
+  } catch (error) {
+    console.error('[Admin] Error fetching businesses:', error);
+    res.status(500).json({ error: 'Failed to fetch businesses' });
+  }
+});
+
+// Get dashboard statistics
+app.get('/api/admin/statistics', async (req, res) => {
+  try {
+    const businesses = await db.getAllBusinesses();
+
+    const totalBusinesses = businesses.length;
+
+    // Count active businesses today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayTime = today.getTime();
+
+    let activeToday = 0;
+    let totalMessagesProcessed = 0;
+    let connectedChannels = 0;
+    let totalChannels = 0;
+
+    businesses.forEach(business => {
+      const conversations = business.conversations || [];
+      let hasActivityToday = false;
+
+      conversations.forEach(conv => {
+        const messages = conv.messages || [];
+        totalMessagesProcessed += messages.length;
+
+        messages.forEach(msg => {
+          const msgDate = new Date(msg.timestamp || 0);
+          msgDate.setHours(0, 0, 0, 0);
+          if (msgDate.getTime() === todayTime) {
+            hasActivityToday = true;
+          }
+        });
+      });
+
+      if (hasActivityToday) activeToday++;
+
+      // Count connected channels
+      if (business.instagram?.connected) connectedChannels++;
+      if (business.whatsapp?.connected) connectedChannels++;
+      if (business.telegram?.connected) connectedChannels++;
+      totalChannels += 3;
+    });
+
+    const connectionHealth = totalChannels > 0
+      ? Math.round((connectedChannels / totalChannels) * 100)
+      : 0;
+
+    res.json({
+      success: true,
+      data: {
+        totalBusinesses,
+        activeToday,
+        totalMessagesProcessed,
+        connectionHealth,
+        trends: {
+          businesses: '+0',
+          active: '+0',
+          messages: '+0',
+          health: '0'
+        }
+      }
+    });
+  } catch (error) {
+    console.error('[Admin] Error fetching statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch statistics' });
+  }
+});
+
+// Get single business details
+app.get('/api/admin/businesses/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const businesses = await db.getAllBusinesses();
+    const business = businesses.find(b => b.id === id);
+
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    res.json({
+      success: true,
+      data: business
+    });
+  } catch (error) {
+    console.error('[Admin] Error fetching business:', error);
+    res.status(500).json({ error: 'Failed to fetch business details' });
+  }
+});
+
+// Create new business
+app.post('/api/admin/businesses', async (req, res) => {
+  try {
+    const { name, ownerName, ownerEmail, phone, country } = req.body;
+
+    // Validation
+    if (!name || !ownerName || !ownerEmail) {
+      return res.status(400).json({ error: 'Name, owner name, and owner email are required' });
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(ownerEmail)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    const businesses = await db.getAllBusinesses();
+
+    const newBusiness = {
+      id: 'business_' + Date.now(),
+      name,
+      ownerName,
+      ownerEmail,
+      owner_email: ownerEmail,
+      owner_name: ownerName,
+      phone: phone || '',
+      country: country || 'Kyrgyzstan',
+      registrationDate: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      active: true,
+      plan: 'free',
+      instagram: { connected: false, username: null },
+      whatsapp: { connected: false, phone_number: null },
+      telegram: { connected: false, bot_username: null },
+      conversations: [],
+      services: [],
+      hours: {}
+    };
+
+    businesses.push(newBusiness);
+    // Data saved automatically via Prisma
+
+    console.log(`[Admin] New business created: ${name} (${ownerEmail})`);
+
+    res.json({
+      success: true,
+      data: newBusiness,
+      message: 'Business created successfully'
+    });
+  } catch (error) {
+    console.error('[Admin] Error creating business:', error);
+    res.status(500).json({ error: 'Failed to create business' });
+  }
+});
+
+// Update business
+app.put('/api/admin/businesses/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, ownerName, ownerEmail, phone, country, plan, active } = req.body;
+
+    const businesses = await db.getAllBusinesses();
+    const business = businesses.find(b => b.id === id);
+
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    // Update fields
+    if (name) business.name = name;
+    if (ownerName) {
+      business.ownerName = ownerName;
+      business.owner_name = ownerName;
+    }
+    if (ownerEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(ownerEmail)) {
+        return res.status(400).json({ error: 'Invalid email format' });
+      }
+      business.ownerEmail = ownerEmail;
+      business.owner_email = ownerEmail;
+    }
+    if (phone !== undefined) business.phone = phone;
+    if (country) business.country = country;
+    if (plan) business.plan = plan;
+    if (typeof active === 'boolean') business.active = active;
+    // Data saved automatically via Prisma
+
+    console.log(`[Admin] Business updated: ${id}`);
+
+    res.json({
+      success: true,
+      data: business,
+      message: 'Business updated successfully'
+    });
+  } catch (error) {
+    console.error('[Admin] Error updating business:', error);
+    res.status(500).json({ error: 'Failed to update business' });
+  }
+});
+
+// Delete business
+app.delete('/api/admin/businesses/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const businesses = await db.getAllBusinesses();
+    const businessIndex = businesses.findIndex(b => b.id === id);
+
+    if (businessIndex === -1) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    const deletedBusiness = businesses[businessIndex];
+    businesses.splice(businessIndex, 1);
+    // Data saved automatically via Prisma
+
+    console.log(`[Admin] Business deleted: ${deletedBusiness.name} (${id})`);
+
+    res.json({
+      success: true,
+      message: 'Business deleted successfully'
+    });
+  } catch (error) {
+    console.error('[Admin] Error deleting business:', error);
+    res.status(500).json({ error: 'Failed to delete business' });
+  }
+});
+
+// Get channel health for a business
+app.get('/api/admin/channel-health/:businessId', async (req, res) => {
+  try {
+    const { businessId } = req.params;
+    const businesses = await db.getAllBusinesses();
+    const business = businesses.find(b => b.id === businessId);
+
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    const conversations = business.conversations || [];
+    const instagramMsgs = conversations.filter(c => c.platform === 'instagram').reduce((sum, c) => sum + (c.messages || []).length, 0);
+    const whatsappMsgs = conversations.filter(c => c.platform === 'whatsapp').reduce((sum, c) => sum + (c.messages || []).length, 0);
+    const telegramMsgs = conversations.filter(c => c.platform === 'telegram').reduce((sum, c) => sum + (c.messages || []).length, 0);
+
+    res.json({
+      success: true,
+      data: {
+        businessId,
+        channels: {
+          instagram: {
+            connected: business.instagram?.connected || false,
+            lastSync: business.instagram?.lastSync || null,
+            messagesSent: instagramMsgs,
+            username: business.instagram?.username || null
+          },
+          whatsapp: {
+            connected: business.whatsapp?.connected || false,
+            lastSync: business.whatsapp?.lastSync || null,
+            messagesSent: whatsappMsgs,
+            error: business.whatsapp?.error || null
+          },
+          telegram: {
+            connected: business.telegram?.connected || false,
+            lastSync: business.telegram?.lastSync || null,
+            messagesSent: telegramMsgs,
+            username: business.telegram?.bot_username || null
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.error('[Admin] Error fetching channel health:', error);
+    res.status(500).json({ error: 'Failed to fetch channel health' });
+  }
+});
+
+// ========================================
+// BUSINESSES MANAGEMENT ADMIN APIS
+// ========================================
+
+// Get all businesses with filtering and search
+
+// Get dashboard statistics
+app.get('/api/admin/statistics', async (req, res) => {
+  try {
+    const businesses = await db.getAllBusinesses();
+
+    const totalBusinesses = businesses.length;
+
+    // Count active businesses today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayTime = today.getTime();
+
+    let activeToday = 0;
+    let totalMessagesProcessed = 0;
+    let connectedChannels = 0;
+    let totalChannels = 0;
+
+    businesses.forEach(business => {
+      const conversations = business.conversations || [];
+      let hasActivityToday = false;
+
+      conversations.forEach(conv => {
+        const messages = conv.messages || [];
+        totalMessagesProcessed += messages.length;
+
+        messages.forEach(msg => {
+          const msgDate = new Date(msg.timestamp || 0);
+          msgDate.setHours(0, 0, 0, 0);
+          if (msgDate.getTime() === todayTime) {
+            hasActivityToday = true;
+          }
+        });
+      });
+
+      if (hasActivityToday) activeToday++;
+
+      // Count connected channels
+      if (business.instagram?.connected) connectedChannels++;
+      if (business.whatsapp?.connected) connectedChannels++;
+      if (business.telegram?.connected) connectedChannels++;
+      totalChannels += 3;
+    });
+
+    const connectionHealth = totalChannels > 0
+      ? Math.round((connectedChannels / totalChannels) * 100)
+      : 0;
+
+    res.json({
+      success: true,
+      data: {
+        totalBusinesses,
+        activeToday,
+        totalMessagesProcessed,
+        connectionHealth
+      }
+    });
+  } catch (error) {
+    console.error('[Admin] Error fetching statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch statistics' });
+  }
+});
+
+// Get single business details
+app.get('/api/admin/businesses/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const businesses = await db.getAllBusinesses();
+    const business = businesses.find(b => b.id === id);
+
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    res.json({
+      success: true,
+      data: business
+    });
+  } catch (error) {
+    console.error('[Admin] Error fetching business:', error);
+    res.status(500).json({ error: 'Failed to fetch business details' });
+  }
+});
+
+// Create new business
+app.post('/api/admin/businesses', async (req, res) => {
+  try {
+    const { name, ownerName, ownerEmail, phone, country } = req.body;
+
+    // Validation
+    if (!name || !ownerName || !ownerEmail) {
+      return res.status(400).json({ error: 'Name, owner name, and owner email are required' });
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(ownerEmail)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    const businesses = await db.getAllBusinesses();
+
+    const newBusiness = {
+      id: 'business_' + Date.now(),
+      name,
+      ownerName,
+      ownerEmail,
+      owner_email: ownerEmail,
+      owner_name: ownerName,
+      phone: phone || '',
+      country: country || 'Kyrgyzstan',
+      registrationDate: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      active: true,
+      plan: 'free',
+      instagram: { connected: false, username: null },
+      whatsapp: { connected: false, phone_number: null },
+      telegram: { connected: false, bot_username: null },
+      conversations: [],
+      services: [],
+      hours: {}
+    };
+
+    businesses.push(newBusiness);
+    // Data saved automatically via Prisma
+
+    console.log(`[Admin] New business created: ${name} (${ownerEmail})`);
+
+    res.json({
+      success: true,
+      data: newBusiness,
+      message: 'Business created successfully'
+    });
+  } catch (error) {
+    console.error('[Admin] Error creating business:', error);
+    res.status(500).json({ error: 'Failed to create business' });
+  }
+});
+
+// Update business
+app.put('/api/admin/businesses/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, ownerName, ownerEmail, phone, country, plan, active } = req.body;
+
+    const businesses = await db.getAllBusinesses();
+    const business = businesses.find(b => b.id === id);
+
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    // Update fields
+    if (name) business.name = name;
+    if (ownerName) {
+      business.ownerName = ownerName;
+      business.owner_name = ownerName;
+    }
+    if (ownerEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(ownerEmail)) {
+        return res.status(400).json({ error: 'Invalid email format' });
+      }
+      business.ownerEmail = ownerEmail;
+      business.owner_email = ownerEmail;
+    }
+    if (phone !== undefined) business.phone = phone;
+    if (country) business.country = country;
+    if (plan) business.plan = plan;
+    if (typeof active === 'boolean') business.active = active;
+    // Data saved automatically via Prisma
+
+    console.log(`[Admin] Business updated: ${id}`);
+
+    res.json({
+      success: true,
+      data: business,
+      message: 'Business updated successfully'
+    });
+  } catch (error) {
+    console.error('[Admin] Error updating business:', error);
+    res.status(500).json({ error: 'Failed to update business' });
+  }
+});
+
+// Delete business
+app.delete('/api/admin/businesses/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const businesses = await db.getAllBusinesses();
+    const businessIndex = businesses.findIndex(b => b.id === id);
+
+    if (businessIndex === -1) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    const deletedBusiness = businesses[businessIndex];
+    businesses.splice(businessIndex, 1);
+    // Data saved automatically via Prisma
+
+    console.log(`[Admin] Business deleted: ${deletedBusiness.name} (${id})`);
+
+    res.json({
+      success: true,
+      message: 'Business deleted successfully'
+    });
+  } catch (error) {
+    console.error('[Admin] Error deleting business:', error);
+    res.status(500).json({ error: 'Failed to delete business' });
   }
 });
 
@@ -3936,6 +4894,406 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// ============= PLATFORM SETTINGS APIs =============
+
+// Helper function to read platform settings
+function readPlatformSettings() {
+  try {
+    const data = fs.readFileSync(path.join(__dirname, 'platform-settings.json'), 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    // Return defaults if file doesn't exist
+    return {
+      general: {
+        platformName: "REPLAI",
+        defaultLanguage: "English",
+        timeZone: "(UTC+05:00) Tashkent"
+      },
+      security: {
+        twoFactorEnabled: false,
+        loginNotifications: true
+      },
+      notifications: {
+        newBusinessRegistration: true,
+        systemAlerts: true,
+        weeklyReports: false
+      },
+      billing: {
+        currentPlan: "professional",
+        monthlyLimit: 100000,
+        currentUsage: 65000,
+        resetDate: "2026-11-01",
+        pricePerMonth: 99
+      }
+    };
+  }
+}
+
+// Helper function to write platform settings
+function writePlatformSettings(settings) {
+  fs.writeFileSync(
+    path.join(__dirname, 'platform-settings.json'),
+    JSON.stringify(settings, null, 2),
+    'utf8'
+  );
+}
+
+// Get all platform settings
+app.get('/api/admin/platform-settings', (req, res) => {
+  try {
+    const settings = readPlatformSettings();
+    res.json({ success: true, data: settings });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update general settings
+app.put('/api/admin/platform-settings/general', (req, res) => {
+  try {
+    const { platformName, defaultLanguage, timeZone } = req.body;
+    const settings = readPlatformSettings();
+
+    settings.general = {
+      platformName,
+      defaultLanguage,
+      timeZone
+    };
+
+    writePlatformSettings(settings);
+    res.json({ success: true, data: settings.general });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update security settings
+app.put('/api/admin/platform-settings/security', (req, res) => {
+  try {
+    const { twoFactorEnabled, loginNotifications } = req.body;
+    const settings = readPlatformSettings();
+
+    settings.security = {
+      twoFactorEnabled: Boolean(twoFactorEnabled),
+      loginNotifications: Boolean(loginNotifications)
+    };
+
+    writePlatformSettings(settings);
+    res.json({ success: true, data: settings.security });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update notification preferences
+app.put('/api/admin/platform-settings/notifications', (req, res) => {
+  try {
+    const { newBusinessRegistration, systemAlerts, weeklyReports } = req.body;
+    const settings = readPlatformSettings();
+
+    settings.notifications = {
+      newBusinessRegistration: Boolean(newBusinessRegistration),
+      systemAlerts: Boolean(systemAlerts),
+      weeklyReports: Boolean(weeklyReports)
+    };
+
+    writePlatformSettings(settings);
+    res.json({ success: true, data: settings.notifications });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update admin password
+app.post('/api/admin/update-password', async (req, res) => {
+  try {
+    const { currentPassword, newPassword, email } = req.body;
+
+    // Read users file
+    const usersData = fs.readFileSync(path.join(__dirname, 'users.json'), 'utf8');
+    const users = JSON.parse(usersData);
+
+    // Find admin user
+    const admin = users.users.find(u => u.email === email && u.role === 'admin');
+
+    if (!admin) {
+      return res.status(404).json({ success: false, error: 'Admin user not found' });
+    }
+
+    // Verify current password
+    const isValid = await bcrypt.compare(currentPassword, admin.passwordHash);
+    if (!isValid) {
+      return res.status(401).json({ success: false, error: 'Current password is incorrect' });
+    }
+
+    // Hash new password
+    const newHash = await bcrypt.hash(newPassword, 10);
+    admin.passwordHash = newHash;
+
+    // Save users file
+    fs.writeFileSync(
+      path.join(__dirname, 'users.json'),
+      JSON.stringify(users, null, 2),
+      'utf8'
+    );
+
+    res.json({ success: true, message: 'Password updated successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ============= API KEYS Management =============
+
+// Helper function to read API keys
+function readAPIKeys() {
+  try {
+    const data = fs.readFileSync(path.join(__dirname, 'api-keys.json'), 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    return { keys: [] };
+  }
+}
+
+// Helper function to write API keys
+function writeAPIKeys(data) {
+  fs.writeFileSync(
+    path.join(__dirname, 'api-keys.json'),
+    JSON.stringify(data, null, 2),
+    'utf8'
+  );
+}
+
+// Get all API keys
+app.get('/api/admin/api-keys', (req, res) => {
+  try {
+    const data = readAPIKeys();
+    res.json({ success: true, data: data.keys });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Generate new API key
+app.post('/api/admin/api-keys/generate', (req, res) => {
+  try {
+    const data = readAPIKeys();
+
+    // Generate random API key
+    const randomString = crypto.randomBytes(20).toString('hex');
+    const newKey = {
+      id: `key_${Date.now()}`,
+      name: req.body.name || 'Production API Key',
+      key: `rpl_live_sk_${randomString}`,
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      lastUsedAt: null
+    };
+
+    data.keys.push(newKey);
+    writeAPIKeys(data);
+
+    res.json({ success: true, data: newKey });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Revoke API key
+app.delete('/api/admin/api-keys/:keyId', (req, res) => {
+  try {
+    const data = readAPIKeys();
+    const keyIndex = data.keys.findIndex(k => k.id === req.params.keyId);
+
+    if (keyIndex === -1) {
+      return res.status(404).json({ success: false, error: 'API key not found' });
+    }
+
+    data.keys[keyIndex].status = 'revoked';
+    writeAPIKeys(data);
+
+    res.json({ success: true, message: 'API key revoked' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update API usage tracking
+app.post('/api/admin/platform-settings/billing/usage', (req, res) => {
+  try {
+    const { increment } = req.body;
+    const settings = readPlatformSettings();
+
+    settings.billing.currentUsage += (increment || 1);
+    writePlatformSettings(settings);
+
+    res.json({ success: true, data: settings.billing });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ============= AI PROVIDER KEYS Management =============
+import { aiKeyManager } from './ai-key-manager.js';
+
+// Get all AI provider keys
+app.get('/api/admin/ai-provider-keys', (req, res) => {
+  try {
+    const keys = aiKeyManager.getAllKeys();
+
+    // Mask API keys in response (show only first 10 chars)
+    const maskedKeys = keys.map(k => ({
+      ...k,
+      apiKey: k.apiKey.substring(0, 10) + '•'.repeat(20)
+    }));
+
+    res.json({ success: true, data: maskedKeys });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Add new AI provider key
+app.post('/api/admin/ai-provider-keys', async (req, res) => {
+  try {
+    const { provider, name, apiKey, priority, skipValidation } = req.body;
+
+    if (!provider || !name || !apiKey) {
+      return res.status(400).json({ success: false, error: 'Missing required fields' });
+    }
+
+    // Test the key before adding (optional - can be skipped)
+    if (!skipValidation) {
+      console.log(`[AI Keys] Testing ${provider} key before adding...`);
+      const isValid = await testAIProviderKey(provider, apiKey);
+      if (!isValid) {
+        console.log(`[AI Keys] ❌ ${provider} key validation failed`);
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Invalid API key or unable to verify. Please check the key and try again, or add without validation.' 
+        });
+      }
+      console.log(`[AI Keys] ✅ ${provider} key validation passed`);
+    } else {
+      console.log(`[AI Keys] ⚠️  Skipping validation for ${provider} key (skipValidation=true)`);
+    }
+
+    const newKey = aiKeyManager.addKey({ provider, name, apiKey, priority });
+
+    // Mask key in response
+    res.json({
+      success: true,
+      data: {
+        ...newKey,
+        apiKey: newKey.apiKey.substring(0, 10) + '•'.repeat(20)
+      }
+    });
+  } catch (error) {
+    console.error('[AI Keys] Error adding key:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update AI provider key (name, priority)
+app.put('/api/admin/ai-provider-keys/:keyId', (req, res) => {
+  try {
+    const { name, priority } = req.body;
+    const updatedKey = aiKeyManager.updateKey(req.params.keyId, { name, priority });
+
+    res.json({
+      success: true,
+      data: {
+        ...updatedKey,
+        apiKey: updatedKey.apiKey.substring(0, 10) + '•'.repeat(20)
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Delete/disable AI provider key
+app.delete('/api/admin/ai-provider-keys/:keyId', (req, res) => {
+  try {
+    aiKeyManager.deleteKey(req.params.keyId);
+    res.json({ success: true, message: 'AI provider key disabled' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Reset rate limit for a key
+app.post('/api/admin/ai-provider-keys/:keyId/reset-rate-limit', (req, res) => {
+  try {
+    aiKeyManager.resetRateLimit(req.params.keyId);
+    res.json({ success: true, message: 'Rate limit reset' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Test AI provider key
+app.post('/api/admin/ai-provider-keys/test', async (req, res) => {
+  try {
+    const { provider, apiKey } = req.body;
+    const isValid = await testAIProviderKey(provider, apiKey);
+    res.json({ success: true, valid: isValid });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Helper function to test AI provider key
+async function testAIProviderKey(provider, apiKey) {
+  const testConfigs = {
+    'groq': {
+      url: 'https://api.groq.com/openai/v1/models',
+      headers: { 'Authorization': `Bearer ${apiKey}` }
+    },
+    'openrouter': {
+      url: 'https://openrouter.ai/api/v1/models',
+      headers: { 'Authorization': `Bearer ${apiKey}` }
+    },
+    'together': {
+      url: 'https://api.together.xyz/v1/models',
+      headers: { 'Authorization': `Bearer ${apiKey}` }
+    },
+    'huggingface': {
+      url: 'https://api-inference.huggingface.co/models/gpt2',
+      headers: { 'Authorization': `Bearer ${apiKey}` }
+    }
+  };
+
+  const config = testConfigs[provider];
+  if (!config) {
+    console.error(`[AI Key Test] Unknown provider: ${provider}`);
+    return false;
+  }
+
+  try {
+    console.log(`[AI Key Test] Testing ${provider} at ${config.url}...`);
+    const response = await fetch(config.url, {
+      method: 'GET',
+      headers: config.headers,
+      timeout: 10000 // 10 second timeout
+    });
+
+    console.log(`[AI Key Test] ${provider} responded with status: ${response.status}`);
+    
+    if (response.ok) {
+      console.log(`[AI Key Test] ✅ ${provider} key is valid`);
+      return true;
+    } else {
+      const errorText = await response.text().catch(() => 'No error details');
+      console.error(`[AI Key Test] ❌ ${provider} returned error ${response.status}: ${errorText.substring(0, 200)}`);
+      return false;
+    }
+  } catch (error) {
+    console.error(`[AI Key Test] ❌ Failed to test ${provider} key:`, error.message);
+    return false;
+  }
+}
 
 // Instagram OAuth 2.0 status check
 if (platformConnections.instagram.connected) {

@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REPLAI - AI-помощник для вашего бизнеса | Бишкек</title>
+    <meta name="description" content="Автоматизируйте ответы клиентам в Instagram, Telegram и WhatsApp с помощью AI. Работает 24/7. Начните бесплатно за 2 минуты.">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #0066FF;
+            --primary-dark: #0052CC;
+            --secondary: #00D9FF;
+            --dark: #0A1628;
+            --gray: #64748B;
+            --light: #F8FAFC;
+            --white: #FFFFFF;
+            --success: #10B981;
+            --gradient: linear-gradient(135deg, #0066FF 0%, #00D9FF 100%);
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            background: var(--white);
+        }
+        
+        /* Header */
+        header {
+            background: var(--gradient);
+            color: var(--white);
+            padding: 100px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="2" fill="white" opacity="0.1"/></svg>');
+            animation: float 20s infinite linear;
+        }
+        
+        @keyframes float {
+            from { background-position: 0 0; }
+            to { background-position: 100px 100px; }
+        }
+        
+        .header-content {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+        
+        h1 {
+            font-size: 56px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+        
+        .subtitle {
+            font-size: 24px;
+            margin-bottom: 15px;
+            opacity: 0.95;
+        }
+        
+        .badges {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 30px 0;
+        }
+        
+        .badge {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: var(--white);
+            color: var(--primary);
+            padding: 18px 40px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 18px;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-top: 20px;
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .cta-note {
+            margin-top: 15px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        /* Section */
+        section {
+            max-width: 1200px;
+            margin: 80px auto;
+            padding: 0 20px;
+        }
+        
+        h2 {
+            font-size: 42px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 50px;
+            color: var(--dark);
+        }
+        
+        /* Live Demo */
+        .demo-container {
+            background: var(--light);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 60px auto;
+            max-width: 900px;
+        }
+        
+        .demo-chat {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .message {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .message.user {
+            flex-direction: row-reverse;
+        }
+        
+        .message-bubble {
+            background: var(--light);
+            padding: 12px 16px;
+            border-radius: 16px;
+            max-width: 70%;
+        }
+        
+        .message.user .message-bubble {
+            background: var(--primary);
+            color: var(--white);
+        }
+        
+        .demo-input {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .demo-input input {
+            flex: 1;
+            padding: 14px 18px;
+            border: 2px solid #E2E8F0;
+            border-radius: 12px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        .demo-input input:focus {
+            border-color: var(--primary);
+        }
+        
+        .demo-input button {
+            background: var(--primary);
+            color: var(--white);
+            border: none;
+            padding: 14px 30px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .demo-input button:hover {
+            background: var(--primary-dark);
+        }
+        
+        /* Industry Tabs */
+        .industry-tabs {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .industry-tab {
+            padding: 12px 24px;
+            border: 2px solid #E2E8F0;
+            border-radius: 10px;
+            background: var(--white);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .industry-tab.active {
+            background: var(--primary);
+            color: var(--white);
+            border-color: var(--primary);
+        }
+        
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+        
+        .feature-card {
+            background: var(--white);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+        
+        .feature-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        
+        .feature-card h3 {
+            font-size: 22px;
+            margin-bottom: 12px;
+            color: var(--dark);
+        }
+        
+        .feature-card p {
+            color: var(--gray);
+            line-height: 1.7;
+        }
+        
+        /* Pricing */
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+        
+        .pricing-card {
+            background: var(--white);
+            border: 2px solid #E2E8F0;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .pricing-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-5px);
+        }
+        
+        .pricing-card.featured {
+            background: var(--gradient);
+            color: var(--white);
+            border-color: transparent;
+            transform: scale(1.05);
+        }
+        
+        .plan-name {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .plan-price {
+            font-size: 48px;
+            font-weight: 800;
+            margin: 20px 0;
+        }
+        
+        .plan-price span {
+            font-size: 20px;
+            font-weight: 400;
+        }
+        
+        .plan-features {
+            list-style: none;
+            text-align: left;
+            margin: 30px 0;
+        }
+        
+        .plan-features li {
+            padding: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .plan-features li::before {
+            content: '✓';
+            color: var(--success);
+            font-weight: 700;
+            font-size: 20px;
+        }
+        
+        .pricing-card.featured .plan-features li::before {
+            color: var(--white);
+        }
+        
+        .plan-button {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid var(--primary);
+            background: var(--white);
+            color: var(--primary);
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .plan-button:hover {
+            background: var(--primary);
+            color: var(--white);
+        }
+        
+        .pricing-card.featured .plan-button {
+            background: var(--white);
+            border-color: var(--white);
+        }
+        
+        /* Testimonials */
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+        
+        .testimonial-card {
+            background: var(--white);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+        
+        .testimonial-text {
+            font-size: 16px;
+            line-height: 1.8;
+            color: var(--dark);
+            margin-bottom: 20px;
+        }
+        
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .author-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-weight: 700;
+            font-size: 20px;
+        }
+        
+        .author-info h4 {
+            font-size: 16px;
+            margin-bottom: 3px;
+        }
+        
+        .author-info p {
+            font-size: 14px;
+            color: var(--gray);
+        }
+        
+        /* CTA Section */
+        .cta-section {
+            background: var(--gradient);
+            color: var(--white);
+            padding: 80px 20px;
+            text-align: center;
+            border-radius: 30px;
+            margin: 80px auto;
+            max-width: 1200px;
+        }
+        
+        .cta-section h2 {
+            color: var(--white);
+            margin-bottom: 20px;
+        }
+        
+        .cta-section p {
+            font-size: 20px;
+            margin-bottom: 30px;
+            opacity: 0.95;
+        }
+        
+        /* Footer */
+        footer {
+            background: var(--dark);
+            color: var(--white);
+            padding: 60px 20px 30px;
+            text-align: center;
+        }
+        
+        .footer-links {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .footer-links a {
+            color: var(--white);
+            text-decoration: none;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+        
+        .footer-links a:hover {
+            opacity: 1;
+        }
+        
+        /* Mobile */
+        @media (max-width: 768px) {
+            h1 { font-size: 36px; }
+            h2 { font-size: 32px; }
+            .subtitle { font-size: 18px; }
+            header { padding: 60px 20px; }
+            section { margin: 50px auto; }
+            .features-grid,
+            .pricing-grid,
+            .testimonials-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-content">
+            <h1>🤖 AI-ассистент для вашего бизнеса</h1>
+            <p class="subtitle">Отвечает клиентам в Instagram, Telegram и WhatsApp автоматически. Работает 24/7.</p>
+            
+            <div class="badges">
+                <div class="badge">✓ Бишкек</div>
+                <div class="badge">✓ Бесплатный тариф</div>
+                <div class="badge">✓ Готов за 2 минуты</div>
+            </div>
+            
+            <a href="/signup" class="cta-button">Начать бесплатно →</a>
+            <p class="cta-note">Без карты • Без звонков • Без программистов</p>
+        </div>
+    </header>
+
+    <!-- Live Demo -->
+    <section>
+        <h2>Попробуйте прямо сейчас</h2>
+        
+        <div class="industry-tabs">
+            <div class="industry-tab active" data-industry="barber">💈 Барбершоп</div>
+            <div class="industry-tab" data-industry="restaurant">🍕 Ресторан</div>
+            <div class="industry-tab" data-industry="salon">💅 Салон</div>
+            <div class="industry-tab" data-industry="taxi">🚗 Такси</div>
+        </div>
+        
+        <div class="demo-container">
+            <div class="demo-chat" id="demoChat">
+                <!-- Messages will be inserted here -->
+            </div>
+            <div class="demo-input">
+                <input type="text" id="demoInput" placeholder="Напишите вопрос..." />
+                <button onclick="sendDemoMessage()">Отправить</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section>
+        <h2>Что умеет ваш AI-ассистент</h2>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">💬</div>
+                <h3>Отвечает 24/7</h3>
+                <p>Ваши клиенты получают ответы мгновенно, даже ночью и в выходные</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3>Знает ваш бизнес</h3>
+                <p>Рассказывает о услугах, ценах, графике работы. Отвечает как ваш лучший менеджер</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3>Работает везде</h3>
+                <p>Instagram Direct, Telegram, WhatsApp — все в одном месте</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Аналитика</h3>
+                <p>Видите сколько клиентов написало, в какое время, из каких соцсетей</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🇷🇺</div>
+                <h3>Говорит на 3 языках</h3>
+                <p>Русский, кыргызский, английский — переключается автоматически</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>Настройка за 2 минуты</h3>
+                <p>Подключаете Instagram или Telegram — и готово. Никаких программистов</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section>
+        <h2>Прозрачные цены</h2>
+        
+        <div class="pricing-grid">
+            <div class="pricing-card">
+                <div class="plan-name">Бесплатно</div>
+                <div class="plan-price">0₸ <span>/месяц</span></div>
+                <ul class="plan-features">
+                    <li>100 сообщений/месяц</li>
+                    <li>Instagram + Telegram</li>
+                    <li>Базовая аналитика</li>
+                    <li>Поддержка в чате</li>
+                </ul>
+                <a href="/signup?plan=free" class="plan-button">Начать бесплатно</a>
+            </div>
+            
+            <div class="pricing-card featured">
+                <div class="plan-name">Базовый</div>
+                <div class="plan-price">2000 сом <span>/месяц</span></div>
+                <ul class="plan-features">
+                    <li>1000 сообщений/месяц</li>
+                    <li>Все платформы</li>
+                    <li>Полная аналитика</li>
+                    <li>Приоритетная поддержка</li>
+                    <li>Настройка AI под бизнес</li>
+                </ul>
+                <a href="/signup?plan=basic" class="plan-button">Попробовать 7 дней</a>
+            </div>
+            
+            <div class="pricing-card">
+                <div class="plan-name">Про</div>
+                <div class="plan-price">3500 сом <span>/месяц</span></div>
+                <ul class="plan-features">
+                    <li>Безлимит сообщений</li>
+                    <li>Все платформы + WhatsApp</li>
+                    <li>Расширенная аналитика</li>
+                    <li>Персональный менеджер</li>
+                    <li>Обучение AI на ваших данных</li>
+                    <li>Мультиюзер (3 аккаунта)</li>
+                </ul>
+                <a href="/signup?plan=pro" class="plan-button">Связаться с нами</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section>
+        <h2>Отзывы клиентов</h2>
+        
+        <div class="testimonials-grid">
+            <div class="testimonial-card">
+                <p class="testimonial-text">"Раньше я терял клиентов ночью — писали в Instagram, а я отвечал только утром. Сейчас REPLAI отвечает сразу, и записей стало больше на 40%."</p>
+                <div class="testimonial-author">
+                    <div class="author-avatar">А</div>
+                    <div class="author-info">
+                        <h4>Азиз</h4>
+                        <p>Barber Aziz, Бишкек</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="testimonial-card">
+                <p class="testimonial-text">"Настроил за 5 минут. AI отвечает так естественно, что клиенты не отличают от человека. Теперь могу спокойно заниматься готовкой."</p>
+                <div class="testimonial-author">
+                    <div class="author-avatar">Т</div>
+                    <div class="author-info">
+                        <h4>Тимур</h4>
+                        <p>Кафе "Дастархан"</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="testimonial-card">
+                <p class="testimonial-text">"Лучшее вложение в бизнес. За 1500 сом получаю менеджера, который работает 24/7 и не берет отпуск. Окупается в первую неделю."</p>
+                <div class="testimonial-author">
+                    <div class="author-avatar">М</div>
+                    <div class="author-info">
+                        <h4>Мария</h4>
+                        <p>Салон "Красотка"</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <div class="cta-section">
+        <h2>Готовы попробовать?</h2>
+        <p>Подключите AI-ассистента за 2 минуты и начните отвечать клиентам автоматически</p>
+        <a href="/signup" class="cta-button">Начать бесплатно →</a>
+        <p class="cta-note">7 дней бесплатно • Без карты • Отменить можно в любой момент</p>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-links">
+            <a href="/">Главная</a>
+            <a href="/business-info">О компании</a>
+            <a href="/#privacy">Конфиденциальность</a>
+            <a href="/#terms">Условия</a>
+            <a href="/#contact">Контакты</a>
+        </div>
+        <p>&copy; 2026 REPLAI. Bishkek, Kyrgyzstan</p>
+        <p style="margin-top: 10px; opacity: 0.7;">AI-ассистент для бизнеса</p>
+    </footer>
+
+    <script>
+        // Industry templates
+        const industries = {
+            barber: {
+                greeting: "Здравствуйте! Добро пожаловать в Barber Aziz 💈",
+                examples: [
+                    {
+                        user: "Сколько стоит стрижка?",
+                        ai: "Стрижка стоит 500 сом. Также есть:\n• Стрижка + борода – 700 сом\n• Только борода – 300 сом\n\nХотите записаться?"
+                    },
+                    {
+                        user: "Какие часы работы?",
+                        ai: "Мы работаем:\nПн-Пт: 09:00 - 19:00\nСб: 10:00 - 18:00\nВс: Выходной\n\nНа какое время удобно записать?"
+                    }
+                ]
+            },
+            restaurant: {
+                greeting: "Добро пожаловать в Дастархан! 🍕",
+                examples: [
+                    {
+                        user: "Какое меню?",
+                        ai: "У нас кыргызская кухня:\n• Лагман – 250 сом\n• Плов – 300 сом\n• Манты – 200 сом\n• Самсы – 50 сом/шт\n\nДоставка или на вынос?"
+                    },
+                    {
+                        user: "Доставка платная?",
+                        ai: "Доставка бесплатная при заказе от 500 сом. Доставляем за 30-40 минут.\n\nКакой адрес доставки?"
+                    }
+                ]
+            },
+            salon: {
+                greeting: "Здравствуйте! Салон Красотка приветствует вас 💅",
+                examples: [
+                    {
+                        user: "Сколько стоит маникюр?",
+                        ai: "Наши цены:\n• Маникюр – 400 сом\n• Маникюр + гель-лак – 700 сом\n• Педикюр – 500 сом\n• Окрашивание – от 1500 сом\n\nНа какую услугу записать?"
+                    },
+                    {
+                        user: "Можно на сегодня?",
+                        ai: "Есть окно сегодня в 16:00 или 18:30. Какое время удобнее?\n\nЗапишу ваше имя и телефон."
+                    }
+                ]
+            },
+            taxi: {
+                greeting: "Здравствуйте! Служба такси на связи 🚗",
+                examples: [
+                    {
+                        user: "Сколько до аэропорта?",
+                        ai: "До аэропорта Манас:\n• Легковое авто – 800 сом\n• Минивэн (до 7 чел) – 1200 сом\n\nВремя в пути ~40 минут. Откуда забрать?"
+                    },
+                    {
+                        user: "Нужно на завтра в 6 утра",
+                        ai: "Записал заказ на завтра 06:00.\nОткуда забрать?\nКуда везем?\n\nПодтвердите номер телефона для связи с водителем."
+                    }
+                ]
+            }
+        };
+
+        let currentIndustry = 'barber';
+        let exampleIndex = 0;
+
+        // Load initial messages
+        function loadIndustry(industry) {
+            currentIndustry = industry;
+            exampleIndex = 0;
+            const chat = document.getElementById('demoChat');
+            chat.innerHTML = `
+                <div class="message">
+                    <div class="message-bubble">${industries[industry].greeting}</div>
+                </div>
+            `;
+        }
+
+        // Send demo message
+        function sendDemoMessage() {
+            const input = document.getElementById('demoInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            const chat = document.getElementById('demoChat');
+            
+            // User message
+            chat.innerHTML += `
+                <div class="message user">
+                    <div class="message-bubble">${message}</div>
+                </div>
+            `;
+            
+            input.value = '';
+            chat.scrollTop = chat.scrollHeight;
+            
+            // AI response (simulate typing)
+            setTimeout(() => {
+                const response = generateResponse(message);
+                chat.innerHTML += `
+                    <div class="message">
+                        <div class="message-bubble">${response}</div>
+                    </div>
+                `;
+                chat.scrollTop = chat.scrollHeight;
+            }, 500);
+        }
+
+        // Generate AI response
+        function generateResponse(message) {
+            const industry = industries[currentIndustry];
+            
+            // Check examples
+            for (let ex of industry.examples) {
+                if (message.toLowerCase().includes(ex.user.toLowerCase().split(' ')[0])) {
+                    return ex.ai;
+                }
+            }
+            
+            // Default response
+            return "Извините, я ещё учусь! Напишите 'цены' или 'часы работы' чтобы увидеть пример ответа.";
+        }
+
+        // Industry tabs
+        document.querySelectorAll('.industry-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.industry-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                loadIndustry(tab.dataset.industry);
+            });
+        });
+
+        // Enter key
+        document.getElementById('demoInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendDemoMessage();
+        });
+
+        // Load initial industry
+        loadIndustry('barber');
+        
+        // Auto-play example
+        setTimeout(() => {
+            const example = industries.barber.examples[0];
+            document.getElementById('demoInput').value = example.user;
+            sendDemoMessage();
+        }, 2000);
+    </script>
+</body>
+</html>

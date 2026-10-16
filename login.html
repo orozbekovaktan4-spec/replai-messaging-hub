@@ -547,7 +547,13 @@
                 if (response.ok && data.success) {
                     localStorage.setItem('sessionId', data.sessionId);
                     localStorage.setItem('user', JSON.stringify(data.user));
-                    window.location.href = '/admin';
+                    
+                    // Redirect based on user type
+                    if (email === 'admin@replai.com') {
+                        window.location.href = '/admin';  // Super Admin Panel
+                    } else {
+                        window.location.href = '/business';  // Business Owner Panel
+                    }
                 } else {
                     showAlert(data.error || 'Login failed. Please try again.');
                     btn.disabled = false;

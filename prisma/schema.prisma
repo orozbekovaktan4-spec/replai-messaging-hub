@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Admin {
+  id        String   @id
+  email     String   @unique
+  password  String
+  name      String?
+  role      String   @default("admin")
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@index([email])
+}
+
+model ApiKey {
+  id           String    @id
+  key          String    @unique
+  name         String
+  type         String
+  provider     String?
+  status       String    @default("active")
+  requestCount Int       @default(0)
+  priority     Int       @default(1)
+  lastUsed     DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime
+
+  @@index([status])
+  @@index([key])
+}
+
+model Booking {
+  id            String   @id
+  businessId    String
+  customerName  String
+  customerPhone String?
+  userId        String
+  platform      String
+  service       String
+  date          String
+  time          String
+  status        String   @default("pending")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime
+
+  @@index([status])
+  @@index([date])
+  @@index([businessId])
+}
+
+model Business {
+  id              String    @id
+  email           String    @unique
+  name            String
+  industry        String?
+  ownerName       String?
+  password        String
+  whatsapp        String?
+  instagram       String?
+  telegram        String?
+  plan            String    @default("free")
+  subscriptionEnd DateTime?
+  messageCount    Int       @default(0)
+  status          String    @default("active")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime
+  Message         Message[]
+  Session         Session[]
+
+  @@index([status])
+  @@index([email])
+}
+
+model Message {
+  id         String   @id
+  businessId String
+  userId     String
+  platform   String
+  direction  String
+  content    String
+  status     String   @default("sent")
+  messageId  String?
+  createdAt  DateTime @default(now())
+  Business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([platform])
+  @@index([createdAt])
+  @@index([businessId])
+}
+
+model PlatformSettings {
+  id        String   @id
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@index([key])
+}
+
+model Session {
+  id         String   @id
+  businessId String
+  userId     String
+  platform   String
+  history    String   @default("[]")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  Business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, userId, platform])
+  @@index([updatedAt])
+  @@index([businessId])
+}

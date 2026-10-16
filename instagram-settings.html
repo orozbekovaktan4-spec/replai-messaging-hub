@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram Settings | REPLAI</title>
+    <style>
+        :root {
+            --primary: #0066FF;
+            --primary-dark: #0052CC;
+            --secondary: #00D9FF;
+            --dark: #0A1628;
+            --gray: #64748B;
+            --light: #F8FAFC;
+            --white: #FFFFFF;
+            --success: #10B981;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0A1628 0%, #1e293b 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--white);
+            font-size: 16px;
+            line-height: 1.6;
+            text-align: left;
+            direction: ltr;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+        }
+
+        .connection-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .connection-icon {
+            font-size: 48px;
+        }
+
+        .connection-details h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--success);
+            font-size: 16px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .btn-disconnect {
+            background: var(--danger);
+            color: var(--white);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-disconnect:hover {
+            background: #DC2626;
+            transform: translateY(-2px);
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .card h2 {
+            font-size: 22px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-description {
+            color: #94a3b8;
+            font-size: 16px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            text-align: left;
+        }
+
+        /* Toggle Switch */
+        .toggle-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .toggle-label {
+            flex: 1;
+            text-align: left;
+        }
+
+        .toggle-label h3 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .toggle-label p {
+            font-size: 15px;
+            color: #94a3b8;
+        }
+
+        .toggle {
+            width: 50px;
+            height: 28px;
+            background: #E2E8F0;
+            border-radius: 14px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle.active {
+            background: var(--success);
+        }
+
+        .toggle::after {
+            content: '';
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: left 0.3s;
+        }
+
+        .toggle.active::after {
+            left: 24px;
+        }
+
+        /* Checkbox */
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .checkbox-wrapper:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        .checkbox-wrapper label {
+            font-size: 16px;
+            cursor: pointer;
+            flex: 1;
+            text-align: left;
+        }
+
+        /* Rules Section */
+        .rules-list {
+            margin-top: 20px;
+        }
+
+        .rule-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .rule-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .rule-number {
+            font-size: 16px;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .btn-delete-rule {
+            background: transparent;
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+
+        .btn-delete-rule:hover {
+            background: var(--danger);
+            color: var(--white);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #cbd5e1;
+            text-align: left;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--white);
+            font-size: 16px;
+            font-family: inherit;
+            transition: all 0.3s;
+            text-align: left;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 6px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+            text-align: left;
+        }
+
+        .radio-option:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .radio-option input[type="radio"] {
+            margin-top: 3px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        .radio-option label {
+            flex: 1;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .radio-option label strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 16px;
+            text-align: left;
+        }
+
+        .radio-option label span {
+            font-size: 15px;
+            color: #94a3b8;
+            text-align: left;
+        }
+
+        .template-field {
+            display: none;
+            margin-top: 15px;
+        }
+
+        .template-field.show {
+            display: block;
+        }
+
+        .btn-add-rule {
+            width: 100%;
+            background: transparent;
+            color: var(--primary);
+            border: 2px dashed var(--primary);
+            padding: 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-top: 15px;
+        }
+
+        .btn-add-rule:hover {
+            background: rgba(0, 102, 255, 0.1);
+            border-style: solid;
+        }
+
+        /* Save Button */
+        .save-section {
+            position: sticky;
+            bottom: 20px;
+            margin-top: 30px;
+        }
+
+        .btn-save {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: var(--white);
+            border: none;
+            padding: 20px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 20px rgba(0, 102, 255, 0.3);
+        }
+
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(0, 102, 255, 0.4);
+        }
+
+        .btn-save:active {
+            transform: translateY(0);
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--success);
+            color: var(--white);
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+            display: none;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .notification.show {
+            display: flex;
+        }
+
+        .notification.error {
+            background: var(--danger);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .connection-info {
+                flex-direction: column;
+            }
+
+            .btn-disconnect {
+                width: 100%;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .rule-header {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+
+            .btn-delete-rule {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header with Connection Status -->
+        <div class="header">
+            <div class="connection-info">
+                <div class="connection-icon">📸</div>
+                <div class="connection-details">
+                    <h1>Instagram Settings</h1>
+                    <div class="connection-status">
+                        <span class="status-dot"></span>
+                        <span>Connected: <strong id="username">@loading...</strong></span>
+                    </div>
+                </div>
+            </div>
+            <button class="btn-disconnect" onclick="disconnectInstagram()">
+                Disconnect
+            </button>
+        </div>
+
+        <!-- Master Toggle: Activate AI Agent -->
+        <div class="card">
+            <h2>🤖 AI Agent</h2>
+            <p class="card-description">
+                Turn on AI to automatically respond to messages and comments. When off, no automatic responses will be sent.
+            </p>
+            <div class="toggle-wrapper">
+                <div class="toggle-label">
+                    <h3>Activate AI Agent</h3>
+                    <p>AI will respond based on your rules below</p>
+                </div>
+                <div class="toggle" id="masterToggle" onclick="toggleMaster()"></div>
+            </div>
+        </div>
+
+        <!-- Channel Selection -->
+        <div class="card">
+            <h2>📱 Active Channels</h2>
+            <p class="card-description">
+                Choose which channels AI should monitor and respond to.
+            </p>
+            <div class="checkbox-wrapper" onclick="toggleCheckbox('dmCheckbox')">
+                <input type="checkbox" id="dmCheckbox" checked onclick="event.stopPropagation()">
+                <label for="dmCheckbox">Direct Messages (DMs)</label>
+            </div>
+            <div class="checkbox-wrapper" onclick="toggleCheckbox('commentsCheckbox')">
+                <input type="checkbox" id="commentsCheckbox" checked onclick="event.stopPropagation()">
+                <label for="commentsCheckbox">Comments on posts</label>
+            </div>
+        </div>
+
+        <!-- Response Rules -->
+        <div class="card">
+            <h2>⚡ Response Rules</h2>
+            <p class="card-description">
+                Define how AI should respond to different types of messages. Rules are matched from top to bottom.
+            </p>
+            <div class="rules-list" id="rulesList">
+                <!-- Rules will be inserted here dynamically -->
+            </div>
+            <button class="btn-add-rule" onclick="addRule()">
+                + Add New Rule
+            </button>
+        </div>
+
+        <!-- Comment-to-DM Funnel -->
+        <div class="card">
+            <h2>💬 Comment-to-DM Funnel</h2>
+            <p class="card-description">
+                Automatically move conversations from public comments to private DMs.
+            </p>
+
+            <div class="toggle-wrapper" style="margin-bottom: 20px;">
+                <div class="toggle-label">
+                    <h3>Enable Comment-to-DM Funnel</h3>
+                    <p>Reply to comments and send DM automatically</p>
+                </div>
+                <div class="toggle" id="funnelToggle" onclick="toggleFunnel()"></div>
+            </div>
+
+            <div id="funnelOptions" style="display: none;">
+                <div class="checkbox-wrapper" onclick="toggleCheckbox('replyInCommentsCheckbox')">
+                    <input type="checkbox" id="replyInCommentsCheckbox" checked onclick="event.stopPropagation()">
+                    <label for="replyInCommentsCheckbox">Reply in comments</label>
+                </div>
+
+                <div class="form-group" style="margin-left: 32px;">
+                    <label>Comment reply template</label>
+                    <input type="text" id="commentTemplate" placeholder="Отправил вам в DM! 💬" value="Отправил вам в DM! 💬">
+                    <small>This message will be posted as a comment reply</small>
+                </div>
+
+                <div class="checkbox-wrapper" onclick="toggleCheckbox('sendDMCheckbox')" style="margin-top: 15px;">
+                    <input type="checkbox" id="sendDMCheckbox" checked onclick="event.stopPropagation()">
+                    <label for="sendDMCheckbox">Send Direct Message</label>
+                </div>
+
+                <div class="radio-group" style="margin-left: 32px; margin-top: 10px;">
+                    <div class="radio-option">
+                        <input type="radio" name="dmType" id="dmAI" value="ai_generated" checked>
+                        <label for="dmAI">
+                            <strong>AI Generated</strong>
+                            <span>AI creates a personalized response based on the comment</span>
+                        </label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" name="dmType" id="dmTemplate" value="template">
+                        <label for="dmTemplate">
+                            <strong>Template Message</strong>
+                            <span>Send a fixed message every time</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group template-field" id="dmTemplateField" style="margin-left: 32px;">
+                    <label>DM template text</label>
+                    <textarea id="dmTemplateText" placeholder="Hi! Thanks for your comment. How can I help you?"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="save-section">
+            <button class="btn-save" onclick="saveSettings()">
+                💾 Save Settings
+            </button>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div class="notification" id="notification">
+        <span id="notificationText"></span>
+    </div>
+
+    <script>
+        let settings = {
+            enabled: false,
+            directMessages: true,
+            comments: true,
+            rules: [],
+            commentToDM: {
+                enabled: false,
+                replyInComments: true,
+                commentTemplate: 'Отправил вам в DM! 💬',
+                sendDM: true,
+                dmType: 'ai_generated',
+                dmTemplate: ''
+            }
+        };
+
+        let ruleCounter = 0;
+
+        // Load settings on page load
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/instagram/settings');
+                const data = await response.json();
+
+                if (data.username) {
+                    document.getElementById('username').textContent = '@' + data.username;
+                }
+
+                if (data.settings) {
+                    settings = data.settings;
+
+                    // Update UI
+                    updateMasterToggle();
+                    document.getElementById('dmCheckbox').checked = settings.directMessages;
+                    document.getElementById('commentsCheckbox').checked = settings.comments;
+
+                    // Load rules
+                    settings.rules.forEach(rule => {
+                        addRuleToUI(rule);
+                    });
+
+                    // Load funnel settings
+                    updateFunnelToggle();
+                    document.getElementById('replyInCommentsCheckbox').checked = settings.commentToDM.replyInComments;
+                    document.getElementById('commentTemplate').value = settings.commentToDM.commentTemplate;
+                    document.getElementById('sendDMCheckbox').checked = settings.commentToDM.sendDM;
+
+                    if (settings.commentToDM.dmType === 'template') {
+                        document.getElementById('dmTemplate').checked = true;
+                        document.getElementById('dmTemplateField').classList.add('show');
+                    }
+                    document.getElementById('dmTemplateText').value = settings.commentToDM.dmTemplate || '';
+                }
+            } catch (error) {
+                console.error('Error loading settings:', error);
+                showNotification('Failed to load settings', 'error');
+            }
+        }
+
+        function toggleMaster() {
+            settings.enabled = !settings.enabled;
+            updateMasterToggle();
+        }
+
+        function updateMasterToggle() {
+            const toggle = document.getElementById('masterToggle');
+            if (settings.enabled) {
+                toggle.classList.add('active');
+            } else {
+                toggle.classList.remove('active');
+            }
+        }
+
+        function toggleFunnel() {
+            settings.commentToDM.enabled = !settings.commentToDM.enabled;
+            updateFunnelToggle();
+        }
+
+        function updateFunnelToggle() {
+            const toggle = document.getElementById('funnelToggle');
+            const options = document.getElementById('funnelOptions');
+
+            if (settings.commentToDM.enabled) {
+                toggle.classList.add('active');
+                options.style.display = 'block';
+            } else {
+                toggle.classList.remove('active');
+                options.style.display = 'none';
+            }
+        }
+
+        function toggleCheckbox(id) {
+            const checkbox = document.getElementById(id);
+            checkbox.checked = !checkbox.checked;
+        }
+
+        function addRule() {
+            const rule = {
+                id: 'rule_' + Date.now(),
+                trigger: '',
+                responseType: 'ai_generated',
+                template: '',
+                context: ''
+            };
+            settings.rules.push(rule);
+            addRuleToUI(rule);
+        }
+
+        function addRuleToUI(rule) {
+            ruleCounter++;
+            const rulesList = document.getElementById('rulesList');
+
+            const ruleDiv = document.createElement('div');
+            ruleDiv.className = 'rule-item';
+            ruleDiv.dataset.ruleId = rule.id;
+
+            ruleDiv.innerHTML = `
+                <div class="rule-header">
+                    <span class="rule-number">Rule ${ruleCounter}</span>
+                    ${ruleCounter > 1 ? '<button class="btn-delete-rule" onclick="deleteRule(\'' + rule.id + '\')">Delete</button>' : ''}
+                </div>
+
+                <div class="form-group">
+                    <label>Trigger Keywords (optional)</label>
+                    <input type="text" placeholder="price, цена, cost" value="${rule.trigger || ''}"
+                           onchange="updateRuleTrigger('${rule.id}', this.value)">
+                    <small>Comma-separated. Leave empty to match all messages.</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Response Type</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" name="responseType_${rule.id}" value="ai_generated"
+                                   ${rule.responseType === 'ai_generated' ? 'checked' : ''}
+                                   onchange="updateRuleType('${rule.id}', 'ai_generated')">
+                            <label>
+                                <strong>AI Generated (Dynamic)</strong>
+                                <span>AI creates a personalized response for each message</span>
+                            </label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" name="responseType_${rule.id}" value="template"
+                                   ${rule.responseType === 'template' ? 'checked' : ''}
+                                   onchange="updateRuleType('${rule.id}', 'template')">
+                            <label>
+                                <strong>Template Answer</strong>
+                                <span>Send the same fixed message every time</span>
+                            </label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" name="responseType_${rule.id}" value="extended_prompt"
+                                   ${rule.responseType === 'extended_prompt' ? 'checked' : ''}
+                                   onchange="updateRuleType('${rule.id}', 'extended_prompt')">
+                            <label>
+                                <strong>Extended Prompt</strong>
+                                <span>AI with extra context (e.g., price list, address)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group template-field ${rule.responseType === 'template' ? 'show' : ''}" id="template_${rule.id}">
+                    <label>Template Text</label>
+                    <textarea placeholder="Enter your fixed response here..."
+                              onchange="updateRuleTemplate('${rule.id}', this.value)">${rule.template || ''}</textarea>
+                </div>
+
+                <div class="form-group template-field ${rule.responseType === 'extended_prompt' ? 'show' : ''}" id="context_${rule.id}">
+                    <label>Additional Context for AI</label>
+                    <textarea placeholder="E.g., Our prices: Haircut $20, Beard trim $15..."
+                              onchange="updateRuleContext('${rule.id}', this.value)">${rule.context || ''}</textarea>
+                    <small>This context will be added to the AI's knowledge when responding</small>
+                </div>
+            `;
+
+            rulesList.appendChild(ruleDiv);
+        }
+
+        function updateRuleTrigger(ruleId, value) {
+            const rule = settings.rules.find(r => r.id === ruleId);
+            if (rule) rule.trigger = value;
+        }
+
+        function updateRuleType(ruleId, type) {
+            const rule = settings.rules.find(r => r.id === ruleId);
+            if (rule) rule.responseType = type;
+
+            // Show/hide template fields
+            document.getElementById('template_' + ruleId).classList.toggle('show', type === 'template');
+            document.getElementById('context_' + ruleId).classList.toggle('show', type === 'extended_prompt');
+        }
+
+        function updateRuleTemplate(ruleId, value) {
+            const rule = settings.rules.find(r => r.id === ruleId);
+            if (rule) rule.template = value;
+        }
+
+        function updateRuleContext(ruleId, value) {
+            const rule = settings.rules.find(r => r.id === ruleId);
+            if (rule) rule.context = value;
+        }
+
+        function deleteRule(ruleId) {
+            if (!confirm('Delete this rule?')) return;
+
+            settings.rules = settings.rules.filter(r => r.id !== ruleId);
+            const ruleDiv = document.querySelector(`[data-rule-id="${ruleId}"]`);
+            if (ruleDiv) ruleDiv.remove();
+
+            // Renumber rules
+            ruleCounter = 0;
+            document.querySelectorAll('.rule-item').forEach(item => {
+                ruleCounter++;
+                item.querySelector('.rule-number').textContent = 'Rule ' + ruleCounter;
+            });
+        }
+
+        async function saveSettings() {
+            // Gather all settings
+            settings.directMessages = document.getElementById('dmCheckbox').checked;
+            settings.comments = document.getElementById('commentsCheckbox').checked;
+
+            settings.commentToDM.replyInComments = document.getElementById('replyInCommentsCheckbox').checked;
+            settings.commentToDM.commentTemplate = document.getElementById('commentTemplate').value;
+            settings.commentToDM.sendDM = document.getElementById('sendDMCheckbox').checked;
+            settings.commentToDM.dmType = document.querySelector('input[name="dmType"]:checked').value;
+            settings.commentToDM.dmTemplate = document.getElementById('dmTemplateText').value;
+
+            try {
+                const response = await fetch('/api/instagram/settings', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification('✓ Settings saved successfully!', 'success');
+                } else {
+                    showNotification('Failed to save settings', 'error');
+                }
+            } catch (error) {
+                console.error('Error saving settings:', error);
+                showNotification('Failed to save settings', 'error');
+            }
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const text = document.getElementById('notificationText');
+
+            text.textContent = message;
+            notification.className = 'notification show ' + (type === 'error' ? 'error' : '');
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        async function disconnectInstagram() {
+            if (!confirm('Disconnect Instagram? You will need to reconnect to use this channel again.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/instagram/disconnect', {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    window.location.href = '/admin';
+                } else {
+                    showNotification('Failed to disconnect', 'error');
+                }
+            } catch (error) {
+                console.error('Error disconnecting:', error);
+                showNotification('Failed to disconnect', 'error');
+            }
+        }
+
+        // Toggle DM template field visibility
+        document.querySelectorAll('input[name="dmType"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                document.getElementById('dmTemplateField').classList.toggle('show', this.value === 'template');
+            });
+        });
+
+        // Load settings on page load
+        loadSettings();
+    </script>
+</body>
+</html>

@@ -2799,6 +2799,62 @@
       "timestamp": "2026-10-04T03:18:04.530Z",
       "date": "2026-10-04",
       "hour": 9
+    },
+    {
+      "id": "msg_1791374090518_ylah5s",
+      "platform": "instagram",
+      "direction": "incoming",
+      "userId": "959413120451030",
+      "userName": null,
+      "messageText": "Что у вас там",
+      "aiResponse": null,
+      "aiResponseSuccess": true,
+      "conversationId": "aWdfZAG06MzQwMjgyMzY2ODQxNzEwMzAxMjQ0MjU5NzI4NTE0NzU2NTQ5NDYx",
+      "timestamp": "2026-10-07T11:54:50.518Z",
+      "date": "2026-10-07",
+      "hour": 17
+    },
+    {
+      "id": "msg_1791374090520_l1cfee",
+      "platform": "instagram",
+      "direction": "outgoing",
+      "userId": "959413120451030",
+      "userName": null,
+      "messageText": "Hello! Welcome to Aziz Barber Shop. How can I help you today?  \n\n**Our services and prices:**  \n- Haircut – Classic men's haircut – 500 сом  \n- Beard trim – Beard shaping and trim – 300 сом  \n- Haircut + Beard – Full grooming package – 700 сом  \n- Kids haircut – Haircut for kids under 12 – 400 сом  \n- Head shave – Full head shave – 400 сом  \n\nWould you like to book an appointment or need more details?",
+      "aiResponse": "Hello! Welcome to Aziz Barber Shop. How can I help you today?  \n\n**Our services and prices:**  \n- Haircut – Classic men's haircut – 500 сом  \n- Beard trim – Beard shaping and trim – 300 сом  \n- Haircut + Beard – Full grooming package – 700 сом  \n- Kids haircut – Haircut for kids under 12 – 400 сом  \n- Head shave – Full head shave – 400 сом  \n\nWould you like to book an appointment or need more details?",
+      "aiResponseSuccess": true,
+      "conversationId": "aWdfZAG06MzQwMjgyMzY2ODQxNzEwMzAxMjQ0MjU5NzI4NTE0NzU2NTQ5NDYx",
+      "timestamp": "2026-10-07T11:54:50.520Z",
+      "date": "2026-10-07",
+      "hour": 17
+    },
+    {
+      "id": "msg_1791434030669_7gr3ki",
+      "platform": "instagram",
+      "direction": "incoming",
+      "userId": "4163267173964684",
+      "userName": null,
+      "messageText": "Привет",
+      "aiResponse": null,
+      "aiResponseSuccess": true,
+      "conversationId": "aWdfZAG06MzQwMjgyMzY2ODQxNzEwMzAxMjQ0Mjc2MjU1NDgzNzk1NTE3OTA2",
+      "timestamp": "2026-10-08T04:33:50.669Z",
+      "date": "2026-10-08",
+      "hour": 10
+    },
+    {
+      "id": "msg_1791434030670_v5kax0",
+      "platform": "instagram",
+      "direction": "outgoing",
+      "userId": "4163267173964684",
+      "userName": null,
+      "messageText": "Привет! Добро пожаловать в Aziz Barber Shop. Чем могу помочь?",
+      "aiResponse": "Привет! Добро пожаловать в Aziz Barber Shop. Чем могу помочь?",
+      "aiResponseSuccess": true,
+      "conversationId": "aWdfZAG06MzQwMjgyMzY2ODQxNzEwMzAxMjQ0Mjc2MjU1NDgzNzk1NTE3OTA2",
+      "timestamp": "2026-10-08T04:33:50.670Z",
+      "date": "2026-10-08",
+      "hour": 10
     }
   ],
   "metadata": {

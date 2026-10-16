@@ -1,5 +1,6 @@
 import fetch from 'node-fetch';
 import fs from 'fs';
+import { aiKeyManager } from './ai-key-manager.js';
 
 // Load business information
 const businessInfo = JSON.parse(fs.readFileSync('./business-info.json', 'utf8'));
@@ -168,16 +169,18 @@ async function getGroqResponse(userMessage, history, language, userId) {
 }
 
 // Option 2: Hugging Face Inference API (FREE)
-async function getHuggingFaceResponse(userMessage, history, language, userId) {
+async function getHuggingFaceResponse(userMessage, history, language, userId, apiKey = null) {
   try {
     const prompt = createSystemPrompt(language, userId) + '\n\n' +
                    history.map(h => `${h.role}: ${h.content}`).join('\n') +
                    `\nuser: ${userMessage}\nassistant:`;
 
+    const key = apiKey || process.env.HUGGINGFACE_API_KEY;
+
     const response = await fetch('https://api-inference.huggingface.co/models/mistralai/Mixtral-8x7B-Instruct-v0.1', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+        'Authorization': `Bearer ${key}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -259,62 +262,100 @@ async function getTogetherResponse(userMessage, history, language, userId) {
   }
 }
 
-// Main function - choose your provider
+// Main function with key rotation and retry logic
 export async function getAIResponse(userId, userMessage, language = readSavedLanguage()) {
-  try {
-    // Get or create conversation history for this user
-    if (!conversationHistory.has(userId)) {
-      conversationHistory.set(userId, []);
-    }
+  const provider = process.env.AI_PROVIDER || 'groq';
+  const maxRetries = 3;
+  let lastError = null;
+  let currentKeyId = null;
 
-    const history = conversationHistory.get(userId);
-
-    // Add user message to history
-    history.push({
-      role: 'user',
-      content: userMessage
-    });
-
-    // Keep only last 10 messages to manage context
-    if (history.length > 10) {
-      history.splice(0, history.length - 10);
-    }
-
-    // Choose your AI provider (set in .env: AI_PROVIDER=groq|huggingface|openrouter|together)
-    const provider = process.env.AI_PROVIDER || 'groq';
-    let assistantMessage;
-
-    switch (provider) {
-      case 'groq':
-        assistantMessage = await getGroqResponse(userMessage, history, language, userId);
-        break;
-      case 'huggingface':
-        assistantMessage = await getHuggingFaceResponse(userMessage, history, language, userId);
-        break;
-      case 'openrouter':
-        assistantMessage = await getOpenRouterResponse(userMessage, history, language, userId);
-        break;
-      case 'together':
-        assistantMessage = await getTogetherResponse(userMessage, history, language, userId);
-        break;
-      default:
-        throw new Error(`Unknown AI provider: ${provider}`);
-    }
-
-    // Add assistant response to history
-    history.push({
-      role: 'assistant',
-      content: assistantMessage
-    });
-
-    console.log(`[AI/${provider}] Response generated`);
-
-    return assistantMessage;
-
-  } catch (error) {
-    console.error('[AI] Error:', error.message);
-    return fallbackMessages[language] || fallbackMessages.en;
+  // Get or create conversation history for this user
+  if (!conversationHistory.has(userId)) {
+    conversationHistory.set(userId, []);
   }
+
+  const history = conversationHistory.get(userId);
+
+  // Add user message to history
+  history.push({
+    role: 'user',
+    content: userMessage
+  });
+
+  // Keep only last 10 messages to manage context
+  if (history.length > 10) {
+    history.splice(0, history.length - 10);
+  }
+
+  // Try up to 3 times with different keys
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      // Get next available key from pool
+      const keyData = aiKeyManager.getNextKey(provider);
+      currentKeyId = keyData.id;
+
+      console.log(`🤖 [AI] Attempt ${attempt + 1}/${maxRetries} using key: ${keyData.name} (${keyData.provider})`);
+
+      // Make API request with this key
+      let assistantMessage;
+      switch (provider) {
+        case 'groq':
+          assistantMessage = await getGroqResponse(userMessage, history, language, userId, keyData.apiKey);
+          break;
+        case 'huggingface':
+          assistantMessage = await getHuggingFaceResponse(userMessage, history, language, userId, keyData.apiKey);
+          break;
+        case 'openrouter':
+          assistantMessage = await getOpenRouterResponse(userMessage, history, language, userId, keyData.apiKey);
+          break;
+        case 'together':
+          assistantMessage = await getTogetherResponse(userMessage, history, language, userId, keyData.apiKey);
+          break;
+        default:
+          throw new Error(`Unknown AI provider: ${provider}`);
+      }
+
+      // Success! Update stats
+      aiKeyManager.updateKeyStats(keyData.id, true);
+
+      // Add assistant response to history
+      history.push({
+        role: 'assistant',
+        content: assistantMessage
+      });
+
+      return assistantMessage;
+
+    } catch (error) {
+      lastError = error;
+
+      // Check if rate limit error (429)
+      if (error.message?.includes('429') || error.message?.includes('rate limit') || error.message?.includes('Rate limit')) {
+        console.warn(`⚠️  Rate limit hit on key. Marking as rate limited and trying next key...`);
+        if (currentKeyId) {
+          aiKeyManager.markKeyAsRateLimited(currentKeyId, 60); // 60 min cooldown
+        }
+        // Try next key
+        continue;
+      }
+
+      // Update error stats
+      if (currentKeyId) {
+        aiKeyManager.updateKeyStats(currentKeyId, false, error.message);
+      }
+
+      // If not rate limit, don't retry with other keys
+      console.error(`❌ [AI] Error with provider ${provider}:`, error.message);
+      break;
+    }
+  }
+
+  // All keys exhausted or non-retryable error
+  console.error(`❌ [AI] All attempts failed. Last error:`, lastError?.message);
+
+  // Fallback message
+  const fallbackLang = language === 'auto' ? 'en' : language;
+  return fallbackMessages[fallbackLang] || fallbackMessages.en;
 }
 
 // Clear conversation history for a user (optional utility)

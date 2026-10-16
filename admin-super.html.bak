@@ -1,0 +1,2852 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REPLAI - Enterprise Admin</title>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Mobile Block -->
+    <script>
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768) {
+            document.write('<html><head><title>Desktop Only</title><style>body{font-family:-apple-system,sans-serif;background:linear-gradient(135deg,#0A1628,#1e293b);min-height:100vh;display:flex;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px}.container{max-width:500px}.icon{font-size:80px;margin-bottom:20px}h1{font-size:28px;margin-bottom:15px}p{font-size:18px;color:#94a3b8}</style></head><body><div class="container"><div class="icon">💻</div><h1>Desktop Only</h1><p>Enterprise Admin requires desktop browser</p></div></body></html>');
+            document.close();
+        }
+    </script>
+    
+    <style>
+        /* v0.dev Design Tokens - Applied 2026-10-12 */
+        :root[data-theme="light"] {
+            /* Brand Colors */
+            --brand-from: #60efff;
+            --brand-to: #0061ff;
+
+            /* Base Colors */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f6f7f9;
+            --bg-tertiary: #eef0f4;
+            --text-primary: #0b0d12;
+            --text-secondary: #5b6270;
+            --text-tertiary: #8a919f;
+            --border-color: #e3e6ec;
+
+            /* Shadows */
+            --card-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            --card-shadow-hover: 0 10px 15px rgba(0,0,0,0.1);
+            --shadow-brand: 0 8px 16px rgba(0,97,255,0.25);
+            --shadow-brand-hover: 0 8px 16px rgba(0,97,255,0.4);
+            --shadow-success: 0 8px 16px rgba(16,185,129,0.25);
+
+            /* Sidebar */
+            --sidebar-bg: #ffffff;
+            --sidebar-border: #e3e6ec;
+
+            /* Primary Colors */
+            --primary: #0061ff;
+            --primary-light: rgba(0,97,255,0.1);
+            --primary-foreground: #ffffff;
+
+            /* Status Colors */
+            --success: #10b981;
+            --success-light: rgba(16,185,129,0.12);
+            --warning: #f59e0b;
+            --warning-light: rgba(245,158,11,0.12);
+            --danger: #ef4444;
+            --danger-light: rgba(239,68,68,0.12);
+            --enterprise: #8b5cf6;
+
+            /* Platform Colors */
+            --instagram: #e1306c;
+            --whatsapp: #25d366;
+            --telegram: #0088cc;
+        }
+        :root[data-theme="dark"] {
+            /* Brand Colors (same as light) */
+            --brand-from: #60efff;
+            --brand-to: #0061ff;
+
+            /* Base Colors */
+            --bg-primary: #0e1015;
+            --bg-secondary: #08090c;
+            --bg-tertiary: #151820;
+            --text-primary: #eceef2;
+            --text-secondary: #8a919f;
+            --text-tertiary: #5b6270;
+            --border-color: #1d2129;
+
+            /* Shadows */
+            --card-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            --card-shadow-hover: 0 10px 15px rgba(0,0,0,0.5);
+            --shadow-brand: 0 8px 16px rgba(47,134,255,0.3);
+            --shadow-brand-hover: 0 8px 16px rgba(47,134,255,0.5);
+            --shadow-success: 0 8px 16px rgba(16,185,129,0.3);
+
+            /* Sidebar */
+            --sidebar-bg: #0b0c10;
+            --sidebar-border: #1d2129;
+
+            /* Primary Colors */
+            --primary: #2f86ff;
+            --primary-light: rgba(47,134,255,0.15);
+            --primary-foreground: #ffffff;
+
+            /* Status Colors */
+            --success: #10b981;
+            --success-light: rgba(16,185,129,0.15);
+            --warning: #f59e0b;
+            --warning-light: rgba(245,158,11,0.15);
+            --danger: #ef4444;
+            --danger-light: rgba(239,68,68,0.15);
+            --enterprise: #8b5cf6;
+
+            /* Platform Colors */
+            --instagram: #e1306c;
+            --whatsapp: #25d366;
+            --telegram: #0088cc;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; }
+        h2 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; }
+        h3 { font-size: 18px; font-weight: 600; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 72px;
+            height: 100vh;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+            z-index: 100;
+            transition: width 0.3s;
+        }
+        @media (min-width: 1024px) {
+            .sidebar {
+                width: 280px;
+            }
+        }
+        .sidebar-brand {
+            padding: 24px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: 700;
+            text-align: center;
+        }
+        .logo .repl {
+            background: linear-gradient(135deg, #60efff 0%, #0061ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .logo .ai {
+            background: linear-gradient(135deg, var(--brand-from) 0%, var(--brand-to) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .menu-section { padding: 20px 0; }
+        .section-header {
+            padding: 0 20px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-tertiary);
+        }
+        .menu-item {
+            padding: 12px;
+            margin: 4px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        .menu-item:hover {
+            background: var(--primary-light);
+            color: var(--text-primary);
+            transform: translateX(4px);
+        }
+        .menu-item.active {
+            background: linear-gradient(135deg, var(--brand-from) 0%, var(--brand-to) 100%);
+            color: white;
+            box-shadow: 0 8px 16px rgba(96,239,255,0.3);
+        }
+        
+        /* Header */
+        .header {
+            position: sticky;
+            top: 0;
+            height: 64px;
+            background: rgba(var(--bg-primary-rgb, 14, 16, 21), 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 50;
+        }
+        .header-title { font-size: 20px; font-weight: 600; }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .user-info:hover { background: var(--bg-secondary); }
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #60efff 0%, #0061ff 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            color: white;
+        }
+        .user-name { font-size: 14px; font-weight: 600; }
+        .theme-toggle {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .theme-toggle:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+        .btn-logout {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-logout:hover {
+            background: var(--danger-light);
+            border-color: rgba(239,68,68,0.4);
+            color: var(--danger);
+        }
+        
+        /* Main Content */
+        .main-content {
+            margin-left: 260px;
+            min-height: 100vh;
+        }
+        .content-section {
+            display: none;
+            padding: 32px;
+            animation: fadeIn 0.3s;
+        }
+        .content-section.active { display: block; }
+        
+        /* Cards */
+        .card {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s;
+        }
+        .card:hover {
+            box-shadow: var(--card-shadow-hover);
+            transform: scale(1.01);
+            border-color: rgba(47,134,255,0.3);
+        }
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .card-body { padding: 24px; }
+        
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        .stat-card {
+            background: var(--bg-primary);
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .stat-card:hover {
+            transform: scale(1.02);
+            box-shadow: var(--card-shadow-hover);
+            border-color: rgba(47,134,255,0.3);
+        }
+        .stat-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .stat-card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        .stat-card-icon.primary {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        .stat-card-icon.success {
+            background: var(--success-light);
+            color: var(--success);
+        }
+        .stat-card-icon.warning {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+        .stat-card-icon.danger {
+            background: var(--danger-light);
+            color: var(--danger);
+        }
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+            line-height: 1;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .stat-trend {
+            font-size: 12px;
+            font-weight: 500;
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .stat-trend.positive { color: var(--success); }
+        
+        /* Buttons */
+        .btn {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--brand-from) 0%, var(--brand-to) 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(0,97,255,0.25);
+        }
+        .btn-primary:hover {
+            box-shadow: 0 6px 16px rgba(0,97,255,0.35);
+            transform: translateY(-1px);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        .btn-primary-large {
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #34d399 0%, var(--success) 100%);
+            color: white;
+            border-radius: 10px;
+            box-shadow: var(--shadow-success);
+        }
+        .btn-primary-large:hover {
+            box-shadow: 0 8px 20px rgba(16,185,129,0.4);
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        .btn-secondary:hover {
+            background: var(--bg-tertiary);
+        }
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+            box-shadow: 0 4px 12px rgba(239,68,68,0.25);
+        }
+        .btn-danger:hover {
+            box-shadow: 0 6px 16px rgba(239,68,68,0.35);
+            transform: translateY(-1px);
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+        
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 80px;
+            right: -400px;
+            background: var(--bg-primary);
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 320px;
+            transition: right 0.3s cubic-bezier(0.21, 1.02, 0.73, 1);
+            z-index: 10000;
+        }
+        .toast.show { right: 24px; }
+        .toast-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        .toast-success {
+            border-left: 3px solid var(--success);
+        }
+        .toast-success .toast-icon {
+            background: var(--success-light);
+            color: var(--success);
+        }
+        .toast-error {
+            border-left: 3px solid var(--danger);
+        }
+        .toast-error .toast-icon {
+            background: var(--danger-light);
+            color: var(--danger);
+        }
+        .toast-info {
+            border-left: 3px solid var(--primary);
+        }
+        .toast-info .toast-icon {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        .toast-message {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        /* Loading */
+        .loading-spinner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 60px 20px;
+        }
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--border-color);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        .loading-text {
+            margin-top: 16px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #loading-overlay.show { opacity: 1; }
+        .loading-content {
+            background: var(--bg-primary);
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+        }
+        
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            padding: 24px;
+            animation: fadeIn 0.2s;
+        }
+        .modal.show { display: flex; }
+        .modal-content {
+            background: var(--bg-primary);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            animation: modalIn 0.2s;
+        }
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .modal-body { padding: 24px; }
+        .modal-footer {
+            padding: 20px 24px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        
+        /* Wizard */
+        .wizard-modal { max-width: 600px; padding: 0; }
+        .wizard-header {
+            padding: 32px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .wizard-steps {
+            display: flex;
+            gap: 16px;
+            margin-top: 24px;
+        }
+        .step {
+            flex: 1;
+            padding: 8px 16px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: all 0.3s;
+        }
+        .step.active {
+            background: linear-gradient(135deg, var(--brand-from) 0%, var(--brand-to) 100%);
+            color: white;
+            box-shadow: 0 0 0 0 rgba(96,239,255,0.4);
+            animation: stepPulse 2s ease-in-out infinite;
+        }
+        @keyframes stepPulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(96,239,255,0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 8px rgba(96,239,255,0);
+            }
+        }
+        .wizard-step {
+            display: none;
+            padding: 32px;
+        }
+        .wizard-step.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+        .form-group-large { margin-bottom: 24px; }
+        .form-group-large label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .form-group-large input,
+        .form-group-large select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 15px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+        .form-group-large input:focus,
+        .form-group-large select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px var(--primary-light);
+        }
+        .plan-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        .plan-option {
+            padding: 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .plan-option:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: var(--card-shadow-hover);
+        }
+        .plan-option.selected {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+        .plan-badge {
+            position: absolute;
+            top: -10px;
+            right: 12px;
+            background: linear-gradient(135deg, var(--brand-from) 0%, var(--brand-to) 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .plan-name {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        .plan-price {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 12px;
+        }
+        .plan-features {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+        .wizard-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-color);
+        }
+        .wizard-actions button { flex: 1; }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        /* DataTable */
+        .datatable-container {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            margin-top: 24px;
+        }
+        .datatable {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .datatable thead {
+            background: var(--bg-secondary);
+            border-bottom: 2px solid var(--border-color);
+        }
+        .datatable th {
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+        }
+        .datatable th:hover { background: var(--primary-light); }
+        .datatable tbody tr {
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.2s;
+        }
+        .datatable tbody tr:hover {
+            background: var(--bg-secondary);
+        }
+        .datatable td {
+            padding: 14px 16px;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        .business-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .business-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--brand-from) 0%, var(--brand-to) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            color: white;
+        }
+        .business-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .business-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .owner-email {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .badge {
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: capitalize;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .badge-active { background: var(--success-light); color: var(--success); }
+        .badge-trial { background: var(--warning-light); color: var(--warning); }
+        .badge-plan-free { background: var(--bg-secondary); color: var(--text-secondary); }
+        .badge-plan-pro { background: var(--primary-light); color: var(--primary); }
+        .channels-icons {
+            display: flex;
+            gap: 6px;
+        }
+        .channel-icon {
+            opacity: 0.3;
+            font-size: 18px;
+        }
+        .channel-icon.connected { opacity: 1; }
+        .health-badge {
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        .health-badge.excellent { background: var(--success-light); color: var(--success); }
+        .health-badge.good { background: var(--warning-light); color: var(--warning); }
+        .health-badge.poor { background: var(--danger-light); color: var(--danger); }
+        .actions-dropdown { position: relative; }
+        .actions-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: var(--card-shadow-hover);
+            min-width: 180px;
+            z-index: 100;
+        }
+        .actions-menu.show { display: block; }
+        .actions-menu a {
+            display: block;
+            padding: 10px 16px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .actions-menu a:hover { background: var(--bg-secondary); }
+        .actions-menu a.danger { color: var(--danger); }
+        
+        /* Charts */
+        .charts-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        .chart-card {
+            height: 350px;
+        }
+        .chart-card canvas {
+            margin-top: 20px;
+        }
+        
+        /* Activity Feed */
+        .activity-feed {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .activity-item {
+            display: flex;
+            gap: 12px;
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .activity-item:last-child { border-bottom: none; }
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--bg-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        .activity-content { flex: 1; }
+        .activity-title {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        .activity-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+        .activity-time {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+        
+        /* Filters */
+        .filters-bar {
+            background: var(--bg-primary);
+            padding: 20px 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            gap: 16px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+        .filter-group { flex: 1; min-width: 150px; }
+        .filter-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .filter-group select,
+        .filter-group input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        .search-group { flex: 2; min-width: 250px; }
+        .filter-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .btn-icon {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .btn-icon:hover {
+            background: var(--primary-light);
+            border-color: var(--primary);
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+        .empty-state h3 {
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+        .empty-state p {
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+        
+        /* Settings Tabs */
+        .settings-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            margin: 2px 0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .settings-nav-item:hover {
+            background: var(--primary-light);
+            color: var(--text-primary);
+        }
+        .settings-nav-item.active {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        .settings-tab {
+            display: none;
+        }
+        .settings-tab.active {
+            display: block;
+        }
+        
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 28px;
+            cursor: pointer;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-tertiary);
+            border-radius: 28px;
+            transition: 0.3s;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            border-radius: 50%;
+            transition: 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: var(--success);
+        }
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-brand">
+            <div style="display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--border-color);">
+                <div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, var(--brand-from), var(--brand-to)); display: flex; align-items: center; justify-content: center;">
+                    <i data-lucide="sparkles" style="width: 20px; height: 20px; color: white;"></i>
+                </div>
+                <div>
+                    <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">REPLAI Inc.</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">AI Messaging Hub</div>
+                </div>
+            </div>
+        </div>
+        <div class="menu-section">
+            <div class="section-header">MANAGEMENT</div>
+            <div class="menu-item active" onclick="showSection('businesses')">
+                <i data-lucide="building-2" style="width: 18px; height: 18px;"></i>
+                <span>Businesses Management</span>
+            </div>
+            <div class="menu-item" onclick="showSection('analytics')">
+                <i data-lucide="bar-chart-3" style="width: 18px; height: 18px;"></i>
+                <span>Platform Analytics</span>
+            </div>
+        </div>
+        <div class="menu-section">
+            <div class="section-header">CONFIGURATION</div>
+            <div class="menu-item" onclick="showSection('settings')">
+                <i data-lucide="settings" style="width: 18px; height: 18px;"></i>
+                <span>System Settings</span>
+            </div>
+        </div>
+        <div style="margin-top: auto; padding: 16px 20px; border-top: 1px solid var(--border-color);">
+            <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; background: var(--success-light); font-size: 12px; font-weight: 500; color: var(--success);">
+                <span style="position: relative; display: flex; width: 8px; height: 8px;">
+                    <span style="position: absolute; width: 100%; height: 100%; border-radius: 50%; background: var(--success); animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></span>
+                    <span style="position: relative; width: 8px; height: 8px; border-radius: 50%; background: var(--success);"></span>
+                </span>
+                All systems operational
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <div class="header">
+            <div style="width: 260px;">
+                <div class="logo">
+                    <span class="repl">REPL</span><span class="ai">AI</span>
+                </div>
+            </div>
+            <div class="header-title" id="section-title">Businesses Management</div>
+            <div class="header-actions">
+                <div class="user-info">
+                    <div class="user-avatar">SA</div>
+                    <span class="user-name">Super Admin</span>
+                </div>
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+                    <i data-lucide="sun" id="theme-icon-light" style="width: 16px; height: 16px; display: none;"></i>
+                    <i data-lucide="moon" id="theme-icon-dark" style="width: 16px; height: 16px;"></i>
+                </button>
+                <button class="btn-logout" onclick="handleLogout()">
+                    <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Businesses Section -->
+        <div id="businesses-section" class="content-section active">
+            <!-- Header with Add Button -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+                <div>
+                    <h1 style="margin-bottom: 4px;">Businesses Management</h1>
+                    <p style="font-size: 14px; color: var(--text-secondary);">Onboard, monitor, and manage every business on the platform.</p>
+                </div>
+                <button class="btn-primary-large" onclick="showQuickAddBusiness()">
+                    <i data-lucide="plus" style="width: 20px; height: 20px;"></i>
+                    Add New Business
+                </button>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="businesses-total">0</div>
+                    <div class="stat-label">Total Businesses</div>
+                    <div class="stat-trend positive">↑ +12% this month</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="businesses-active">0</div>
+                    <div class="stat-label">Active Today</div>
+                    <div class="stat-trend positive">↑ +5% this week</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="businesses-messages">0</div>
+                    <div class="stat-label">Messages</div>
+                    <div class="stat-trend positive">↑ +18% this week</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="businesses-health">0%</div>
+                    <div class="stat-label">Health Score</div>
+                    <div class="stat-trend positive">↑ +3%</div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters-bar">
+                <div class="filter-group">
+                    <label>Status</label>
+                    <select id="filter-status" onchange="applyFilters()">
+                        <option value="all">All</option>
+                        <option value="active">Active</option>
+                        <option value="trial">Trial</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Plan</label>
+                    <select id="filter-plan" onchange="applyFilters()">
+                        <option value="all">All Plans</option>
+                        <option value="free">Free</option>
+                        <option value="pro">Pro</option>
+                    </select>
+                </div>
+                <div class="filter-group search-group">
+                    <label>Search</label>
+                    <input type="search" id="search-businesses" placeholder="Search businesses..." oninput="applyFilters()">
+                </div>
+                <div class="filter-actions">
+                    <button class="btn-icon" onclick="resetFilters()" title="Reset">↻</button>
+                </div>
+            </div>
+
+            <!-- DataTable -->
+            <div class="datatable-container">
+                <table class="datatable">
+                    <thead>
+                        <tr>
+                            <th>Business</th>
+                            <th>Owner</th>
+                            <th>Status</th>
+                            <th>Plan</th>
+                            <th>Channels</th>
+                            <th>Messages</th>
+                            <th>Health</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="businesses-table-body">
+                        <tr>
+                            <td colspan="8">
+                                <div class="loading-spinner">
+                                    <div class="spinner"></div>
+                                    <div class="loading-text">Loading businesses...</div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Analytics Section -->
+        <div id="analytics-section" class="content-section">
+            <!-- Stats -->
+            <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+                <div class="stat-card">
+                    <div style="display: flex; align-items: flex-start; gap: 16px;">
+                        <div style="width: 40px; height: 40px; border-radius: 10px; background: var(--primary-light); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <i data-lucide="building-2" style="width: 20px; height: 20px; color: var(--primary);"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div class="stat-label">Total Businesses</div>
+                            <div class="stat-number" style="font-size: 28px;" id="analytics-total">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div style="display: flex; align-items: flex-start; gap: 16px;">
+                        <div style="width: 40px; height: 40px; border-radius: 10px; background: var(--success-light); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <i data-lucide="check-circle" style="width: 20px; height: 20px; color: var(--success);"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div class="stat-label">Active Today</div>
+                            <div class="stat-number" style="font-size: 28px;" id="analytics-active">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div style="display: flex; align-items: flex-start; gap: 16px;">
+                        <div style="width: 40px; height: 40px; border-radius: 10px; background: var(--primary-light); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <i data-lucide="message-circle" style="width: 20px; height: 20px; color: var(--primary);"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div class="stat-label">Total Messages</div>
+                            <div class="stat-number" style="font-size: 28px;" id="analytics-messages">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div style="display: flex; align-items: flex-start; gap: 16px;">
+                        <div style="width: 40px; height: 40px; border-radius: 10px; background: var(--success-light); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <i data-lucide="activity" style="width: 20px; height: 20px; color: var(--success);"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div class="stat-label">Platform Health</div>
+                            <div class="stat-number" style="font-size: 28px;" id="analytics-health">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-row">
+                <div class="card chart-card">
+                    <div class="card-header">
+                        <h3>Business Growth</h3>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="growth-chart"></canvas>
+                    </div>
+                </div>
+                <div class="card chart-card">
+                    <div class="card-header">
+                        <h3>Messages by Platform</h3>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="platform-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Feed -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Recent Activity</h3>
+                    <button class="btn-icon" onclick="loadAnalyticsDashboard()">🔄</button>
+                </div>
+                <div class="activity-feed" id="activity-feed">
+                    <div class="loading-spinner">
+                        <div class="spinner"></div>
+                        <div class="loading-text">Loading activity...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div id="settings-section" class="content-section">
+            <div style="margin-bottom: 32px;">
+                <h1 style="margin-bottom: 4px;">System Settings</h1>
+                <p style="font-size: 14px; color: var(--text-secondary);">Configure platform defaults, security, and billing.</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 240px 1fr; gap: 32px;">
+                <!-- Settings Sidebar -->
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; height: fit-content;">
+                    <div class="settings-nav-item active" onclick="showSettingsTab('general')">
+                        <i data-lucide="settings" style="width: 18px; height: 18px;"></i>
+                        <span>General</span>
+                    </div>
+                    <div class="settings-nav-item" onclick="showSettingsTab('security')">
+                        <i data-lucide="lock" style="width: 18px; height: 18px;"></i>
+                        <span>Security</span>
+                    </div>
+                    <div class="settings-nav-item" onclick="showSettingsTab('notifications')">
+                        <i data-lucide="bell" style="width: 18px; height: 18px;"></i>
+                        <span>Notifications</span>
+                    </div>
+                    <div class="settings-nav-item" onclick="showSettingsTab('api')">
+                        <i data-lucide="key" style="width: 18px; height: 18px;"></i>
+                        <span>API Keys</span>
+                    </div>
+                    <div class="settings-nav-item" onclick="showSettingsTab('billing')">
+                        <i data-lucide="credit-card" style="width: 18px; height: 18px;"></i>
+                        <span>Billing</span>
+                    </div>
+                </div>
+
+                <!-- Settings Content -->
+                <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 12px; padding: 32px;">
+                    <!-- General Tab -->
+                    <div id="settings-general" class="settings-tab active">
+                        <h2 style="margin-bottom: 8px;">General Settings</h2>
+                        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 32px;">Basic configuration that applies across the whole platform.</p>
+
+                        <div style="display: flex; flex-direction: column; gap: 24px;">
+                            <div>
+                                <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;">Platform Name</label>
+                                <input type="text" value="REPLAI" style="width: 100%; max-width: 500px; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
+                                <p style="font-size: 12px; color: var(--text-tertiary); margin-top: 6px;">Shown in emails, the business dashboard, and the browser tab.</p>
+                            </div>
+
+                            <div>
+                                <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;">Default Language</label>
+                                <select style="width: 100%; max-width: 500px; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; cursor: pointer;">
+                                    <option>English</option>
+                                    <option>Русский</option>
+                                    <option>Кыргызча</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;">Time Zone</label>
+                                <select style="width: 100%; max-width: 500px; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; cursor: pointer;">
+                                    <option>(UTC+05:00) Tashkent</option>
+                                    <option>(UTC+03:00) Moscow</option>
+                                    <option>(UTC+00:00) London</option>
+                                    <option>(UTC-05:00) New York</option>
+                                </select>
+                            </div>
+
+                            <div style="padding-top: 16px;">
+                                <button class="btn-primary-large" onclick="saveGeneralSettings()">
+                                    <i data-lucide="check" style="width: 20px; height: 20px;"></i>
+                                    Save Changes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Security Tab -->
+                    <div id="settings-security" class="settings-tab">
+                        <h2 style="margin-bottom: 8px;">Security Settings</h2>
+                        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 32px;">Protect the super admin account.</p>
+
+                        <div style="display: flex; flex-direction: column; gap: 32px;">
+                            <!-- Two-Factor Authentication -->
+                            <div style="padding-bottom: 24px; border-bottom: 1px solid var(--border-color);">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                                    <div>
+                                        <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">Two-Factor Authentication</h3>
+                                        <p style="font-size: 14px; color: var(--text-secondary);">Require a one-time code from an authenticator app at sign in.</p>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="toggle-2fa">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Login Notifications -->
+                            <div style="padding-bottom: 24px; border-bottom: 1px solid var(--border-color);">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                                    <div>
+                                        <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">Login Notifications</h3>
+                                        <p style="font-size: 14px; color: var(--text-secondary);">Get an email whenever a new device signs in to this account.</p>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="toggle-login-notif" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Change Password -->
+                            <div>
+                                <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 24px;">Change Password</h3>
+                                
+                                <div style="display: flex; flex-direction: column; gap: 20px;">
+                                    <div>
+                                        <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;">Current password</label>
+                                        <input type="password" id="current-password" placeholder="Enter current password" style="width: 100%; max-width: 500px; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
+                                    </div>
+
+                                    <div>
+                                        <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;">New password</label>
+                                        <input type="password" id="new-password" placeholder="Enter new password" style="width: 100%; max-width: 500px; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
+                                        <p style="font-size: 12px; color: var(--text-tertiary); margin-top: 6px;">Minimum 8 characters.</p>
+                                    </div>
+
+                                    <div style="padding-top: 8px;">
+                                        <button class="btn-primary-large" onclick="updatePassword()">
+                                            Update Password
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notifications Tab -->
+                    <div id="settings-notifications" class="settings-tab">
+                        <h2 style="margin-bottom: 8px;">Notification Preferences</h2>
+                        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 32px;">Choose which updates land in your inbox.</p>
+
+                        <div style="display: flex; flex-direction: column; gap: 24px;">
+                            <h3 style="font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary);">EMAIL NOTIFICATIONS</h3>
+
+                            <!-- New Business Registration -->
+                            <div style="padding-bottom: 20px; border-bottom: 1px solid var(--border-color);">
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <div>
+                                        <h4 style="font-size: 15px; font-weight: 600; margin-bottom: 4px;">New Business Registration</h4>
+                                        <p style="font-size: 14px; color: var(--text-secondary);">When a new business signs up on the platform.</p>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- System Alerts -->
+                            <div style="padding-bottom: 20px; border-bottom: 1px solid var(--border-color);">
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <div>
+                                        <h4 style="font-size: 15px; font-weight: 600; margin-bottom: 4px;">System Alerts</h4>
+                                        <p style="font-size: 14px; color: var(--text-secondary);">Outages, degraded performance, and quota warnings.</p>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Weekly Reports -->
+                            <div style="padding-bottom: 20px; border-bottom: 1px solid var(--border-color);">
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <div>
+                                        <h4 style="font-size: 15px; font-weight: 600; margin-bottom: 4px;">Weekly Reports</h4>
+                                        <p style="font-size: 14px; color: var(--text-secondary);">A Monday summary of growth and message volume.</p>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- API Tab -->
+                    <div id="settings-api" class="settings-tab">
+                        <h2 style="margin-bottom: 8px;">API Keys</h2>
+                        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 32px;">Keys grant full access to the REPLAI API. Keep them secret.</p>
+
+                        <!-- Production API Key -->
+                        <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <h3 style="font-size: 16px; font-weight: 600;">Production API Key</h3>
+                                    <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; background: var(--success-light); color: var(--success);">
+                                        <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--success);"></span>
+                                        Active
+                                    </span>
+                                </div>
+                                <button style="padding: 8px 16px; border-radius: 8px; border: none; background: var(--danger); color: white; font-size: 13px; font-weight: 600; cursor: pointer;" onclick="revokeAPIKey()">
+                                    Revoke
+                                </button>
+                            </div>
+
+                            <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; display: flex; align-items: center; justify-content: space-between; font-family: monospace; font-size: 14px;">
+                                <span id="api-key-display">rpl_live_••••••••••••••••••••••••</span>
+                                <div style="display: flex; gap: 8px;">
+                                    <button style="padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; background: transparent; cursor: pointer; display: flex; align-items: center; gap: 6px;" onclick="toggleAPIKeyVisibility()">
+                                        <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
+                                    </button>
+                                    <button style="padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; background: transparent; cursor: pointer; display: flex; align-items: center; gap: 6px;" onclick="copyAPIKey()">
+                                        <i data-lucide="copy" style="width: 16px; height: 16px;"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <p style="font-size: 12px; color: var(--text-tertiary); margin-top: 12px;">
+                                Created: Oct 11, 2026 • Last used: 2 hours ago
+                            </p>
+                        </div>
+
+                        <button class="btn-primary-large" onclick="generateNewAPIKey()">
+                            <i data-lucide="plus" style="width: 20px; height: 20px;"></i>
+                            Generate New Key
+                        </button>
+
+                        <!-- AI Provider Keys Section -->
+                        <div style="margin-top: 48px; padding-top: 48px; border-top: 2px solid var(--border-color);">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+                                <div>
+                                    <h2 style="margin-bottom: 8px;">AI Provider Keys</h2>
+                                    <p style="font-size: 14px; color: var(--text-secondary);">Manage API keys for Groq, OpenRouter, Together, and HuggingFace with automatic rotation.</p>
+                                </div>
+                                <button class="btn-primary-large" onclick="showAddAIKeyModal()">
+                                    <i data-lucide="plus" style="width: 20px; height: 20px;"></i>
+                                    Add AI Provider Key
+                                </button>
+                            </div>
+
+                            <!-- AI Keys List -->
+                            <div id="ai-keys-container">
+                                <!-- Keys will be loaded here -->
+                                <div style="text-align: center; padding: 60px 20px; background: var(--bg-secondary); border: 1px dashed var(--border-color); border-radius: 12px;">
+                                    <i data-lucide="key" style="width: 48px; height: 48px; color: var(--text-tertiary); margin-bottom: 16px;"></i>
+                                    <p style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">No AI provider keys yet</p>
+                                    <p style="font-size: 14px; color: var(--text-secondary);">Add your first Groq, OpenRouter, Together, or HuggingFace key to enable automatic rotation.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Billing Tab -->
+                    <div id="settings-billing" class="settings-tab">
+                        <h2 style="margin-bottom: 8px;">Billing & Usage</h2>
+                        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 32px;">Your subscription and this month's consumption.</p>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
+                            <!-- Current Plan Card -->
+                            <div style="background: var(--bg-primary); border: 2px solid var(--primary); border-radius: 16px; padding: 28px;">
+                                <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--primary); margin-bottom: 12px;">PROFESSIONAL PLAN</div>
+                                <div style="display: flex; align-items: baseline; margin-bottom: 20px;">
+                                    <span style="font-size: 40px; font-weight: 700;">$99</span>
+                                    <span style="font-size: 16px; color: var(--text-secondary);">/month</span>
+                                </div>
+
+                                <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
+                                    <div style="display: flex; align-items: center; gap: 10px; font-size: 14px;">
+                                        <i data-lucide="check" style="width: 18px; height: 18px; color: var(--success);"></i>
+                                        <span>100,000 messages per month</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 10px; font-size: 14px;">
+                                        <i data-lucide="check" style="width: 18px; height: 18px; color: var(--success);"></i>
+                                        <span>Unlimited businesses</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 10px; font-size: 14px;">
+                                        <i data-lucide="check" style="width: 18px; height: 18px; color: var(--success);"></i>
+                                        <span>All messaging channels</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 10px; font-size: 14px;">
+                                        <i data-lucide="check" style="width: 18px; height: 18px; color: var(--success);"></i>
+                                        <span>Priority support & SLA</span>
+                                    </div>
+                                </div>
+
+                                <button class="btn-primary-large" style="width: 100%;" onclick="upgradePlan()">
+                                    Upgrade Plan
+                                </button>
+                            </div>
+
+                            <!-- Usage This Month -->
+                            <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 16px; padding: 28px;">
+                                <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 24px;">Usage This Month</h3>
+
+                                <!-- Progress Bar -->
+                                <div style="margin-bottom: 12px;">
+                                    <div style="width: 100%; height: 12px; background: var(--bg-secondary); border-radius: 20px; overflow: hidden;">
+                                        <div style="width: 65%; height: 100%; background: linear-gradient(90deg, var(--brand-from), var(--brand-to)); border-radius: 20px;"></div>
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                                    <span style="font-size: 16px; font-weight: 600;">65,000 / 100,000 messages</span>
+                                    <span style="font-size: 16px; font-weight: 600; color: var(--primary);">65%</span>
+                                </div>
+
+                                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 32px;">
+                                    Resets on Nov 1, 2026. You'll get an alert at 80% usage.
+                                </p>
+
+                                <button style="padding: 12px 24px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; font-weight: 600; cursor: pointer; width: 100%;" onclick="viewInvoices()">
+                                    View Invoices
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Add Business Modal -->
+    <div id="quick-add-modal" class="modal">
+        <div class="modal-content wizard-modal">
+            <div class="wizard-header">
+                <h2>Add New Business</h2>
+                <div class="wizard-steps">
+                    <div class="step active" id="step-indicator-1">1. Basic Info</div>
+                    <div class="step" id="step-indicator-2">2. Contact</div>
+                    <div class="step" id="step-indicator-3">3. Setup</div>
+                </div>
+            </div>
+
+            <!-- Step 1: Basic Info -->
+            <div class="wizard-step active" id="wizard-step-1">
+                <div class="form-group-large">
+                    <label>Business Name *</label>
+                    <input type="text" id="quick-business-name" placeholder="e.g., Aziz Barber Shop" autofocus>
+                </div>
+                <div class="form-group-large">
+                    <label>Industry</label>
+                    <select id="quick-industry">
+                        <option>Barber Shop</option>
+                        <option>Restaurant</option>
+                        <option>Retail Store</option>
+                        <option>Salon & Spa</option>
+                        <option>Healthcare</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+                <div class="wizard-actions">
+                    <button class="btn btn-secondary" onclick="closeQuickAdd()">Cancel</button>
+                    <button class="btn btn-primary" onclick="nextWizardStep(2)">Next →</button>
+                </div>
+            </div>
+
+            <!-- Step 2: Contact -->
+            <div class="wizard-step" id="wizard-step-2">
+                <div class="form-group-large">
+                    <label>Owner Name *</label>
+                    <input type="text" id="quick-owner-name" placeholder="e.g., Aziz Karimov">
+                </div>
+                <div class="form-group-large">
+                    <label>Email *</label>
+                    <input type="email" id="quick-email" placeholder="owner@business.com">
+                </div>
+                <div class="form-group-large">
+                    <label>Phone</label>
+                    <input type="tel" id="quick-phone" placeholder="+996 555 123 456">
+                </div>
+                <div class="wizard-actions">
+                    <button class="btn btn-secondary" onclick="prevWizardStep(1)">← Back</button>
+                    <button class="btn btn-primary" onclick="nextWizardStep(3)">Next →</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Setup -->
+            <div class="wizard-step" id="wizard-step-3">
+                <div class="form-group-large">
+                    <label>Choose Plan</label>
+                    <div class="plan-selector">
+                        <div class="plan-option" data-plan="free" onclick="selectPlan('free')">
+                            <div class="plan-name">Free</div>
+                            <div class="plan-price">$0/mo</div>
+                            <div class="plan-features">
+                                • 1,000 messages/mo<br>
+                                • 1 channel<br>
+                                • Basic support
+                            </div>
+                        </div>
+                        <div class="plan-option selected" data-plan="pro" onclick="selectPlan('pro')">
+                            <div class="plan-badge">POPULAR</div>
+                            <div class="plan-name">Pro</div>
+                            <div class="plan-price">$29/mo</div>
+                            <div class="plan-features">
+                                • 10,000 messages/mo<br>
+                                • 3 channels<br>
+                                • Priority support
+                            </div>
+                        </div>
+                        <div class="plan-option" data-plan="enterprise" onclick="selectPlan('enterprise')">
+                            <div class="plan-name">Enterprise</div>
+                            <div class="plan-price">Custom</div>
+                            <div class="plan-features">
+                                • Unlimited messages<br>
+                                • All channels<br>
+                                • Dedicated support
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group-large">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="send-welcome-email" checked>
+                        Send welcome email with login instructions
+                    </label>
+                </div>
+                <div class="wizard-actions">
+                    <button class="btn btn-secondary" onclick="prevWizardStep(2)">← Back</button>
+                    <button class="btn-primary-large" onclick="createBusinessQuick()">
+                        <i data-lucide="check" style="width: 20px; height: 20px;"></i>
+                        Create Business
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirm-modal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 id="confirm-title">Confirm Action</h3>
+            </div>
+            <div class="modal-body">
+                <p id="confirm-message"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+                <button class="btn btn-danger" id="confirm-action-btn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global State
+        let selectedPlan = 'pro';
+        let allBusinesses = [];
+        let filteredBusinesses = [];
+        let currentFilters = { status: 'all', plan: 'all', search: '' };
+        
+        // Settings Tab Switching
+        function showSettingsTab(tabName) {
+            // Update nav items
+            document.querySelectorAll('.settings-nav-item').forEach(item => item.classList.remove('active'));
+            event.target.closest('.settings-nav-item').classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.settings-tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(`settings-${tabName}`).classList.add('active');
+
+            // Load AI provider keys when API tab is shown
+            if (tabName === 'api') {
+                loadAIProviderKeys();
+            }
+
+            lucide.createIcons();
+        }
+        
+        function saveGeneralSettings() {
+            const platformName = document.getElementById('platform-name').value;
+            const defaultLanguage = document.getElementById('default-language').value;
+            const timeZone = document.getElementById('timezone').value;
+
+            fetch('/api/admin/platform-settings/general', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ platformName, defaultLanguage, timeZone })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Settings saved successfully', 'success');
+                } else {
+                    showToast(data.error || 'Failed to save settings', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Save error:', error);
+                showToast('Failed to save settings', 'error');
+            });
+        }
+        
+        // Security Functions
+        function updatePassword() {
+            const current = document.getElementById('current-password').value;
+            const newPass = document.getElementById('new-password').value;
+
+            if (!current || !newPass) {
+                showToast('Please fill in all fields', 'error');
+                return;
+            }
+
+            if (newPass.length < 8) {
+                showToast('Password must be at least 8 characters', 'error');
+                return;
+            }
+
+            fetch('/api/admin/update-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    currentPassword: current,
+                    newPassword: newPass,
+                    email: 'admin@replai.com'
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Password updated successfully', 'success');
+                    document.getElementById('current-password').value = '';
+                    document.getElementById('new-password').value = '';
+                } else {
+                    showToast(data.error || 'Failed to update password', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Password update error:', error);
+                showToast('Failed to update password', 'error');
+            });
+        }
+
+        // API Functions
+        let apiKeyVisible = false;
+        let fullAPIKey = 'rpl_live_sk_1a2b3c4d5e6f7g8h9i0j';
+        let currentAPIKeyId = null;
+
+        function loadAPIKeys() {
+            fetch('/api/admin/api-keys')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.data.length > 0) {
+                    const key = data.data[0];
+                    fullAPIKey = key.key;
+                    currentAPIKeyId = key.id;
+                    document.getElementById('api-key-display').textContent = maskAPIKey(key.key);
+                }
+            })
+            .catch(error => console.error('Failed to load API keys:', error));
+        }
+
+        function maskAPIKey(key) {
+            return key.substring(0, 13) + '••••••••••••••••••••••••';
+        }
+
+        function toggleAPIKeyVisibility() {
+            apiKeyVisible = !apiKeyVisible;
+            const display = document.getElementById('api-key-display');
+            display.textContent = apiKeyVisible ? fullAPIKey : maskAPIKey(fullAPIKey);
+            lucide.createIcons();
+        }
+
+        function copyAPIKey() {
+            navigator.clipboard.writeText(fullAPIKey);
+            showToast('API key copied to clipboard', 'success');
+        }
+
+        function revokeAPIKey() {
+            if (!confirm('Are you sure you want to revoke this API key? This action cannot be undone.')) {
+                return;
+            }
+
+            fetch(`/api/admin/api-keys/${currentAPIKeyId}`, {
+                method: 'DELETE'
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('API key revoked', 'success');
+                    loadAPIKeys();
+                } else {
+                    showToast('Failed to revoke API key', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Revoke error:', error);
+                showToast('Failed to revoke API key', 'error');
+            });
+        }
+
+        function generateNewAPIKey() {
+            fetch('/api/admin/api-keys/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: 'Production API Key' })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('New API key generated', 'success');
+                    fullAPIKey = data.data.key;
+                    currentAPIKeyId = data.data.id;
+                    document.getElementById('api-key-display').textContent = maskAPIKey(data.data.key);
+                    lucide.createIcons();
+                } else {
+                    showToast('Failed to generate API key', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Generate error:', error);
+                showToast('Failed to generate API key', 'error');
+            });
+        }
+
+        // Load platform settings
+        function loadPlatformSettings() {
+            fetch('/api/admin/platform-settings')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const settings = data.data;
+
+                    // Populate General Settings
+                    document.getElementById('platform-name').value = settings.general.platformName;
+                    document.getElementById('default-language').value = settings.general.defaultLanguage;
+                    document.getElementById('timezone').value = settings.general.timeZone;
+
+                    // Populate Security Settings
+                    document.getElementById('toggle-2fa').checked = settings.security.twoFactorEnabled;
+                    document.getElementById('toggle-login-notif').checked = settings.security.loginNotifications;
+
+                    // Populate Notifications
+                    const notifToggles = document.querySelectorAll('#settings-notifications input[type="checkbox"]');
+                    if (notifToggles.length >= 3) {
+                        notifToggles[0].checked = settings.notifications.newBusinessRegistration;
+                        notifToggles[1].checked = settings.notifications.systemAlerts;
+                        notifToggles[2].checked = settings.notifications.weeklyReports;
+                    }
+
+                    // Update billing display
+                    if (settings.billing) {
+                        const percentage = Math.round((settings.billing.currentUsage / settings.billing.monthlyLimit) * 100);
+                        const progressBar = document.querySelector('.progress-fill');
+                        if (progressBar) {
+                            progressBar.style.width = `${percentage}%`;
+                        }
+                    }
+                }
+            })
+            .catch(error => console.error('Failed to load settings:', error));
+        }
+
+        // Save security settings
+        function saveSecuritySettings() {
+            const twoFactorEnabled = document.getElementById('toggle-2fa').checked;
+            const loginNotifications = document.getElementById('toggle-login-notif').checked;
+
+            fetch('/api/admin/platform-settings/security', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ twoFactorEnabled, loginNotifications })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Security settings updated', 'success');
+                }
+            })
+            .catch(error => console.error('Failed to save security settings:', error));
+        }
+
+        // Save notification settings
+        function saveNotificationSettings() {
+            const toggles = document.querySelectorAll('#settings-notifications input[type="checkbox"]');
+
+            if (toggles.length >= 3) {
+                fetch('/api/admin/platform-settings/notifications', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        newBusinessRegistration: toggles[0].checked,
+                        systemAlerts: toggles[1].checked,
+                        weeklyReports: toggles[2].checked
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('Notification preferences updated', 'success');
+                    }
+                })
+                .catch(error => console.error('Failed to save notification settings:', error));
+            }
+        }
+        
+        // Billing Functions
+        function upgradePlan() {
+            showToast('Plan upgrade coming soon', 'success');
+        }
+        
+        function viewInvoices() {
+            showToast('Invoices view coming soon', 'success');
+        }
+
+        // Theme Management
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-theme', newTheme);
+            document.getElementById('theme-icon-light').style.display = newTheme === 'light' ? 'none' : 'block';
+            document.getElementById('theme-icon-dark').style.display = newTheme === 'light' ? 'block' : 'none';
+            localStorage.setItem('replai-theme', newTheme);
+            lucide.createIcons();
+        }
+
+        // Init
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('replai-theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            document.getElementById('theme-icon-light').style.display = savedTheme === 'light' ? 'none' : 'block';
+            document.getElementById('theme-icon-dark').style.display = savedTheme === 'light' ? 'block' : 'none';
+            loadBusinessesDashboard();
+            loadPlatformSettings();
+            loadAPIKeys();
+            lucide.createIcons();
+
+            // Add toggle event listeners for auto-save
+            const toggle2FA = document.getElementById('toggle-2fa');
+            const toggleLoginNotif = document.getElementById('toggle-login-notif');
+            if (toggle2FA) toggle2FA.addEventListener('change', saveSecuritySettings);
+            if (toggleLoginNotif) toggleLoginNotif.addEventListener('change', saveSecuritySettings);
+
+            // Notification toggles
+            document.querySelectorAll('#settings-notifications input[type="checkbox"]').forEach(toggle => {
+                toggle.addEventListener('change', saveNotificationSettings);
+            });
+        });
+
+        // Section Management
+        function showSection(section) {
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+            document.getElementById(section + '-section').classList.add('active');
+            
+            const menuItems = document.querySelectorAll('.menu-item');
+            menuItems.forEach(m => {
+                if (m.getAttribute('onclick').includes(`'${section}'`)) {
+                    m.classList.add('active');
+                }
+            });
+
+            const titles = {
+                'businesses': 'Businesses Management',
+                'analytics': 'Platform Analytics',
+                'settings': 'System Settings'
+            };
+            document.getElementById('section-title').textContent = titles[section] || 'Dashboard';
+
+            if (section === 'businesses') loadBusinessesDashboard();
+            if (section === 'analytics') loadAnalyticsDashboard();
+        }
+
+        // Toast Notifications
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-icon">
+                    <i data-lucide="${type === 'success' ? 'check-circle' : 'alert-circle'}" style="width: 20px; height: 20px;"></i>
+                </div>
+                <div class="toast-message">${message}</div>
+            `;
+            document.body.appendChild(toast);
+            lucide.createIcons(); // Reinitialize icons for toast
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Confirm Modal
+        function showConfirm(title, message, callback) {
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-message').textContent = message;
+            document.getElementById('confirm-modal').classList.add('show');
+            document.getElementById('confirm-action-btn').onclick = () => {
+                callback();
+                closeConfirmModal();
+            };
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.remove('show');
+        }
+
+        // Loading Overlay
+        function showLoadingOverlay(message = 'Loading...') {
+            const overlay = document.createElement('div');
+            overlay.id = 'loading-overlay';
+            overlay.innerHTML = `
+                <div class="loading-content">
+                    <div class="spinner"></div>
+                    <div class="loading-text">${message}</div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            setTimeout(() => overlay.classList.add('show'), 10);
+        }
+
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.classList.remove('show');
+                setTimeout(() => overlay.remove(), 300);
+            }
+        }
+
+        // Logout
+        function handleLogout() {
+            showConfirm('Confirm Logout', 'Are you sure you want to logout?', () => {
+                showToast('Logging out...', 'success');
+                setTimeout(() => window.location.href = '/', 1000);
+            });
+        }
+
+        // Animated Counter
+        function animateCounter(elementId, target, suffix = '') {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            const duration = 1000;
+            const start = 0;
+            const startTime = performance.now();
+
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const value = Math.floor(start + (target - start) * progress);
+                element.textContent = value.toLocaleString() + suffix;
+                if (progress < 1) requestAnimationFrame(update);
+            }
+            requestAnimationFrame(update);
+        }
+
+        // Relative Time
+        function getRelativeTime(dateString) {
+            if (!dateString) return 'Never';
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = now - date;
+            const seconds = Math.floor(diff / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+            if (seconds < 60) return 'Just now';
+            if (minutes < 60) return `${minutes}m ago`;
+            if (hours < 24) return `${hours}h ago`;
+            if (days < 7) return `${days}d ago`;
+            return date.toLocaleDateString();
+        }
+
+        // Business Management
+        async function loadBusinessesDashboard() {
+            try {
+                const res = await fetch('/api/admin/businesses?limit=1000');
+                const data = await res.json();
+                if (data.success) {
+                    allBusinesses = data.data || [];
+                    filteredBusinesses = [...allBusinesses];
+                    
+                    // Update stats
+                    animateCounter('businesses-total', allBusinesses.length);
+                    const activeCount = allBusinesses.filter(b => {
+                        if (!b.lastActivity) return false;
+                        const lastActivity = new Date(b.lastActivity);
+                        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+                        return lastActivity > oneDayAgo;
+                    }).length;
+                    animateCounter('businesses-active', activeCount);
+                    
+                    const totalMessages = allBusinesses.reduce((sum, b) => sum + (b.messageCount || 0), 0);
+                    animateCounter('businesses-messages', totalMessages);
+                    
+                    const connectedBusinesses = allBusinesses.filter(b => {
+                        const channels = b.channels || {};
+                        return Object.values(channels).some(ch => ch.connected);
+                    }).length;
+                    const healthScore = allBusinesses.length > 0 ? Math.round((connectedBusinesses / allBusinesses.length) * 100) : 0;
+                    animateCounter('businesses-health', healthScore, '%');
+                    
+                    renderBusinessesTable();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Failed to load businesses', 'error');
+            }
+        }
+
+        function renderBusinessesTable() {
+            const tbody = document.getElementById('businesses-table-body');
+            if (filteredBusinesses.length === 0) {
+                tbody.innerHTML = `
+                    <tr><td colspan="8">
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i data-lucide="building-2" style="width: 48px; height: 48px; color: var(--text-tertiary);"></i>
+                            </div>
+                            <h3>No businesses found</h3>
+                            <p>Add your first business to get started</p>
+                            <button class="btn-primary-large" onclick="showQuickAddBusiness()">
+                                <i data-lucide="plus" style="width: 20px; height: 20px;"></i>
+                                Add Business
+                            </button>
+                        </div>
+                    </td></tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = filteredBusinesses.map(b => {
+                const healthScore = calculateHealthScore(b);
+                const healthClass = healthScore >= 80 ? 'excellent' : healthScore >= 50 ? 'good' : 'poor';
+                return `
+                    <tr>
+                        <td>
+                            <div class="business-cell">
+                                <div class="business-avatar">${b.name.charAt(0)}</div>
+                                <div>
+                                    <div class="business-name">${b.name}</div>
+                                    <div class="business-meta">${b.country || 'N/A'}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div>${b.ownerName || 'N/A'}</div>
+                            <div class="owner-email">${b.ownerEmail}</div>
+                        </td>
+                        <td><span class="badge badge-active">active</span></td>
+                        <td><span class="badge badge-plan-${b.plan || 'free'}">${b.plan || 'free'}</span></td>
+                        <td>
+                            <div class="channels-icons">
+                                <span class="channel-icon ${b.channels?.instagram?.connected ? 'connected' : ''}" title="Instagram">
+                                    <i data-lucide="camera" style="width: 16px; height: 16px;"></i>
+                                </span>
+                                <span class="channel-icon ${b.channels?.whatsapp?.connected ? 'connected' : ''}" title="WhatsApp">
+                                    <i data-lucide="message-circle" style="width: 16px; height: 16px;"></i>
+                                </span>
+                                <span class="channel-icon ${b.channels?.telegram?.connected ? 'connected' : ''}" title="Telegram">
+                                    <i data-lucide="send" style="width: 16px; height: 16px;"></i>
+                                </span>
+                            </div>
+                        </td>
+                        <td>${(b.messageCount || 0).toLocaleString()}</td>
+                        <td><span class="health-badge ${healthClass}">${healthScore}%</span></td>
+                        <td>
+                            <div class="actions-dropdown">
+                                <button class="btn-icon" onclick="toggleActionsMenu(event)">
+                                    <i data-lucide="more-vertical" style="width: 16px; height: 16px;"></i>
+                                </button>
+                                <div class="actions-menu">
+                                    <a onclick="viewBusiness('${b.id}')">
+                                        <i data-lucide="eye" style="width: 16px; height: 16px;"></i> View
+                                    </a>
+                                    <a onclick="deleteBusiness('${b.id}', '${b.name}')" class="danger">
+                                        <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i> Delete
+                                    </a>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            // Reinitialize Lucide icons after rendering dynamic content
+            lucide.createIcons();
+        }
+
+        function calculateHealthScore(business) {
+            let score = 0;
+            const channels = business.channels || {};
+            if (channels.instagram?.connected) score += 33;
+            if (channels.whatsapp?.connected) score += 33;
+            if (channels.telegram?.connected) score += 34;
+            return score;
+        }
+
+        function toggleActionsMenu(e) {
+            e.stopPropagation();
+            const menu = e.target.nextElementSibling;
+            document.querySelectorAll('.actions-menu').forEach(m => {
+                if (m !== menu) m.classList.remove('show');
+            });
+            menu.classList.toggle('show');
+        }
+
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.actions-menu').forEach(m => m.classList.remove('show'));
+        });
+
+        function applyFilters() {
+            currentFilters.status = document.getElementById('filter-status').value;
+            currentFilters.plan = document.getElementById('filter-plan').value;
+            currentFilters.search = document.getElementById('search-businesses').value.toLowerCase();
+            
+            filteredBusinesses = allBusinesses.filter(b => {
+                if (currentFilters.status !== 'all' && b.status !== currentFilters.status) return false;
+                if (currentFilters.plan !== 'all' && (b.plan || 'free') !== currentFilters.plan) return false;
+                if (currentFilters.search && !b.name.toLowerCase().includes(currentFilters.search) && 
+                    !b.ownerEmail.toLowerCase().includes(currentFilters.search)) return false;
+                return true;
+            });
+            
+            renderBusinessesTable();
+        }
+
+        function resetFilters() {
+            document.getElementById('filter-status').value = 'all';
+            document.getElementById('filter-plan').value = 'all';
+            document.getElementById('search-businesses').value = '';
+            currentFilters = { status: 'all', plan: 'all', search: '' };
+            filteredBusinesses = [...allBusinesses];
+            renderBusinessesTable();
+        }
+
+        function viewBusiness(id) {
+            showToast('Business details coming soon', 'success');
+        }
+
+        function deleteBusiness(id, name) {
+            showConfirm('Delete Business', `Delete "${name}"? This cannot be undone.`, async () => {
+                showLoadingOverlay('Deleting...');
+                try {
+                    const res = await fetch(`/api/admin/businesses/${id}`, { method: 'DELETE' });
+                    const data = await res.json();
+                    hideLoadingOverlay();
+                    if (data.success) {
+                        showToast('Business deleted successfully', 'success');
+                        loadBusinessesDashboard();
+                    } else {
+                        showToast('Failed to delete business', 'error');
+                    }
+                } catch (error) {
+                    hideLoadingOverlay();
+                    showToast('Error deleting business', 'error');
+                }
+            });
+        }
+
+        // Quick Add Wizard
+        function showQuickAddBusiness() {
+            document.getElementById('quick-add-modal').classList.add('show');
+            document.getElementById('quick-business-name').focus();
+            lucide.createIcons(); // Ensure icons are initialized in modal
+        }
+
+        function closeQuickAdd() {
+            document.getElementById('quick-add-modal').classList.remove('show');
+            resetWizard();
+        }
+
+        function nextWizardStep(step) {
+            document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById('wizard-step-' + step).classList.add('active');
+            document.getElementById('step-indicator-' + step).classList.add('active');
+        }
+
+        function prevWizardStep(step) {
+            nextWizardStep(step);
+        }
+
+        function selectPlan(plan) {
+            selectedPlan = plan;
+            document.querySelectorAll('.plan-option').forEach(p => p.classList.remove('selected'));
+            document.querySelector(`[data-plan="${plan}"]`).classList.add('selected');
+        }
+
+        async function createBusinessQuick() {
+            const businessData = {
+                name: document.getElementById('quick-business-name').value.trim(),
+                industry: document.getElementById('quick-industry').value,
+                ownerName: document.getElementById('quick-owner-name').value.trim(),
+                ownerEmail: document.getElementById('quick-email').value.trim(),
+                phone: document.getElementById('quick-phone').value.trim(),
+                plan: selectedPlan,
+                country: 'Kyrgyzstan',
+                sendWelcome: document.getElementById('send-welcome-email').checked
+            };
+
+            if (!businessData.name || !businessData.ownerName || !businessData.ownerEmail) {
+                showToast('Please fill all required fields', 'error');
+                return;
+            }
+
+            showLoadingOverlay('Creating business...');
+            try {
+                const res = await fetch('/api/admin/businesses', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(businessData)
+                });
+                const data = await res.json();
+                hideLoadingOverlay();
+
+                if (data.success) {
+                    closeQuickAdd();
+                    showToast(`${businessData.name} created successfully!`, 'success');
+                    loadBusinessesDashboard();
+                } else {
+                    showToast('Error: ' + (data.error || 'Failed to create'), 'error');
+                }
+            } catch (error) {
+                hideLoadingOverlay();
+                showToast('Failed to create business', 'error');
+            }
+        }
+
+        function resetWizard() {
+            document.getElementById('quick-business-name').value = '';
+            document.getElementById('quick-owner-name').value = '';
+            document.getElementById('quick-email').value = '';
+            document.getElementById('quick-phone').value = '';
+            nextWizardStep(1);
+            selectedPlan = 'pro';
+        }
+
+        // Analytics Dashboard
+        async function loadAnalyticsDashboard() {
+            try {
+                const res = await fetch('/api/admin/businesses?limit=1000');
+                const data = await res.json();
+                if (!data.success) return;
+
+                const businesses = data.data || [];
+                
+                // Stats
+                animateCounter('analytics-total', businesses.length);
+                const activeToday = businesses.filter(b => {
+                    if (!b.lastActivity) return false;
+                    const lastActivity = new Date(b.lastActivity);
+                    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+                    return lastActivity > oneDayAgo;
+                }).length;
+                animateCounter('analytics-active', activeToday);
+                
+                const totalMessages = businesses.reduce((sum, b) => sum + (b.messageCount || 0), 0);
+                animateCounter('analytics-messages', totalMessages);
+                
+                const connectedBusinesses = businesses.filter(b => {
+                    const channels = b.channels || {};
+                    return Object.values(channels).some(ch => ch.connected);
+                }).length;
+                const healthScore = businesses.length > 0 ? Math.round((connectedBusinesses / businesses.length) * 100) : 0;
+                document.getElementById('analytics-health').textContent = healthScore + '%';
+
+                // Growth Chart
+                loadGrowthChart(businesses);
+                
+                // Platform Chart
+                loadPlatformChart(businesses);
+                
+                // Activity Feed
+                loadActivityFeed(businesses);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function loadGrowthChart(businesses) {
+            const dates = {};
+            businesses.forEach(b => {
+                const date = new Date(b.registrationDate).toLocaleDateString();
+                dates[date] = (dates[date] || 0) + 1;
+            });
+
+            const labels = Object.keys(dates).sort().slice(-30);
+            const data = labels.map(date => dates[date] || 0);
+
+            const ctx = document.getElementById('growth-chart');
+            if (ctx && typeof Chart !== 'undefined') {
+                new Chart(ctx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'New Businesses',
+                            data: data,
+                            borderColor: '#60efff',
+                            backgroundColor: 'rgba(96, 239, 255, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+        }
+
+        function loadPlatformChart(businesses) {
+            let instagram = 0, whatsapp = 0, telegram = 0;
+            
+            businesses.forEach(b => {
+                const conversations = b.conversations || [];
+                conversations.forEach(conv => {
+                    const count = (conv.messages || []).length;
+                    if (conv.platform === 'instagram') instagram += count;
+                    else if (conv.platform === 'whatsapp') whatsapp += count;
+                    else if (conv.platform === 'telegram') telegram += count;
+                });
+            });
+
+            const ctx = document.getElementById('platform-chart');
+            if (ctx && typeof Chart !== 'undefined') {
+                new Chart(ctx.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Instagram', 'WhatsApp', 'Telegram'],
+                        datasets: [{
+                            data: [instagram, whatsapp, telegram],
+                            backgroundColor: ['#E1306C', '#25D366', '#0088cc']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            }
+        }
+
+        function loadActivityFeed(businesses) {
+            const activities = [];
+            const recent = businesses.sort((a, b) => 
+                new Date(b.registrationDate) - new Date(a.registrationDate)
+            ).slice(0, 10);
+
+            recent.forEach(b => {
+                activities.push({
+                    icon: '🏢',
+                    title: 'New business registered',
+                    description: `${b.name} joined the platform`,
+                    time: getRelativeTime(b.registrationDate)
+                });
+            });
+
+            const feed = document.getElementById('activity-feed');
+            feed.innerHTML = activities.map(a => `
+                <div class="activity-item">
+                    <div class="activity-icon">${a.icon}</div>
+                    <div class="activity-content">
+                        <div class="activity-title">${a.title}</div>
+                        <div class="activity-description">${a.description}</div>
+                        <div class="activity-time">${a.time}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ============= AI PROVIDER KEYS Management =============
+        let aiProviderKeys = [];
+
+        async function loadAIProviderKeys() {
+            try {
+                const response = await fetch('/api/admin/ai-provider-keys');
+                const result = await response.json();
+
+                if (result.success) {
+                    aiProviderKeys = result.data;
+                    renderAIProviderKeys(aiProviderKeys);
+                }
+            } catch (error) {
+                console.error('Failed to load AI provider keys:', error);
+            }
+        }
+
+        function renderAIProviderKeys(keys) {
+            const container = document.getElementById('ai-keys-container');
+
+            if (!keys || keys.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px; background: var(--bg-secondary); border: 1px dashed var(--border-color); border-radius: 12px;">
+                        <i data-lucide="key" style="width: 48px; height: 48px; color: var(--text-tertiary); margin-bottom: 16px;"></i>
+                        <p style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">No AI provider keys yet</p>
+                        <p style="font-size: 14px; color: var(--text-secondary);">Add your first Groq, OpenRouter, Together, or HuggingFace key to enable automatic rotation.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = keys.map(key => {
+                const statusConfig = {
+                    active: { color: 'var(--success)', bg: 'var(--success-light)', label: 'Active' },
+                    rate_limited: { color: 'var(--warning)', bg: 'var(--warning-light)', label: 'Rate Limited' },
+                    disabled: { color: 'var(--text-tertiary)', bg: 'var(--bg-tertiary)', label: 'Disabled' }
+                };
+                const status = key.rateLimitReached ? 'rate_limited' : (key.status === 'active' ? 'active' : 'disabled');
+                const config = statusConfig[status];
+
+                return `
+                    <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 16px;">
+                        <div style="display: flex; align-items: start; justify-content: space-between; margin-bottom: 16px;">
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                    <h3 style="font-size: 16px; font-weight: 600;">${key.name}</h3>
+                                    <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; background: ${config.bg}; color: ${config.color};">
+                                        <span style="width: 6px; height: 6px; border-radius: 50%; background: ${config.color};"></span>
+                                        ${config.label}
+                                    </span>
+                                    <span style="padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; background: var(--bg-tertiary); color: var(--text-secondary); text-transform: uppercase;">
+                                        ${key.provider}
+                                    </span>
+                                </div>
+                                <div style="display: flex; gap: 24px; font-size: 13px; color: var(--text-secondary);">
+                                    <span>Priority: ${key.priority}</span>
+                                    <span>Requests: ${key.requestCount}</span>
+                                    <span>Errors: ${key.errorCount}</span>
+                                    <span>Last used: ${key.lastUsed ? formatRelativeTime(key.lastUsed) : 'Never'}</span>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                ${key.rateLimitReached ? `
+                                    <button style="padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-size: 13px; font-weight: 600; cursor: pointer;" onclick="resetRateLimit('${key.id}')">
+                                        Reset Rate Limit
+                                    </button>
+                                ` : ''}
+                                <button style="padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--danger); font-size: 13px; font-weight: 600; cursor: pointer;" onclick="deleteAIKey('${key.id}')">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                        <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; font-family: monospace; font-size: 14px; color: var(--text-secondary);">
+                            ${key.apiKey}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        function showAddAIKeyModal() {
+            document.getElementById('add-ai-key-modal').classList.add('show');
+            document.getElementById('ai-key-test-result').style.display = 'none';
+        }
+
+        function closeAddAIKeyModal() {
+            document.getElementById('add-ai-key-modal').classList.remove('show');
+            document.getElementById('add-ai-key-form').reset();
+            document.getElementById('ai-key-test-result').style.display = 'none';
+        }
+
+        async function testAIKey() {
+            const provider = document.getElementById('ai-provider-select').value;
+            const apiKey = document.getElementById('ai-key-input').value;
+            const resultDiv = document.getElementById('ai-key-test-result');
+
+            if (!provider || !apiKey) {
+                resultDiv.textContent = '⚠️ Please select provider and enter API key';
+                resultDiv.style.display = 'block';
+                resultDiv.style.color = 'var(--warning)';
+                return;
+            }
+
+            resultDiv.textContent = '🔄 Testing key...';
+            resultDiv.style.display = 'block';
+            resultDiv.style.color = 'var(--text-secondary)';
+
+            try {
+                const response = await fetch('/api/admin/ai-provider-keys/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider, apiKey })
+                });
+
+                const result = await response.json();
+
+                if (result.success && result.valid) {
+                    resultDiv.textContent = '✓ API key is valid!';
+                    resultDiv.style.color = 'var(--success)';
+                } else {
+                    resultDiv.textContent = '✗ Invalid API key or unable to verify';
+                    resultDiv.style.color = 'var(--danger)';
+                }
+            } catch (error) {
+                resultDiv.textContent = '✗ Test failed: ' + error.message;
+                resultDiv.style.color = 'var(--danger)';
+            }
+        }
+
+        async function submitAddAIKey(event) {
+            event.preventDefault();
+
+            const provider = document.getElementById('ai-provider-select').value;
+            const name = document.getElementById('ai-key-name').value;
+            const apiKey = document.getElementById('ai-key-input').value;
+            const priority = parseInt(document.getElementById('ai-key-priority').value);
+
+            if (!provider || !name || !apiKey) {
+                alert('Please fill all required fields');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/ai-provider-keys', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider, name, apiKey, priority })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    closeAddAIKeyModal();
+                    await loadAIProviderKeys();
+                    showNotification('AI provider key added successfully', 'success');
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Failed to add key: ' + error.message);
+            }
+        }
+
+        async function deleteAIKey(keyId) {
+            if (!confirm('Are you sure you want to delete this AI provider key?')) return;
+
+            try {
+                const response = await fetch(`/api/admin/ai-provider-keys/${keyId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    await loadAIProviderKeys();
+                    showNotification('AI provider key deleted', 'success');
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Failed to delete key: ' + error.message);
+            }
+        }
+
+        async function resetRateLimit(keyId) {
+            try {
+                const response = await fetch(`/api/admin/ai-provider-keys/${keyId}/reset-rate-limit`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    await loadAIProviderKeys();
+                    showNotification('Rate limit reset', 'success');
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Failed to reset rate limit: ' + error.message);
+            }
+        }
+
+        function formatRelativeTime(isoDate) {
+            const now = new Date();
+            const past = new Date(isoDate);
+            const diffMs = now - past;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMins / 60);
+            const diffDays = Math.floor(diffHours / 24);
+
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            if (diffDays < 7) return `${diffDays}d ago`;
+            return past.toLocaleDateString();
+        }
+    </script>
+
+    <!-- Add AI Provider Key Modal -->
+    <div id="add-ai-key-modal" class="modal">
+        <div class="modal-content" style="width: 600px; max-width: 90vw;">
+            <div class="modal-header">
+                <h2>Add AI Provider Key</h2>
+                <button onclick="closeAddAIKeyModal()" style="background: none; border: none; cursor: pointer; padding: 8px; display: flex; align-items: center;">
+                    <i data-lucide="x" style="width: 24px; height: 24px;"></i>
+                </button>
+            </div>
+
+            <form id="add-ai-key-form" onsubmit="submitAddAIKey(event)">
+                <div class="modal-body">
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        <div>
+                            <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;">Provider *</label>
+                            <select id="ai-provider-select" required style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
+                                <option value="">Select provider...</option>
+                                <option value="groq">Groq</option>
+                                <option value="openrouter">OpenRouter</option>
+                                <option value="together">Together AI</option>
+                                <option value="huggingface">HuggingFace</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;">Key Name *</label>
+                            <input type="text" id="ai-key-name" placeholder="e.g., Groq Primary" required style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
+                        </div>
+
+                        <div>
+                            <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;">API Key *</label>
+                            <input type="password" id="ai-key-input" placeholder="Enter API key" required style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; font-family: monospace;">
+                            <p style="font-size: 12px; color: var(--text-tertiary); margin-top: 6px;">Your key is encrypted and never exposed in logs.</p>
+                        </div>
+
+                        <div>
+                            <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;">Priority</label>
+                            <select id="ai-key-priority" style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
+                                <option value="1">1 (Highest - Used first)</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4 (Lowest - Fallback)</option>
+                            </select>
+                        </div>
+
+                        <div id="ai-key-test-result" style="display: none; padding: 12px; border-radius: 8px; background: var(--bg-tertiary); font-size: 14px; font-weight: 500;">
+                            <!-- Test result appears here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 12px; padding: 24px; border-top: 1px solid var(--border-color);">
+                    <button type="button" onclick="testAIKey()" style="flex: 1; padding: 12px 24px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; font-weight: 600; cursor: pointer;">
+                        Test Key
+                    </button>
+                    <button type="submit" class="btn-primary-large" style="flex: 1;">
+                        <i data-lucide="check" style="width: 20px; height: 20px;"></i>
+                        Add Key
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

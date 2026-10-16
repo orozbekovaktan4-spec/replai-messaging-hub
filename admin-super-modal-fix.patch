@@ -1,0 +1,5 @@
+--- a/admin-super.html
++++ b/admin-super.html
+@@ -2789 +2789 @@
+-    <div id="add-ai-key-modal" class="modal">
++    <div id="add-ai-key-modal" class="modal" onclick="if(event.target === this) closeAddAIKeyModal()">

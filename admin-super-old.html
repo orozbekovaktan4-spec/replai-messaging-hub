@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REPLAI - Super Admin Panel</title>
+
+    <!-- Block Mobile Access -->
+    <script>
+        // Detect mobile devices
+        function isMobileDevice() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+                || window.innerWidth <= 768;
+        }
+
+        // Block mobile access immediately
+        if (isMobileDevice()) {
+            document.write('<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Desktop Only</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:linear-gradient(135deg,#0A1628 0%,#1e293b 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px}.container{max-width:500px}.icon{font-size:80px;margin-bottom:20px}h1{font-size:28px;margin-bottom:15px}p{font-size:18px;color:#94a3b8;line-height:1.6}</style></head><body><div class="container"><div class="icon">🖥️</div><h1>Desktop Only</h1><p>Super Admin panel is only accessible from desktop browsers.</p><p style="margin-top:20px;font-size:16px">Please use a computer to access the admin panel.</p></div></body></html>');
+            document.close();
+        }
+    </script>
+
+    <style>
+        /* Theme Variables */
+        :root[data-theme="light"] {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --sidebar-gradient-start: #60efff;
+            --sidebar-gradient-end: #0061ff;
+            --primary: #0061ff;
+        }
+
+        :root[data-theme="dark"] {
+            --bg-primary: #1e293b;
+            --bg-secondary: #0f172a;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+            --sidebar-gradient-start: #1e3a8a;
+            --sidebar-gradient-end: #0f172a;
+            --primary: #3b82f6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, .card, .header, .stat-card {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-secondary);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 260px;
+            height: 100vh;
+            background: linear-gradient(135deg, var(--sidebar-gradient-start) 0%, var(--sidebar-gradient-end) 100%);
+            color: white;
+            padding: 24px 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 48px;
+            text-align: center;
+        }
+
+        .logo .repl {
+            color: white;
+        }
+
+        .logo .ai {
+            background: linear-gradient(135deg, #60efff 0%, #0061ff 50%, #ff00d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .menu-item {
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateX(4px);
+        }
+
+        .menu-item.active {
+            background: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .main-content {
+            margin-left: 260px;
+            padding: 32px;
+            max-width: 1400px;
+        }
+
+        .header {
+            background: var(--bg-primary);
+            padding: 24px 32px;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .theme-toggle {
+            display: flex;
+            gap: 8px;
+            background: var(--bg-secondary);
+            padding: 4px;
+            border-radius: 8px;
+        }
+
+        .theme-btn {
+            padding: 8px 12px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+
+        .theme-btn:hover {
+            background: var(--bg-primary);
+        }
+
+        .theme-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .card {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--bg-primary);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        .stat-number {
+            font-size: 36px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .business-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+
+        .business-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 102, 255, 0.1);
+        }
+
+        .business-info {
+            flex: 1;
+        }
+
+        .business-info h3 {
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            font-size: 18px;
+        }
+
+        .business-meta {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            flex-wrap: wrap;
+        }
+
+        .business-channels {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .channel-badge {
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .channel-badge.connected {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10B981;
+        }
+
+        .channel-badge.disconnected {
+            background: rgba(239, 68, 68, 0.1);
+            color: #EF4444;
+        }
+
+        .business-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            flex-wrap: wrap;
+        }
+
+        .business-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: 20px;
+        }
+
+        .btn-action {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 8px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .btn-action:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-action.danger:hover {
+            background: #EF4444;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .filter-btn:hover {
+            background: var(--bg-primary);
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 24px;
+        }
+
+        .pagination button {
+            padding: 8px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: var(--primary);
+            color: white;
+        }
+
+        .pagination button.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .detail-channel {
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border-left: 3px solid #EF4444;
+        }
+
+        .detail-channel.connected {
+            border-left-color: #10B981;
+        }
+
+        @media (max-width: 768px) {
+            .business-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .business-actions {
+                margin-left: 0;
+                margin-top: 16px;
+                width: 100%;
+                justify-content: flex-end;
+            }
+
+            .business-meta, .business-stats {
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo">
+            <span class="repl">REPL</span><span class="ai">AI</span>
+        </div>
+
+        <div class="menu-item active" onclick="showSection('businesses')">
+            🏢 <span>Businesses Management</span>
+        </div>
+
+        <div class="menu-item" onclick="showSection('analytics')">
+            📊 <span>Platform Analytics</span>
+        </div>
+
+        <div class="menu-item" onclick="showSection('settings')">
+            ⚙️ <span>System Settings</span>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>Super Admin Panel</h1>
+            <div class="header-actions">
+                <div class="theme-toggle">
+                    <button class="theme-btn" data-theme="light" onclick="setTheme('light')" title="Light">☀️</button>
+                    <button class="theme-btn active" data-theme="dark" onclick="setTheme('dark')" title="Dark">🌙</button>
+                </div>
+                <button class="btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <!-- Businesses Management Section -->
+        <div id="businesses-section" class="content-section active">
+            <!-- Dashboard Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="businesses-total">0</div>
+                    <div class="stat-label">Total Businesses</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="businesses-active">0</div>
+                    <div class="stat-label">Active Today</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="businesses-messages">0</div>
+                    <div class="stat-label">Messages Processed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="businesses-health">0%</div>
+                    <div class="stat-label">Connection Health</div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="card" style="margin-bottom: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <button class="filter-btn active" onclick="applyBusinessesFilter('all')">All</button>
+                        <button class="filter-btn" onclick="applyBusinessesFilter('connected')">Connected</button>
+                        <button class="filter-btn" onclick="applyBusinessesFilter('partially')">Partially</button>
+                        <button class="filter-btn" onclick="applyBusinessesFilter('disconnected')">Disconnected</button>
+                    </div>
+                    <div style="display: flex; gap: 12px; flex: 1; min-width: 200px; max-width: 400px;">
+                        <input type="text" placeholder="Search by name or email..."
+                               style="flex: 1; padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary);"
+                               oninput="searchBusinesses(this.value)">
+                        <button class="btn" onclick="showAddBusinessModal()" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); white-space: nowrap;">
+                            + New Business
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Businesses List -->
+            <div id="businesses-list" style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
+                <div style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
+                    <div style="font-size: 48px; margin-bottom: 16px;">⏳</div>
+                    <p>Loading businesses...</p>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div id="businesses-pagination"></div>
+        </div>
+
+        <!-- Platform Analytics Section (Placeholder) -->
+        <div id="analytics-section" class="content-section">
+            <div class="card" style="text-align: center; padding: 60px 20px;">
+                <div style="font-size: 64px; margin-bottom: 20px;">📊</div>
+                <h2 style="margin-bottom: 12px; color: var(--text-primary);">Platform Analytics</h2>
+                <p style="color: var(--text-secondary);">Coming soon - Advanced analytics and insights</p>
+            </div>
+        </div>
+
+        <!-- System Settings Section (Placeholder) -->
+        <div id="settings-section" class="content-section">
+            <div class="card" style="text-align: center; padding: 60px 20px;">
+                <div style="font-size: 64px; margin-bottom: 20px;">⚙️</div>
+                <h2 style="margin-bottom: 12px; color: var(--text-primary);">System Settings</h2>
+                <p style="color: var(--text-secondary);">Coming soon - Platform configuration and settings</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Business Detail Modal -->
+    <div id="business-detail-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
+        <div style="background: var(--bg-primary); border-radius: 16px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 30px; position: relative;">
+            <button onclick="closeBusinessDetailModal()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; font-size: 24px; cursor: pointer; color: var(--text-primary);">×</button>
+
+            <h2 style="margin-bottom: 20px; color: var(--text-primary);" id="detail-business-name">Business Name</h2>
+
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <label style="font-size: 14px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Owner Name</label>
+                    <div style="color: var(--text-primary); font-weight: 500;" id="detail-owner-name">-</div>
+                </div>
+                <div>
+                    <label style="font-size: 14px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Owner Email</label>
+                    <div style="color: var(--text-primary); font-weight: 500;" id="detail-owner-email">-</div>
+                </div>
+                <div>
+                    <label style="font-size: 14px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Phone</label>
+                    <div style="color: var(--text-primary); font-weight: 500;" id="detail-phone">-</div>
+                </div>
+                <div>
+                    <label style="font-size: 14px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Country</label>
+                    <div style="color: var(--text-primary); font-weight: 500;" id="detail-country">-</div>
+                </div>
+                <div>
+                    <label style="font-size: 14px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Plan</label>
+                    <div style="color: var(--text-primary); font-weight: 500; text-transform: uppercase;" id="detail-plan">-</div>
+                </div>
+                <div>
+                    <label style="font-size: 14px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Registration Date</label>
+                    <div style="color: var(--text-primary); font-weight: 500;" id="detail-registration">-</div>
+                </div>
+                <div>
+                    <label style="font-size: 14px; color: var(--text-secondary); display: block; margin-bottom: 8px;">Connected Channels</label>
+                    <div id="detail-channels" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                </div>
+                <div>
+                    <label style="font-size: 14px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Total Messages</label>
+                    <div style="color: var(--text-primary); font-weight: 500;" id="detail-messages">0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Business Modal -->
+    <div id="edit-business-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
+        <div style="background: var(--bg-primary); border-radius: 16px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 30px; position: relative;">
+            <button onclick="closeEditBusinessModal()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; font-size: 24px; cursor: pointer; color: var(--text-primary);">×</button>
+
+            <h2 style="margin-bottom: 20px; color: var(--text-primary);">Edit Business</h2>
+
+            <input type="hidden" id="edit-business-id">
+
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <label style="font-size: 14px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Business Name *</label>
+                    <input type="text" id="edit-business-name" required style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);">
+                </div>
+                <div>
+                    <label style="font-size: 14px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Owner Name *</label>
+                    <input type="text" id="edit-owner-name" required style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);">
+                </div>
+                <div>
+                    <label style="font-size: 14px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Owner Email *</label>
+                    <input type="email" id="edit-owner-email" required style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);">
+                </div>
+                <div>
+                    <label style="font-size: 14px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Phone</label>
+                    <input type="text" id="edit-phone" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);">
+                </div>
+                <div>
+                    <label style="font-size: 14px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Country</label>
+                    <input type="text" id="edit-country" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);">
+                </div>
+                <div>
+                    <label style="font-size: 14px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Plan</label>
+                    <select id="edit-plan" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);">
+                        <option value="free">Free</option>
+                        <option value="basic">Basic</option>
+                        <option value="pro">Pro</option>
+                    </select>
+                </div>
+                <button onclick="saveEditedBusiness()" class="btn" style="margin-top: 8px;">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Business Modal -->
+    <div id="add-business-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
+        <div style="background: var(--bg-primary); border-radius: 16px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 30px; position: relative;">
+            <button onclick="closeAddBusinessModal()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; font-size: 24px; cursor: pointer; color: var(--text-primary);">×</button>
+
+            <h2 style="margin-bottom: 20px; color: var(--text-primary);">Add New Business</h2>
+
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <label style="font-size: 14px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Business Name *</label>
+                    <input type="text" id="new-business-name" required style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);">
+                </div>
+                <div>
+                    <label style="font-size: 14px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Owner Name *</label>
+                    <input type="text" id="new-owner-name" required style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);">
+                </div>
+                <div>
+                    <label style="font-size: 14px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Owner Email *</label>
+                    <input type="email" id="new-owner-email" required style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);">
+                </div>
+                <div>
+                    <label style="font-size: 14px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Phone</label>
+                    <input type="text" id="new-phone" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);">
+                </div>
+                <div>
+                    <label style="font-size: 14px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Country</label>
+                    <input type="text" id="new-country" value="Kyrgyzstan" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);">
+                </div>
+                <button onclick="addNewBusiness()" class="btn" style="margin-top: 8px; background: linear-gradient(135deg, #10B981 0%, #059669 100%);">Create Business</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme Management
+        function setTheme(theme) {
+            const html = document.documentElement;
+            const themeButtons = document.querySelectorAll('.theme-btn');
+
+            themeButtons.forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[data-theme="${theme}"]`).classList.add('active');
+
+            html.setAttribute('data-theme', theme);
+            localStorage.setItem('replai-theme', theme);
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('replai-theme') || 'dark';
+            setTheme(savedTheme);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadTheme();
+            loadBusinessesDashboard();
+        });
+
+        // Section Management
+        function showSection(section) {
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+
+            document.getElementById(section + '-section').classList.add('active');
+
+            const menuItems = document.querySelectorAll('.menu-item');
+            menuItems.forEach(m => {
+                const onclick = m.getAttribute('onclick') || '';
+                if (onclick.includes(`'${section}'`)) {
+                    m.classList.add('active');
+                }
+            });
+
+            if (section === 'businesses') {
+                loadBusinessesDashboard();
+            }
+        }
+
+        // Logout
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                window.location.href = '/';
+            }
+        }
+
+        // ========================================
+        // BUSINESSES MANAGEMENT
+        // ========================================
+
+        let currentBusinessesPage = 1;
+        let businessesFilter = 'all';
+        let businessesSearch = '';
+        let businessesSort = 'registrationDate';
+        let businessesSortOrder = 'desc';
+
+        async function loadBusinessesDashboard() {
+            try {
+                const statsRes = await fetch('/api/admin/statistics');
+                const statsData = await statsRes.json();
+
+                if (statsData.success) {
+                    document.getElementById('businesses-total').textContent = statsData.data.totalBusinesses;
+                    document.getElementById('businesses-active').textContent = statsData.data.activeToday;
+                    document.getElementById('businesses-messages').textContent = statsData.data.totalMessagesProcessed;
+                    document.getElementById('businesses-health').textContent = statsData.data.connectionHealth + '%';
+                }
+
+                await loadBusinessesList();
+            } catch (error) {
+                console.error('Error loading businesses dashboard:', error);
+            }
+        }
+
+        async function loadBusinessesList() {
+            try {
+                const params = new URLSearchParams({
+                    page: currentBusinessesPage,
+                    limit: 10,
+                    filter: businessesFilter,
+                    search: businessesSearch,
+                    sort: businessesSort,
+                    order: businessesSortOrder
+                });
+
+                const res = await fetch(`/api/admin/businesses?${params}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    displayBusinessesList(data.data);
+                    updateBusinessesPagination(data.page, data.pages, data.total);
+                }
+            } catch (error) {
+                console.error('Error loading businesses list:', error);
+            }
+        }
+
+        function displayBusinessesList(businesses) {
+            const container = document.getElementById('businesses-list');
+
+            if (businesses.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
+                        <div style="font-size: 48px; margin-bottom: 16px;">🏢</div>
+                        <h3 style="margin-bottom: 8px;">No businesses found</h3>
+                        <p>Add your first business to get started</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = businesses.map(business => {
+                const lastActivity = business.lastActivity
+                    ? new Date(business.lastActivity).toLocaleDateString()
+                    : 'Never';
+
+                return `
+                    <div class="business-card">
+                        <div class="business-info">
+                            <h3>${business.name}</h3>
+                            <div class="business-meta">
+                                <span>👤 ${business.ownerEmail}</span>
+                                <span>📱 ${business.phone}</span>
+                                <span>📅 Registered: ${new Date(business.registrationDate).toLocaleDateString()}</span>
+                            </div>
+                            <div class="business-channels">
+                                <span class="channel-badge ${business.channels.instagram.connected ? 'connected' : 'disconnected'}">
+                                    📸 Instagram ${business.channels.instagram.connected ? '✅' : '❌'}
+                                </span>
+                                <span class="channel-badge ${business.channels.whatsapp.connected ? 'connected' : 'disconnected'}">
+                                    💬 WhatsApp ${business.channels.whatsapp.connected ? '✅' : '❌'}
+                                </span>
+                                <span class="channel-badge ${business.channels.telegram.connected ? 'connected' : 'disconnected'}">
+                                    ✈️ Telegram ${business.channels.telegram.connected ? '✅' : '❌'}
+                                </span>
+                            </div>
+                            <div class="business-stats">
+                                <span>💬 ${business.messageCount} messages</span>
+                                <span>📊 Plan: ${business.plan}</span>
+                                <span>🕒 Last: ${lastActivity}</span>
+                            </div>
+                        </div>
+                        <div class="business-actions">
+                            <button onclick="viewBusinessDetails('${business.id}')" class="btn-action" title="View Details">
+                                👁️
+                            </button>
+                            <button onclick="editBusiness('${business.id}')" class="btn-action" title="Edit">
+                                ✏️
+                            </button>
+                            <button onclick="confirmDeleteBusiness('${business.id}', '${business.name}')" class="btn-action danger" title="Delete">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateBusinessesPagination(currentPage, totalPages, totalItems) {
+            const container = document.getElementById('businesses-pagination');
+
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = `<div class="pagination">`;
+            html += `<button onclick="changeBusinessesPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>← Previous</button>`;
+
+            for (let i = 1; i <= Math.min(totalPages, 5); i++) {
+                html += `<button onclick="changeBusinessesPage(${i})" class="${i === currentPage ? 'active' : ''}">${i}</button>`;
+            }
+
+            html += `<button onclick="changeBusinessesPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next →</button>`;
+            html += `</div>`;
+            html += `<div style="text-align: center; margin-top: 12px; color: var(--text-secondary); font-size: 14px;">Showing ${totalItems} businesses</div>`;
+
+            container.innerHTML = html;
+        }
+
+        function changeBusinessesPage(page) {
+            currentBusinessesPage = page;
+            loadBusinessesList();
+        }
+
+        function applyBusinessesFilter(filter) {
+            businessesFilter = filter;
+            currentBusinessesPage = 1;
+            loadBusinessesList();
+
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function searchBusinesses(query) {
+            businessesSearch = query;
+            currentBusinessesPage = 1;
+            loadBusinessesList();
+        }
+
+        async function viewBusinessDetails(businessId) {
+            try {
+                const res = await fetch(`/api/admin/businesses/${businessId}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    const business = data.data;
+
+                    document.getElementById('detail-business-name').textContent = business.name;
+                    document.getElementById('detail-owner-name').textContent = business.ownerName || business.owner_name || 'N/A';
+                    document.getElementById('detail-owner-email').textContent = business.ownerEmail || business.owner_email || 'N/A';
+                    document.getElementById('detail-phone').textContent = business.phone || 'N/A';
+                    document.getElementById('detail-country').textContent = business.country || 'N/A';
+                    document.getElementById('detail-plan').textContent = business.plan || 'free';
+                    document.getElementById('detail-registration').textContent = new Date(business.registrationDate || business.createdAt).toLocaleDateString();
+
+                    const channelsHtml = `
+                        <div class="detail-channel ${business.instagram?.connected ? 'connected' : ''}">
+                            📸 Instagram: ${business.instagram?.connected ? '✅ Connected' : '❌ Not Connected'}
+                            ${business.instagram?.username ? `<br><small>@${business.instagram.username}</small>` : ''}
+                        </div>
+                        <div class="detail-channel ${business.whatsapp?.connected ? 'connected' : ''}">
+                            💬 WhatsApp: ${business.whatsapp?.connected ? '✅ Connected' : '❌ Not Connected'}
+                            ${business.whatsapp?.phone_number ? `<br><small>${business.whatsapp.phone_number}</small>` : ''}
+                        </div>
+                        <div class="detail-channel ${business.telegram?.connected ? 'connected' : ''}">
+                            ✈️ Telegram: ${business.telegram?.connected ? '✅ Connected' : '❌ Not Connected'}
+                            ${business.telegram?.bot_username ? `<br><small>@${business.telegram.bot_username}</small>` : ''}
+                        </div>
+                    `;
+                    document.getElementById('detail-channels').innerHTML = channelsHtml;
+
+                    const messageCount = (business.conversations || []).reduce((total, conv) => {
+                        return total + (conv.messages || []).length;
+                    }, 0);
+                    document.getElementById('detail-messages').textContent = messageCount;
+
+                    document.getElementById('business-detail-modal').style.display = 'flex';
+                }
+            } catch (error) {
+                console.error('Error loading business details:', error);
+                alert('Failed to load business details');
+            }
+        }
+
+        async function editBusiness(businessId) {
+            try {
+                const res = await fetch(`/api/admin/businesses/${businessId}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    const business = data.data;
+
+                    document.getElementById('edit-business-id').value = business.id;
+                    document.getElementById('edit-business-name').value = business.name;
+                    document.getElementById('edit-owner-name').value = business.ownerName || business.owner_name || '';
+                    document.getElementById('edit-owner-email').value = business.ownerEmail || business.owner_email || '';
+                    document.getElementById('edit-phone').value = business.phone || '';
+                    document.getElementById('edit-country').value = business.country || 'Kyrgyzstan';
+                    document.getElementById('edit-plan').value = business.plan || 'free';
+
+                    document.getElementById('edit-business-modal').style.display = 'flex';
+                }
+            } catch (error) {
+                console.error('Error loading business for edit:', error);
+                alert('Failed to load business');
+            }
+        }
+
+        async function saveEditedBusiness() {
+            try {
+                const businessId = document.getElementById('edit-business-id').value;
+                const name = document.getElementById('edit-business-name').value.trim();
+                const ownerName = document.getElementById('edit-owner-name').value.trim();
+                const ownerEmail = document.getElementById('edit-owner-email').value.trim();
+                const phone = document.getElementById('edit-phone').value.trim();
+                const country = document.getElementById('edit-country').value.trim();
+                const plan = document.getElementById('edit-plan').value;
+
+                if (!name || !ownerName || !ownerEmail) {
+                    alert('Name, owner name, and email are required');
+                    return;
+                }
+
+                const res = await fetch(`/api/admin/businesses/${businessId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, ownerName, ownerEmail, phone, country, plan })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    alert('Business updated successfully!');
+                    closeEditBusinessModal();
+                    loadBusinessesList();
+                } else {
+                    alert('Failed to update business: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error updating business:', error);
+                alert('Failed to update business');
+            }
+        }
+
+        function showAddBusinessModal() {
+            document.getElementById('add-business-modal').style.display = 'flex';
+        }
+
+        async function addNewBusiness() {
+            try {
+                const name = document.getElementById('new-business-name').value.trim();
+                const ownerName = document.getElementById('new-owner-name').value.trim();
+                const ownerEmail = document.getElementById('new-owner-email').value.trim();
+                const phone = document.getElementById('new-phone').value.trim();
+                const country = document.getElementById('new-country').value.trim();
+
+                if (!name || !ownerName || !ownerEmail) {
+                    alert('Name, owner name, and email are required');
+                    return;
+                }
+
+                const res = await fetch('/api/admin/businesses', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, ownerName, ownerEmail, phone, country })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    alert('Business created successfully!');
+                    closeAddBusinessModal();
+
+                    document.getElementById('new-business-name').value = '';
+                    document.getElementById('new-owner-name').value = '';
+                    document.getElementById('new-owner-email').value = '';
+                    document.getElementById('new-phone').value = '';
+                    document.getElementById('new-country').value = 'Kyrgyzstan';
+
+                    loadBusinessesDashboard();
+                } else {
+                    alert('Failed to create business: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error creating business:', error);
+                alert('Failed to create business');
+            }
+        }
+
+        function confirmDeleteBusiness(businessId, businessName) {
+            if (confirm(`Are you sure you want to delete "${businessName}"? This action cannot be undone.`)) {
+                deleteBusiness(businessId);
+            }
+        }
+
+        async function deleteBusiness(businessId) {
+            try {
+                const res = await fetch(`/api/admin/businesses/${businessId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    alert('Business deleted successfully!');
+                    loadBusinessesDashboard();
+                } else {
+                    alert('Failed to delete business: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error deleting business:', error);
+                alert('Failed to delete business');
+            }
+        }
+
+        function closeBusinessDetailModal() {
+            document.getElementById('business-detail-modal').style.display = 'none';
+        }
+
+        function closeEditBusinessModal() {
+            document.getElementById('edit-business-modal').style.display = 'none';
+        }
+
+        function closeAddBusinessModal() {
+            document.getElementById('add-business-modal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
