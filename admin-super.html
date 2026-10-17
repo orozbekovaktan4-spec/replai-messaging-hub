@@ -736,7 +736,7 @@
         .datatable-container {
             background: var(--bg-primary);
             border-radius: 12px;
-            overflow: hidden;
+            overflow: visible;
             box-shadow: var(--card-shadow);
             margin-top: 24px;
         }
@@ -837,24 +837,33 @@
             position: absolute;
             right: 0;
             top: 100%;
+            margin-top: 4px;
             background: var(--bg-primary);
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            box-shadow: var(--card-shadow-hover);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             min-width: 180px;
-            z-index: 100;
+            z-index: 1000;
+            overflow: visible;
         }
         .actions-menu.show { display: block; }
         .actions-menu a {
-            display: block;
+            display: flex;
+            align-items: center;
+            gap: 8px;
             padding: 10px 16px;
             color: var(--text-primary);
             text-decoration: none;
             font-size: 14px;
             transition: background 0.2s;
+            cursor: pointer;
+            white-space: nowrap;
         }
+        .actions-menu a:first-child { border-radius: 8px 8px 0 0; }
+        .actions-menu a:last-child { border-radius: 0 0 8px 8px; }
         .actions-menu a:hover { background: var(--bg-secondary); }
         .actions-menu a.danger { color: var(--danger); }
+        .actions-menu a.danger:hover { background: var(--danger-light); }
         
         /* Charts */
         .charts-row {
@@ -2519,10 +2528,19 @@
 
         function toggleActionsMenu(e) {
             e.stopPropagation();
-            const menu = e.target.nextElementSibling;
+            e.preventDefault();
+            
+            // Find the button and menu
+            const button = e.target.closest('button');
+            const dropdown = button.closest('.actions-dropdown');
+            const menu = dropdown.querySelector('.actions-menu');
+            
+            // Close all other menus
             document.querySelectorAll('.actions-menu').forEach(m => {
                 if (m !== menu) m.classList.remove('show');
             });
+            
+            // Toggle this menu
             menu.classList.toggle('show');
         }
 
