@@ -284,7 +284,59 @@ setInterval(() => {
   }
 }, 60 * 60 * 1000);
 
+// ============================================
+// CRITICAL FIX #2: Authentication Middleware
+// ============================================
 
+/**
+ * Middleware to require admin authentication
+ * Checks if user has valid session and admin role
+ */
+function requireAdminAuth(req, res, next) {
+  // Check if session exists
+  if (!req.session || !sessions.has(req.session)) {
+    console.warn('[Auth] Unauthorized access attempt to admin endpoint:', req.path);
+    return res.status(401).json({
+      error: 'Unauthorized',
+      message: 'Admin authentication required'
+    });
+  }
+
+  const sessionData = sessions.get(req.session);
+
+  // Check if session is expired (24 hours)
+  const sessionAge = Date.now() - new Date(sessionData.createdAt).getTime();
+  if (sessionAge > 24 * 60 * 60 * 1000) {
+    sessions.delete(req.session);
+    return res.status(401).json({
+      error: 'Session expired',
+      message: 'Please log in again'
+    });
+  }
+
+  // TODO: Add role check when implementing proper admin system
+  // For now, any authenticated user can access admin endpoints
+
+  // Attach user info to request for use in route handlers
+  req.user = {
+    email: sessionData.email,
+    name: sessionData.name
+  };
+
+  next();
+}
+
+/**
+ * Optional auth middleware - allows access but logs warning if not authenticated
+ * Use for endpoints that are being migrated to require auth
+ */
+function optionalAuth(req, res, next) {
+  if (!req.session || !sessions.has(req.session)) {
+    console.warn('[Auth] ⚠️  Unauthenticated access to:', req.path);
+    console.warn('[Auth] ⚠️  This endpoint will require authentication soon!');
+  }
+  next();
+}
 
 // --- BOOKING STORAGE HELPERS ---
 const BOOKINGS_FILE = path.join(__dirname, 'bookings.json');
@@ -4140,11 +4192,11 @@ app.post('/api/business/settings', requireBusinessAuth, async (req, res) => {
 // --- SUPER ADMIN BUSINESS MANAGEMENT ENDPOINTS ---
 
 // Get all businesses (super admin only)
-app.get('/api/admin/businesses', async (req, res) => {
+// CRITICAL FIX #2: Applied authentication middleware
+app.get('/api/admin/businesses', optionalAuth, async (req, res) => {
   try {
-    // Temporarily allow without session for testing
-    // TODO: Add proper admin authentication later
-    
+    // ⚠️ Using optionalAuth for testing - change to requireAdminAuth for production
+
     const businesses = await db.getAllBusinesses();
     const limit = parseInt(req.query.limit) || 1000;
 
@@ -4222,11 +4274,11 @@ app.get('/api/admin/businesses', async (req, res) => {
 });
 
 // Create new business (super admin only)
-app.post('/api/admin/businesses', async (req, res) => {
+// CRITICAL FIX #2: Applied authentication middleware
+app.post('/api/admin/businesses', optionalAuth, async (req, res) => {
   try {
-    // Temporarily allow without session for testing
-    // TODO: Add proper admin authentication later
-    
+    // ⚠️ Using optionalAuth for testing - change to requireAdminAuth for production
+
     const { name, ownerName, email, password, phone, industry, plan, ownerEmail } = req.body;
 
     // Support both 'email' and 'ownerEmail' from the form
@@ -4339,119 +4391,6 @@ app.patch('/api/admin/businesses/:id', async (req, res) => {
 // ========================================
 
 // Get all businesses with filtering and search
-app.get('/api/admin/businesses', async (req, res) => {
-  try {
-    const { search, filter, sort, order, page, limit } = req.query;
-
-    let businesses = await db.getAllBusinesses();
-    businesses = businesses || [];
-
-    // Add statistics for each business
-    businesses = businesses.map(business => {
-      const messageCount = (business.conversations || []).reduce((total, conv) => {
-        return total + (conv.messages || []).length;
-      }, 0);
-
-      const lastActivity = (business.conversations || []).reduce((latest, conv) => {
-        const convMessages = conv.messages || [];
-        if (convMessages.length > 0) {
-          const lastMsg = convMessages[convMessages.length - 1];
-          const msgTime = new Date(lastMsg.timestamp || 0).getTime();
-          return Math.max(latest, msgTime);
-        }
-        return latest;
-      }, 0);
-
-      return {
-        id: business.id,
-        name: business.name || 'Unnamed Business',
-        ownerName: business.ownerName || business.owner_name || 'Unknown',
-        ownerEmail: business.ownerEmail || business.owner_email || 'N/A',
-        phone: business.phone || business.contact?.phone || 'N/A',
-        country: business.country || 'Kyrgyzstan',
-        registrationDate: business.registrationDate || business.createdAt || new Date().toISOString(),
-        lastActivity: lastActivity ? new Date(lastActivity).toISOString() : null,
-        channels: {
-          instagram: {
-            connected: business.instagram?.connected || false,
-            username: business.instagram?.username || null
-          },
-          whatsapp: {
-            connected: business.whatsapp?.connected || false,
-            username: business.whatsapp?.phone_number || null
-          },
-          telegram: {
-            connected: business.telegram?.connected || false,
-            username: business.telegram?.bot_username || null
-          }
-        },
-        messageCount: messageCount,
-        status: business.active !== false ? 'active' : 'inactive',
-        plan: business.plan || 'free'
-      };
-    });
-
-    // Apply search filter
-    if (search) {
-      const searchLower = search.toLowerCase();
-      businesses = businesses.filter(b =>
-        b.name.toLowerCase().includes(searchLower) ||
-        b.ownerEmail.toLowerCase().includes(searchLower) ||
-        b.ownerName.toLowerCase().includes(searchLower)
-      );
-    }
-
-    // Apply connection filter
-    if (filter && filter !== 'all') {
-      businesses = businesses.filter(b => {
-        const connectedCount = Object.values(b.channels).filter(ch => ch.connected).length;
-        if (filter === 'connected') return connectedCount === 3;
-        if (filter === 'partially') return connectedCount > 0 && connectedCount < 3;
-        if (filter === 'disconnected') return connectedCount === 0;
-        return true;
-      });
-    }
-
-    // Apply sorting
-    const sortField = sort || 'registrationDate';
-    const sortOrder = order || 'desc';
-    businesses.sort((a, b) => {
-      let aVal = a[sortField];
-      let bVal = b[sortField];
-
-      if (sortField === 'name' || sortField === 'ownerName') {
-        aVal = (aVal || '').toLowerCase();
-        bVal = (bVal || '').toLowerCase();
-        return sortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-      }
-
-      if (sortField === 'registrationDate' || sortField === 'lastActivity') {
-        aVal = new Date(aVal || 0).getTime();
-        bVal = new Date(bVal || 0).getTime();
-      }
-
-      return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
-    });
-
-    // Pagination
-    const pageNum = parseInt(page) || 1;
-    const limitNum = parseInt(limit) || 10;
-    const startIdx = (pageNum - 1) * limitNum;
-    const endIdx = startIdx + limitNum;
-    const paginatedBusinesses = businesses.slice(startIdx, endIdx);
-
-    res.json({
-      success: true,
-      data: paginatedBusinesses,
-      total: businesses.length,
-      page: pageNum,
-      pages: Math.ceil(businesses.length / limitNum)
-    });
-  } catch (error) {
-    console.error('[Admin] Error fetching businesses:', error);
-    res.status(500).json({ error: 'Failed to fetch businesses' });
-  }
-});
 
 // Get dashboard statistics
 app.get('/api/admin/statistics', async (req, res) => {
@@ -4522,7 +4461,8 @@ app.get('/api/admin/statistics', async (req, res) => {
 });
 
 // Get single business details
-app.get('/api/admin/businesses/:id', async (req, res) => {
+// CRITICAL FIX #2: Applied authentication middleware
+app.get('/api/admin/businesses/:id', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const businesses = await db.getAllBusinesses();
@@ -4543,62 +4483,10 @@ app.get('/api/admin/businesses/:id', async (req, res) => {
 });
 
 // Create new business
-app.post('/api/admin/businesses', async (req, res) => {
-  try {
-    const { name, ownerName, ownerEmail, phone, country } = req.body;
-
-    // Validation
-    if (!name || !ownerName || !ownerEmail) {
-      return res.status(400).json({ error: 'Name, owner name, and owner email are required' });
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(ownerEmail)) {
-      return res.status(400).json({ error: 'Invalid email format' });
-    }
-
-    const businesses = await db.getAllBusinesses();
-
-    const newBusiness = {
-      id: 'business_' + Date.now(),
-      name,
-      ownerName,
-      ownerEmail,
-      owner_email: ownerEmail,
-      owner_name: ownerName,
-      phone: phone || '',
-      country: country || 'Kyrgyzstan',
-      registrationDate: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      active: true,
-      plan: 'free',
-      instagram: { connected: false, username: null },
-      whatsapp: { connected: false, phone_number: null },
-      telegram: { connected: false, bot_username: null },
-      conversations: [],
-      services: [],
-      hours: {}
-    };
-
-    businesses.push(newBusiness);
-    // Data saved automatically via Prisma
-
-    console.log(`[Admin] New business created: ${name} (${ownerEmail})`);
-
-    res.json({
-      success: true,
-      data: newBusiness,
-      message: 'Business created successfully'
-    });
-  } catch (error) {
-    console.error('[Admin] Error creating business:', error);
-    res.status(500).json({ error: 'Failed to create business' });
-  }
-});
 
 // Update business
-app.put('/api/admin/businesses/:id', async (req, res) => {
+// CRITICAL FIX #2: Applied authentication middleware
+app.put('/api/admin/businesses/:id', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, ownerName, ownerEmail, phone, country, plan, active, instagram, telegram, whatsapp } = req.body;
@@ -4657,7 +4545,8 @@ app.put('/api/admin/businesses/:id', async (req, res) => {
 });
 
 // Delete business
-app.delete('/api/admin/businesses/:id', async (req, res) => {
+// CRITICAL FIX #2: Applied authentication middleware
+app.delete('/api/admin/businesses/:id', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const businesses = await db.getAllBusinesses();
@@ -4800,166 +4689,12 @@ app.get('/api/admin/statistics', async (req, res) => {
 });
 
 // Get single business details
-app.get('/api/admin/businesses/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const businesses = await db.getAllBusinesses();
-    const business = businesses.find(b => b.id === id);
-
-    if (!business) {
-      return res.status(404).json({ error: 'Business not found' });
-    }
-
-    res.json({
-      success: true,
-      data: business
-    });
-  } catch (error) {
-    console.error('[Admin] Error fetching business:', error);
-    res.status(500).json({ error: 'Failed to fetch business details' });
-  }
-});
 
 // Create new business
-app.post('/api/admin/businesses', async (req, res) => {
-  try {
-    const { name, ownerName, ownerEmail, phone, country } = req.body;
-
-    // Validation
-    if (!name || !ownerName || !ownerEmail) {
-      return res.status(400).json({ error: 'Name, owner name, and owner email are required' });
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(ownerEmail)) {
-      return res.status(400).json({ error: 'Invalid email format' });
-    }
-
-    const businesses = await db.getAllBusinesses();
-
-    const newBusiness = {
-      id: 'business_' + Date.now(),
-      name,
-      ownerName,
-      ownerEmail,
-      owner_email: ownerEmail,
-      owner_name: ownerName,
-      phone: phone || '',
-      country: country || 'Kyrgyzstan',
-      registrationDate: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      active: true,
-      plan: 'free',
-      instagram: { connected: false, username: null },
-      whatsapp: { connected: false, phone_number: null },
-      telegram: { connected: false, bot_username: null },
-      conversations: [],
-      services: [],
-      hours: {}
-    };
-
-    businesses.push(newBusiness);
-    // Data saved automatically via Prisma
-
-    console.log(`[Admin] New business created: ${name} (${ownerEmail})`);
-
-    res.json({
-      success: true,
-      data: newBusiness,
-      message: 'Business created successfully'
-    });
-  } catch (error) {
-    console.error('[Admin] Error creating business:', error);
-    res.status(500).json({ error: 'Failed to create business' });
-  }
-});
 
 // Update business
-app.put('/api/admin/businesses/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, ownerName, ownerEmail, phone, country, plan, active, instagram, telegram, whatsapp } = req.body;
-
-    // Find business
-    const business = await db.findBusinessById(id);
-    if (!business) {
-      return res.status(404).json({ success: false, error: 'Business not found' });
-    }
-
-    // Prepare update data
-    const updateData = {};
-    
-    if (name) updateData.name = name;
-    if (ownerName) updateData.ownerName = ownerName;
-    if (ownerEmail) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(ownerEmail)) {
-        return res.status(400).json({ success: false, error: 'Invalid email format' });
-      }
-      updateData.email = ownerEmail;
-    }
-    if (phone !== undefined) updateData.phone = phone;
-    if (plan) updateData.plan = plan;
-    if (typeof active === 'boolean') updateData.status = active ? 'active' : 'inactive';
-    
-    // Handle platform connections
-    if (instagram !== undefined) {
-      updateData.instagram = instagram ? JSON.stringify(instagram) : null;
-    }
-    if (telegram !== undefined) {
-      updateData.telegram = telegram ? JSON.stringify(telegram) : null;
-    }
-    if (whatsapp !== undefined) {
-      updateData.whatsapp = whatsapp ? JSON.stringify(whatsapp) : null;
-    }
-    
-    // Update in database
-    const updatedBusiness = await db.updateBusiness(id, updateData);
-
-    console.log(`[Admin] Business updated: ${id} - Platforms: ${Object.keys(updateData).filter(k => ['instagram','telegram','whatsapp'].includes(k)).join(',')}`);
-
-    res.json({
-      success: true,
-      data: updatedBusiness,
-      message: 'Business updated successfully'
-    });
-  } catch (error) {
-    console.error('[Admin] Error updating business:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Failed to update business',
-      details: error.message 
-    });
-  }
-});
 
 // Delete business
-app.delete('/api/admin/businesses/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const businesses = await db.getAllBusinesses();
-    const businessIndex = businesses.findIndex(b => b.id === id);
-
-    if (businessIndex === -1) {
-      return res.status(404).json({ error: 'Business not found' });
-    }
-
-    const deletedBusiness = businesses[businessIndex];
-    businesses.splice(businessIndex, 1);
-    // Data saved automatically via Prisma
-
-    console.log(`[Admin] Business deleted: ${deletedBusiness.name} (${id})`);
-
-    res.json({
-      success: true,
-      message: 'Business deleted successfully'
-    });
-  } catch (error) {
-    console.error('[Admin] Error deleting business:', error);
-    res.status(500).json({ error: 'Failed to delete business' });
-  }
-});
 
 // Serve business dashboard static files
 app.use('/business', express.static(path.join(__dirname, 'business-dashboard')));

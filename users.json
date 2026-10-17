@@ -1,0 +1,25 @@
+{
+  "users": [
+    {
+      "email": "admin@replai.com",
+      "name": "Admin",
+      "passwordHash": "$2b$10$23EujO4ujV8hn67oSmk0IO8NzBuCrS.h.4ndOHE4LastSOuWr1K.K",
+      "createdAt": "2026-08-10T15:00:00.000Z"
+    },
+    {
+      "email": "test@replai.dev",
+      "name": "Test",
+      "passwordHash": "$2b$10$.w1MbBzSUtceZinfrwaHZeJaNY18ekkPOWGACeOSWdngSCGJqzfSe",
+      "createdAt": "2026-08-08T06:30:09.966Z"
+    },
+    {
+      "email": "orozbekovaktan4@gmail.com",
+      "name": "Aktan",
+      "passwordHash": "$2b$10$2Y8HBDJ19uyr48YbqdizlOslB2bGCJ6PIZTk2OZBK9iPcHvnYSYNm",
+      "googleId": "102272565797119190091",
+      "picture": "https://lh3.googleusercontent.com/a/ACg8ocLeEF8ZoBPfbaeOsLrq92Qno9N0wZF1yd-y2HLVOXnD56Ce4w=s96-c",
+      "provider": "google",
+      "createdAt": "2026-10-06T08:25:42.712Z"
+    }
+  ]
+}

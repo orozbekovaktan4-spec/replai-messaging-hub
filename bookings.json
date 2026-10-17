@@ -1,0 +1,84 @@
+{
+  "bookings": [
+    {
+      "id": "b_1727513400000_abc123",
+      "customerName": "Ahmed Karimov",
+      "customerPhone": "+996555111222",
+      "service": "Haircut",
+      "date": "2026-09-28",
+      "time": "09:00",
+      "notes": "",
+      "platform": "instagram",
+      "userId": "ig_12345",
+      "status": "completed",
+      "createdAt": "2026-09-27T15:30:00.000Z",
+      "completedAt": "2026-09-28T09:35:00.000Z"
+    },
+    {
+      "id": "b_1727513460000_def456",
+      "customerName": "Rustam Muratov",
+      "customerPhone": "+996555222333",
+      "service": "Beard trim",
+      "date": "2026-09-28",
+      "time": "09:30",
+      "notes": "",
+      "platform": "telegram",
+      "userId": "tg_67890",
+      "status": "completed",
+      "createdAt": "2026-09-27T16:00:00.000Z",
+      "completedAt": "2026-09-28T09:50:00.000Z"
+    },
+    {
+      "id": "b_1727516400000_ghi789",
+      "customerName": "Bekzod Toktomushev",
+      "customerPhone": "+996555333444",
+      "service": "Haircut + Beard",
+      "date": "2026-09-28",
+      "time": "11:00",
+      "notes": "Regular customer",
+      "platform": "whatsapp",
+      "userId": "wa_11223",
+      "status": "confirmed",
+      "createdAt": "2026-09-27T18:20:00.000Z"
+    },
+    {
+      "id": "b_1727520000000_jkl012",
+      "customerName": "Daniyar Asanov",
+      "customerPhone": "+996555444555",
+      "service": "Kids haircut",
+      "date": "2026-09-28",
+      "time": "14:00",
+      "notes": "8 years old",
+      "platform": "instagram",
+      "userId": "ig_44556",
+      "status": "confirmed",
+      "createdAt": "2026-09-28T06:15:00.000Z"
+    },
+    {
+      "id": "b_1727521800000_mno345",
+      "customerName": "Emil Nurbekov",
+      "customerPhone": "+996555555666",
+      "service": "Haircut",
+      "date": "2026-09-28",
+      "time": "14:30",
+      "notes": "",
+      "platform": "telegram",
+      "userId": "tg_77889",
+      "status": "confirmed",
+      "createdAt": "2026-09-28T07:00:00.000Z"
+    },
+    {
+      "id": "b_1727523600000_pqr678",
+      "customerName": "Timur Sydykov",
+      "customerPhone": "+996555666777",
+      "service": "Beard trim",
+      "date": "2026-09-28",
+      "time": "16:00",
+      "notes": "First time customer",
+      "platform": "whatsapp",
+      "userId": "wa_99001",
+      "status": "confirmed",
+      "createdAt": "2026-09-28T08:00:00.000Z"
+    }
+  ]
+}

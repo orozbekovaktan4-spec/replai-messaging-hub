@@ -1,0 +1,5480 @@
+import express from 'express';
+import fetch from 'node-fetch';
+import twilio from 'twilio';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import { getAIResponse } from './ai-engine-free.js';
+import { connectionManager } from './connection-manager.js';
+import { analyticsManager } from './analytics-manager.js';
+// Database imports (Prisma)
+import * as db from './db.js';
+import { prisma } from './db.js';
+
+// Load environment variables
+dotenv.config();
+
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Validate required environment variables
+const provider = process.env.AI_PROVIDER || 'groq';
+const providerKey = {
+  'groq': 'GROQ_API_KEY',
+  'huggingface': 'HUGGINGFACE_API_KEY',
+  'openrouter': 'OPENROUTER_API_KEY',
+  'together': 'TOGETHER_API_KEY'
+}[provider];
+
+if (!process.env[providerKey]) {
+  console.error(`❌ Error: ${providerKey} is not set in .env file`);
+  console.error(`   You selected AI_PROVIDER=${provider}`);
+  process.exit(1);
+}
+
+// Initialize Express app
+const app = express();
+const PORT = process.env.PORT || 3000;
+const META_GRAPH_API_VERSION = process.env.META_GRAPH_API_VERSION || 'v25.0';
+const FACEBOOK_GRAPH_BASE_URL = process.env.FACEBOOK_GRAPH_BASE_URL || 'https://graph.facebook.com';
+const INSTAGRAM_GRAPH_BASE_URL = process.env.INSTAGRAM_GRAPH_BASE_URL || 'https://graph.facebook.com';
+const INSTAGRAM_OAUTH_AUTH_URL = 'https://www.instagram.com/oauth/authorize';
+const INSTAGRAM_OAUTH_TOKEN_URL = 'https://api.instagram.com/oauth/access_token';
+const INSTAGRAM_GRAPH_ME_URL = 'https://graph.instagram.com/me';
+const INSTAGRAM_GRAPH_ACCESS_TOKEN_URL = 'https://graph.instagram.com/access_token';
+const INSTAGRAM_GRAPH_REFRESH_URL = 'https://graph.instagram.com/refresh_access_token';
+const INSTAGRAM_MESSAGE_SEND_URL = 'https://graph.instagram.com/v22.0/me/messages';
+const INSTAGRAM_DEFAULT_SCOPES = [
+  'instagram_business_basic',
+  'instagram_business_manage_messages',
+  'instagram_business_manage_comments'
+].join(',');
+const oauthStateStore = new Map();
+
+function facebookGraphUrl(pathname) {
+  return `${FACEBOOK_GRAPH_BASE_URL}/${META_GRAPH_API_VERSION}/${pathname.replace(/^\/+/, '')}`;
+}
+
+function instagramGraphUrl(pathname) {
+  return `${INSTAGRAM_GRAPH_BASE_URL}/${META_GRAPH_API_VERSION}/${pathname.replace(/^\/+/, '')}`;
+}
+
+function getInstagramRedirectUri(req) {
+  return process.env.INSTAGRAM_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/admin/instagram/oauth/callback`;
+}
+
+function parseExpiresAt(value) {
+  const ts = Date.parse(value || '');
+  return Number.isNaN(ts) ? null : ts;
+}
+
+function isInstagramTokenExpired() {
+  const expiresAt = parseExpiresAt(process.env.INSTAGRAM_TOKEN_EXPIRES_AT);
+  return expiresAt ? expiresAt <= Date.now() : false;
+}
+
+function updateInstagramConnectionFromEnv() {
+  const accessToken = process.env.INSTAGRAM_ACCESS_TOKEN || '';
+  const username = process.env.INSTAGRAM_USERNAME || null;
+  const expiresAt = parseExpiresAt(process.env.INSTAGRAM_TOKEN_EXPIRES_AT);
+  platformConnections.instagram = {
+    connected: Boolean(accessToken && username && (!expiresAt || expiresAt > Date.now())),
+    username,
+    accessToken: accessToken || null,
+    userId: process.env.INSTAGRAM_IG_USER_ID || null,
+    expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null
+  };
+}
+
+// WhatsApp & Meta Webhook Signature Validation
+function validateMetaSignature(req, appSecret) {
+  const signature = req.get('X-Hub-Signature-256');
+  if (!signature) {
+    console.warn('[Meta] No signature provided');
+    return false;
+  }
+
+  try {
+    // Use raw body captured by verify function
+    const payload = req.rawBody || JSON.stringify(req.body);
+    const expectedSignature = 'sha256=' +
+      crypto.createHmac('sha256', appSecret)
+        .update(payload)
+        .digest('hex');
+
+    const isValid = signature === expectedSignature;
+    if (!isValid) {
+      console.warn('[Meta] Invalid signature - expected:', expectedSignature.slice(0, 20) + '...', 'got:', signature.slice(0, 20) + '...');
+    }
+    return isValid;
+  } catch (error) {
+    console.error('[Meta] Signature validation error:', error.message);
+    return false;
+  }
+}
+
+// Track processed message IDs to prevent duplicates
+const processedMessages = new Set();
+const MAX_PROCESSED_MESSAGES = 5000;
+
+function markMessageProcessed(messageId) {
+  processedMessages.add(messageId);
+  // Keep memory bounded
+  if (processedMessages.size > MAX_PROCESSED_MESSAGES) {
+    const first = Array.from(processedMessages)[0];
+    processedMessages.delete(first);
+  }
+}
+
+function isMessageProcessed(messageId) {
+  return processedMessages.has(messageId);
+}
+
+// Middleware configuration
+// Capture raw body for webhook signature validation
+app.use(express.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf.toString('utf8');
+  }
+}));
+app.use(express.urlencoded({ extended: true })); // Added to read Twilio incoming webhook data properly
+
+// Memory storage for connections, logs, and statistics
+const chatLogs = [];
+const stats = {
+  totalMessages: 0,
+  todayMessages: 0,
+  lastResetDate: new Date().toDateString()
+};
+
+// Function to reset today's messages at midnight
+function resetDailyStats() {
+  const today = new Date().toDateString();
+  if (stats.lastResetDate !== today) {
+    stats.todayMessages = 0;
+    stats.lastResetDate = today;
+  }
+}
+
+// Function to update message stats
+function updateMessageStats() {
+  resetDailyStats();
+  stats.totalMessages++;
+  stats.todayMessages++;
+}
+
+// Authentication storage
+const sessions = new Map();
+
+// Files for persistence
+const SESSIONS_FILE = path.join(__dirname, 'sessions.json');
+const USERS_FILE = path.join(__dirname, 'users.json');
+
+// Rate limiting storage for login attempts
+const loginAttempts = new Map();
+
+// Load users from file on startup
+function loadUsers() {
+  try {
+    if (fs.existsSync(USERS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+      console.log(`✓ Loaded ${data.users.length} user(s) from users.json`);
+      return data.users || [];
+    } else {
+      console.log('⚠️  No users.json found. Please register your first account at /');
+      fs.writeFileSync(USERS_FILE, JSON.stringify({ users: [] }, null, 2), 'utf8');
+      return [];
+    }
+  } catch (error) {
+    console.error('[Auth] Error loading users:', error.message);
+    return [];
+  }
+}
+
+// Save users to file
+function saveUsers(users) {
+  try {
+    fs.writeFileSync(USERS_FILE, JSON.stringify({ users }, null, 2), 'utf8');
+  } catch (error) {
+    console.error('[Auth] Error saving users:', error.message);
+  }
+}
+
+// Get user by email (checks both admin users and businesses database)
+async function getUserByEmail(email) {
+  // First check admin users (for super admin)
+  const users = loadUsers();
+  const user = users.find(u => u.email === email);
+  if (user) return user;
+
+  // Then check businesses database (for business owners)
+  const business = await db.findBusinessByEmail(email);
+  if (business) {
+    // Return in user format
+    return {
+      email: business.email,
+      name: business.ownerName || business.name,
+      passwordHash: business.password,
+      businessId: business.id,
+      type: 'business'
+    };
+  }
+
+  return null;
+}
+
+// Add new user
+function addUser(user) {
+  const users = loadUsers();
+  users.push(user);
+  saveUsers(users);
+}
+
+// Load sessions from file on startup
+function loadSessions() {
+  try {
+    if (fs.existsSync(SESSIONS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(SESSIONS_FILE, 'utf8'));
+      const now = Date.now();
+      // Only load sessions that haven't expired (24 hours)
+      Object.entries(data).forEach(([sessionId, session]) => {
+        const sessionAge = now - new Date(session.createdAt).getTime();
+        const twentyFourHours = 24 * 60 * 60 * 1000;
+        if (sessionAge < twentyFourHours) {
+          sessions.set(sessionId, session);
+        }
+      });
+      console.log(`✓ Loaded ${sessions.size} active session(s)`);
+    }
+  } catch (error) {
+    console.error('[Auth] Error loading sessions:', error.message);
+  }
+}
+
+// Save sessions to file
+function saveSessions() {
+  try {
+    const sessionsObj = {};
+    sessions.forEach((value, key) => {
+      sessionsObj[key] = value;
+    });
+    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(sessionsObj, null, 2), 'utf8');
+  } catch (error) {
+    console.error('[Auth] Error saving sessions:', error.message);
+  }
+}
+
+// Load sessions on startup
+loadSessions();
+
+// Save sessions periodically (every 5 minutes)
+setInterval(saveSessions, 5 * 60 * 1000);
+
+// Clean up old login attempts every hour
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, data] of loginAttempts.entries()) {
+    if (now - data.lastAttempt > 15 * 60 * 1000) {
+      loginAttempts.delete(ip);
+    }
+  }
+}, 60 * 60 * 1000);
+
+// ============================================
+// CRITICAL FIX #2: Authentication Middleware
+// ============================================
+
+/**
+ * Middleware to require admin authentication
+ * Checks if user has valid session and admin role
+ */
+function requireAdminAuth(req, res, next) {
+  // Check if session exists
+  if (!req.session || !sessions.has(req.session)) {
+    console.warn('[Auth] Unauthorized access attempt to admin endpoint:', req.path);
+    return res.status(401).json({
+      error: 'Unauthorized',
+      message: 'Admin authentication required'
+    });
+  }
+
+  const sessionData = sessions.get(req.session);
+
+  // Check if session is expired (24 hours)
+  const sessionAge = Date.now() - new Date(sessionData.createdAt).getTime();
+  if (sessionAge > 24 * 60 * 60 * 1000) {
+    sessions.delete(req.session);
+    return res.status(401).json({
+      error: 'Session expired',
+      message: 'Please log in again'
+    });
+  }
+
+  // TODO: Add role check when implementing proper admin system
+  // For now, any authenticated user can access admin endpoints
+
+  // Attach user info to request for use in route handlers
+  req.user = {
+    email: sessionData.email,
+    name: sessionData.name
+  };
+
+  next();
+}
+
+/**
+ * Optional auth middleware - allows access but logs warning if not authenticated
+ * Use for endpoints that are being migrated to require auth
+ */
+function optionalAuth(req, res, next) {
+  if (!req.session || !sessions.has(req.session)) {
+    console.warn('[Auth] ⚠️  Unauthenticated access to:', req.path);
+    console.warn('[Auth] ⚠️  This endpoint will require authentication soon!');
+  }
+  next();
+}
+
+// --- BOOKING STORAGE HELPERS ---
+const BOOKINGS_FILE = path.join(__dirname, 'bookings.json');
+
+function ensureBookingsFile() {
+  if (!fs.existsSync(BOOKINGS_FILE)) {
+    fs.writeFileSync(BOOKINGS_FILE, JSON.stringify({ bookings: [] }, null, 2), 'utf8');
+  }
+}
+
+function readBookingsStore() {
+  ensureBookingsFile();
+  try {
+    const parsed = JSON.parse(fs.readFileSync(BOOKINGS_FILE, 'utf8'));
+    return { bookings: Array.isArray(parsed.bookings) ? parsed.bookings : [] };
+  } catch (error) {
+    console.error('[Bookings] Error reading bookings.json:', error.message);
+    return { bookings: [] };
+  }
+}
+
+function writeBookingsStore(store) {
+  fs.writeFileSync(BOOKINGS_FILE, JSON.stringify({ bookings: store.bookings || [] }, null, 2), 'utf8');
+}
+
+function generateBookingId() {
+  return `b_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function parseTimeToMinutes(time) {
+  const match = String(time || '').match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function minutesToTime(minutes) {
+  const hours = Math.floor(minutes / 60).toString().padStart(2, '0');
+  const mins = (minutes % 60).toString().padStart(2, '0');
+  return `${hours}:${mins}`;
+}
+
+function getBusinessData() {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(__dirname, 'business-info.json'), 'utf8'));
+  } catch (error) {
+    console.error('[Bookings] Error reading business-info.json:', error.message);
+    return { business: { hours: {}, services: [], serviceDuration: 30 } };
+  }
+}
+
+function getDayKey(dateString) {
+  const date = new Date(`${dateString}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return null;
+  return ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][date.getDay()];
+}
+
+function getAvailableSlotsFor(date, service) {
+  const businessData = getBusinessData();
+  const business = businessData.business || {};
+  const dayKey = getDayKey(date);
+  const hoursValue = dayKey ? business.hours?.[dayKey] : null;
+  if (!hoursValue || /closed/i.test(hoursValue)) return [];
+
+  const normalized = String(hoursValue).replace(/\s/g, '');
+  const [startRaw, endRaw] = normalized.split('-');
+  const start = parseTimeToMinutes(startRaw);
+  const end = parseTimeToMinutes(endRaw);
+  if (start === null || end === null || end <= start) return [];
+
+  const serviceRecord = Array.isArray(business.services)
+    ? business.services.find(s => String(s.name || '').toLowerCase() === String(service || '').toLowerCase())
+    : null;
+  const duration = Number(serviceRecord?.duration || business.serviceDuration || 30);
+  const interval = 30;
+  const taken = new Set(readBookingsStore().bookings
+    .filter(b => b.date === date && b.status !== 'cancelled')
+    .map(b => b.time));
+
+  const slots = [];
+  for (let minutes = start; minutes + duration <= end; minutes += interval) {
+    const slot = minutesToTime(minutes);
+    if (!taken.has(slot)) slots.push(slot);
+  }
+  return slots;
+}
+
+const platformConnections = {
+  telegram: {
+    connected: Boolean(process.env.TELEGRAM_BOT_TOKEN),
+    token: process.env.TELEGRAM_BOT_TOKEN || null
+  },
+  instagram: {
+    connected: false,
+    username: null,
+    accessToken: null,
+    userId: null,
+    expiresAt: null
+  },
+  whatsapp: {
+    connected: Boolean(process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_ID),
+    token: process.env.WHATSAPP_ACCESS_TOKEN || null,
+    phone_id: process.env.WHATSAPP_PHONE_ID || null
+  },
+  tiktok: {
+    connected: Boolean(process.env.TIKTOK_ACCESS_TOKEN),
+    token: process.env.TIKTOK_ACCESS_TOKEN || null
+  }
+};
+
+updateInstagramConnectionFromEnv();
+
+
+
+// --- INSTAGRAM OAUTH 2.0 (Official Meta Graph API) ---
+// Old private API code removed - now using official OAuth flow
+// See INSTAGRAM-OAUTH-SETUP.md for documentation
+
+// Track which messages we already replied to (in-memory)
+const repliedMessages = new Set();
+
+// Helper: Find matching rule based on trigger keywords
+function findMatchingRule(rules, messageText) {
+  if (!rules || rules.length === 0) return null;
+
+  const text = messageText.toLowerCase();
+
+  // Sort rules: specific triggers first, empty trigger last
+  const sorted = rules.sort((a, b) => {
+    if (!a.trigger && b.trigger) return 1;
+    if (a.trigger && !b.trigger) return -1;
+    return 0;
+  });
+
+  for (const rule of sorted) {
+    // Empty trigger = match all
+    if (!rule.trigger) return rule;
+
+    // Check if any keyword matches
+    const keywords = rule.trigger.split(',').map(k => k.trim().toLowerCase());
+    if (keywords.some(keyword => text.includes(keyword))) {
+      return rule;
+    }
+  }
+
+  return null;
+}
+
+// Helper: Send Instagram DM
+async function sendInstagramDM(senderId, message, accessToken) {
+  const response = await fetch(
+    `https://graph.instagram.com/v23.0/me/messages`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        recipient: { id: senderId },
+        message: { text: message },
+        access_token: accessToken
+      })
+    }
+  );
+
+  return await response.json();
+}
+
+// Helper: Reply to Instagram comment
+async function replyToInstagramComment(commentId, message, accessToken) {
+  const response = await fetch(
+    `https://graph.instagram.com/v23.0/${commentId}/replies`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: message,
+        access_token: accessToken
+      })
+    }
+  );
+
+  return await response.json();
+}
+
+// Main message processor with rules
+async function processInstagramMessage(business, message, isComment = false) {
+  const settings = business.instagram?.settings;
+  const accessToken = business.instagram?.accessToken || process.env.INSTAGRAM_ACCESS_TOKEN;
+
+  // Check if AI is enabled
+  if (!settings?.enabled) {
+    console.log('[Instagram Process] AI is disabled, skipping');
+    return;
+  }
+
+  // Check if this message type is enabled
+  if (isComment && !settings.comments) {
+    console.log('[Instagram Process] Comments disabled, skipping');
+    return;
+  }
+  if (!isComment && !settings.directMessages) {
+    console.log('[Instagram Process] DMs disabled, skipping');
+    return;
+  }
+
+  // Find matching rule
+  const matchedRule = findMatchingRule(settings.rules, message.text);
+
+  if (!matchedRule) {
+    console.log('[Instagram Process] No rule matched, skipping');
+    return;
+  }
+
+  console.log(`[Instagram Process] Rule matched: ${matchedRule.responseType} (trigger: "${matchedRule.trigger || 'all'}")`);
+
+  // Generate response based on rule type
+  let response;
+
+  switch (matchedRule.responseType) {
+    case 'ai_generated':
+      response = await getAIResponse(message.senderId.toString(), message.text);
+      break;
+
+    case 'template':
+      response = matchedRule.template || 'Thank you for your message!';
+      break;
+
+    case 'extended_prompt':
+      // Get AI response with additional context
+      const businessInfo = {
+        name: business.name || 'Business',
+        services: business.services || [],
+        hours: business.hours || {}
+      };
+
+      // Build extended prompt
+      const extendedContext = `
+${matchedRule.context || ''}
+
+Business Info:
+- Name: ${businessInfo.name}
+- Services: ${businessInfo.services.map(s => s.name).join(', ')}
+      `.trim();
+
+      // Call AI with extended context (pass as system message)
+      response = await getAIResponse(
+        message.senderId.toString(),
+        message.text,
+        null, // businessId
+        extendedContext // additionalContext
+      );
+      break;
+
+    default:
+      response = await getAIResponse(message.senderId.toString(), message.text);
+  }
+
+  // Send response based on message type
+  if (isComment) {
+    await handleCommentResponse(business, message, response, settings, accessToken);
+  } else {
+    // Direct message
+    await sendInstagramDM(message.senderId, response, accessToken);
+
+    console.log(`[Instagram Process] ✅ DM reply sent to ${message.senderId}`);
+  }
+
+  // Track analytics
+  analyticsManager.trackMessage({
+    platform: 'instagram',
+    direction: 'incoming',
+    userId: message.senderId,
+    messageText: message.text
+  });
+
+  analyticsManager.trackMessage({
+    platform: 'instagram',
+    direction: 'outgoing',
+    userId: message.senderId,
+    messageText: response,
+    aiResponse: response,
+    aiResponseSuccess: true
+  });
+}
+
+// Handle comment responses with funnel
+async function handleCommentResponse(business, comment, aiResponse, settings, accessToken) {
+  const { commentToDM } = settings;
+
+  if (!commentToDM.enabled) {
+    // Just reply to comment (no funnel)
+    await replyToInstagramComment(comment.id, aiResponse, accessToken);
+    console.log(`[Instagram Process] ✅ Comment reply sent`);
+    return;
+  }
+
+  // Comment-to-DM funnel
+  if (commentToDM.replyInComments) {
+    await replyToInstagramComment(
+      comment.id,
+      commentToDM.commentTemplate || 'Sent you a DM! 💬',
+      accessToken
+    );
+    console.log(`[Instagram Process] ✅ Comment template posted`);
+  }
+
+  if (commentToDM.sendDM) {
+    const dmText = commentToDM.dmType === 'ai_generated'
+      ? aiResponse
+      : (commentToDM.dmTemplate || 'Hi! Thanks for your comment.');
+
+    await sendInstagramDM(comment.senderId, dmText, accessToken);
+    console.log(`[Instagram Process] ✅ DM sent via funnel`);
+  }
+}
+
+async function pollInstagramDirectInbox() {
+  try {
+    const accessToken = process.env.INSTAGRAM_ACCESS_TOKEN;
+    const userId = process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID || '27973124595617787';
+
+    if (!accessToken) {
+      return { processed: 0, error: 'No access token' };
+    }
+
+    // Load business settings from database
+    const businesses = await db.getAllBusinesses();
+    const business = businesses[0];
+
+    if (!business) {
+      return { processed: 0, error: 'No business configured' };
+    }
+
+    // Check if AI is enabled
+    if (!business.instagram?.settings?.enabled) {
+      return { processed: 0, skipped: 'AI disabled' };
+    }
+
+    // Step 1: Get all conversations
+    const convoRes = await fetch(
+      `https://graph.instagram.com/v23.0/${userId}/conversations?fields=id,updated_time&access_token=${accessToken}`,
+      {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+        }
+      }
+    );
+
+    if (!convoRes.ok) {
+      const errorText = await convoRes.text();
+      console.error('[Instagram Poll] Fetch failed:', convoRes.status, errorText);
+      return { processed: 0, error: `HTTP ${convoRes.status}: ${errorText}` };
+    }
+
+    const convoData = await convoRes.json();
+
+    if (!convoData.data) {
+      console.error('[Instagram Poll] No conversations found:', JSON.stringify(convoData));
+      return { processed: 0, error: 'No conversations' };
+    }
+
+    let processed = 0;
+
+    // Step 2: Check recent conversations (last 5 only for speed)
+    const recentConvos = convoData.data.slice(0, 5);
+
+    for (const convo of recentConvos) {
+      // Step 3: Get messages in this conversation
+      const msgRes = await fetch(
+        `https://graph.instagram.com/v23.0/${convo.id}/messages?fields=id,message,from,created_time&access_token=${accessToken}`
+      );
+      const msgData = await msgRes.json();
+
+      if (!msgData.data || msgData.data.length === 0) continue;
+
+      // Step 4: Get the latest message
+      const latestMsg = msgData.data[0];
+
+      // Skip if already replied
+      if (repliedMessages.has(latestMsg.id)) continue;
+
+      // Skip if message is from us (our own replies)
+      if (latestMsg.from?.id === userId) continue;
+
+      // Skip if message is older than 24 hours (avoid replying to old messages on startup)
+      const msgAge = Date.now() - new Date(latestMsg.created_time).getTime();
+      if (msgAge > 24 * 60 * 60 * 1000) {
+        repliedMessages.add(latestMsg.id); // mark old messages as seen
+        continue;
+      }
+
+      const userMessage = latestMsg.message;
+      const senderId = latestMsg.from?.id;
+
+      if (!userMessage || !senderId) continue;
+
+      console.log(`[Instagram Poll] New message from ${senderId}: "${userMessage}"`);
+
+      // Process message with rules system
+      await processInstagramMessage(business, {
+        id: latestMsg.id,
+        text: userMessage,
+        senderId: senderId
+      }, false); // isComment = false
+
+      repliedMessages.add(latestMsg.id);
+      processed++;
+
+      // Log to chatLogs
+      chatLogs.unshift({
+        platform: 'instagram',
+        userId: senderId,
+        userMessage,
+        aiResponse: '(processed by rules)',
+        timestamp: new Date().toISOString()
+      });
+      if (chatLogs.length > 100) chatLogs.pop();
+      updateMessageStats();
+    }
+
+    return { processed };
+
+  } catch (error) {
+    console.error('[Instagram Poll] Error:', error.message);
+    console.error('[Instagram Poll] Error details:', error);
+    return { processed: 0, error: error.message };
+  }
+}
+
+// Start polling every 30 seconds
+setInterval(async () => {
+  if (process.env.INSTAGRAM_ACCESS_TOKEN) {
+    const result = await pollInstagramDirectInbox();
+    if (result.processed > 0) {
+      console.log(`[Instagram Poll] Processed ${result.processed} new message(s)`);
+    }
+  }
+}, 30000);
+
+// Clean up old message IDs every hour to prevent memory leak
+setInterval(() => {
+  if (repliedMessages.size > 1000) {
+    const arr = [...repliedMessages];
+    arr.slice(0, 500).forEach(id => repliedMessages.delete(id));
+  }
+}, 60 * 60 * 1000);
+
+function upsertEnvValues(values) {
+  const envPath = path.join(__dirname, '.env');
+  let envContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
+
+  for (const [key, value] of Object.entries(values)) {
+    const safeValue = String(value ?? '');
+    const line = `${key}=${safeValue}`;
+    const regex = new RegExp(`^${key}=.*$`, 'm');
+    if (regex.test(envContent)) {
+      envContent = envContent.replace(regex, line);
+    } else {
+      envContent += `${envContent.endsWith('\n') || envContent.length === 0 ? '' : '\n'}${line}\n`;
+    }
+    process.env[key] = safeValue;
+  }
+
+  fs.writeFileSync(envPath, envContent, 'utf8');
+}
+
+// --- CORE WEB INTERFACE ROUTES ---
+
+// Serve public landing page as main page (for Meta verification)
+// Serve new landing page as main page
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'landing-new.html'));
+});
+
+// Old landing for reference
+app.get('/landing-old', (req, res) => {
+  res.sendFile(path.join(__dirname, 'landing.html'));
+});
+
+// Serve business info page for Meta verification
+app.get('/business-info', (req, res) => {
+  res.sendFile(path.join(__dirname, 'business-info.html'));
+});
+
+// Serve login page at /login
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'login.html'));
+});
+
+// Instagram prerequisites page
+app.get('/instagram/prerequisites', (req, res) => {
+  res.sendFile(path.join(__dirname, 'instagram-prerequisites.html'));
+});
+
+// Instagram settings page
+app.get('/instagram/settings', (req, res) => {
+  res.sendFile(path.join(__dirname, 'instagram-settings.html'));
+});
+
+// Get Instagram settings (API)
+app.get('/api/instagram/settings', async (req, res) => {
+  try {
+    const businesses = await db.getAllBusinesses();
+    const business = businesses[0]; // For now, using first business
+
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    const response = {
+      connected: business.instagram?.connected || false,
+      username: business.instagram?.username || null,
+      settings: business.instagram?.settings || {
+        enabled: false,
+        directMessages: true,
+        comments: true,
+        rules: [
+          {
+            id: 'rule_default',
+            trigger: '',
+            responseType: 'ai_generated',
+            template: '',
+            context: ''
+          }
+        ],
+        commentToDM: {
+          enabled: false,
+          replyInComments: true,
+          commentTemplate: 'Отправил вам в DM! 💬',
+          sendDM: true,
+          dmType: 'ai_generated',
+          dmTemplate: ''
+        }
+      }
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('[Instagram Settings] Error loading settings:', error);
+    res.status(500).json({ error: 'Failed to load settings' });
+  }
+});
+
+// Update Instagram settings (API)
+app.put('/api/instagram/settings', async (req, res) => {
+  try {
+    const { enabled, directMessages, comments, rules, commentToDM } = req.body;
+
+    const businesses = await db.getAllBusinesses();
+    const business = businesses[0]; // For now, using first business
+
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    // Initialize instagram object if it doesn't exist
+    if (!business.instagram) {
+      business.instagram = {};
+    }
+
+    // Update settings
+    const updatedInstagram = {
+      ...business.instagram,
+      settings: {
+        enabled,
+        directMessages,
+        comments,
+        rules,
+        commentToDM
+      }
+    };
+
+    // Save to database
+    await db.updateBusiness(business.id, { instagram: updatedInstagram });
+
+    console.log('[Instagram Settings] Settings updated:', {
+      enabled,
+      rulesCount: rules.length,
+      funnelEnabled: commentToDM.enabled
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Instagram Settings] Error saving settings:', error);
+    res.status(500).json({ error: 'Failed to save settings' });
+  }
+});
+
+// Disconnect Instagram
+app.post('/api/instagram/disconnect', async (req, res) => {
+  try {
+    const businesses = await db.getAllBusinesses();
+    const business = businesses[0];
+
+    if (business && business.instagram) {
+      await db.updateBusiness(business.id, {
+        instagram: {
+          connected: false,
+          accessToken: null,
+          username: null,
+          settings: null
+        }
+      });
+
+      console.log('[Instagram] Disconnected');
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Instagram] Error disconnecting:', error);
+    res.status(500).json({ error: 'Failed to disconnect' });
+  }
+});
+
+// Authentication endpoints
+// Registration endpoint
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { email, name, password } = req.body;
+    
+    // Validate input
+    if (!email || !name || !password) {
+      return res.status(400).json({ error: 'Email, name, and password are required' });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    // Validate password length
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+    }
+
+    // Check if user already exists
+    const existingUser = await getUserByEmail(email);
+    if (existingUser) {
+      return res.status(409).json({ error: 'An account with this email already exists' });
+    }
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Create user
+    const newUser = {
+      email: email.toLowerCase(),
+      name,
+      passwordHash,
+      createdAt: new Date().toISOString()
+    };
+
+    addUser(newUser);
+
+    console.log(`✓ [Auth] New user registered: ${email}`);
+
+    res.json({
+      success: true,
+      message: 'Account created successfully',
+      user: {
+        email: newUser.email,
+        name: newUser.name
+      }
+    });
+  } catch (error) {
+    console.error('[Auth] Registration error:', error.message);
+    res.status(500).json({ error: 'Registration failed' });
+  }
+});
+
+// Login endpoint with rate limiting
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const clientIp = req.ip || req.connection.remoteAddress;
+    
+    // Check input
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    // Rate limiting: max 10 attempts per 15 minutes per IP
+    const now = Date.now();
+    const attemptData = loginAttempts.get(clientIp) || { count: 0, lastAttempt: now };
+    
+    // Reset counter if 15 minutes have passed
+    if (now - attemptData.lastAttempt > 15 * 60 * 1000) {
+      attemptData.count = 0;
+    }
+
+    if (attemptData.count >= 10) {
+      const timeLeft = Math.ceil((15 * 60 * 1000 - (now - attemptData.lastAttempt)) / 60000);
+      return res.status(429).json({ 
+        error: `Too many login attempts. Please try again in ${timeLeft} minute(s)` 
+      });
+    }
+
+    // Increment attempt counter
+    attemptData.count++;
+    attemptData.lastAttempt = now;
+    loginAttempts.set(clientIp, attemptData);
+
+    // Look up user
+    const user = await getUserByEmail(email.toLowerCase());
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    // Compare password
+    const isValid = await bcrypt.compare(password, user.passwordHash);
+    
+    if (!isValid) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    // Reset attempt counter on successful login
+    loginAttempts.delete(clientIp);
+
+    // Create session
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    sessions.set(sessionId, {
+      email: user.email,
+      name: user.name,
+      createdAt: new Date().toISOString(),
+      lastActivity: new Date().toISOString()
+    });
+
+    // Save sessions immediately
+    saveSessions();
+
+    console.log(`✓ [Auth] User logged in: ${email}`);
+
+    res.json({
+      success: true,
+      sessionId,
+      user: {
+        email: user.email,
+        name: user.name
+      }
+    });
+  } catch (error) {
+    console.error('[Auth] Login error:', error.message);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  const { sessionId } = req.body;
+  if (sessionId) {
+    sessions.delete(sessionId);
+    saveSessions();
+    console.log(`✓ [Auth] User logged out`);
+  }
+  res.json({ success: true });
+});
+
+app.get('/api/auth/verify', (req, res) => {
+  const sessionId = req.headers['x-session-id'];
+  const session = sessions.get(sessionId);
+  
+  if (session) {
+    // Check if session is expired (24 hours)
+    const sessionAge = Date.now() - new Date(session.createdAt).getTime();
+    const twentyFourHours = 24 * 60 * 60 * 1000;
+    
+    if (sessionAge > twentyFourHours) {
+      sessions.delete(sessionId);
+      saveSessions();
+      return res.json({ valid: false, reason: 'Session expired' });
+    }
+    
+    // Update last activity
+    session.lastActivity = new Date().toISOString();
+    sessions.set(sessionId, session);
+    
+    res.json({ valid: true, user: session });
+  } else {
+    res.json({ valid: false, reason: 'Session not found' });
+  }
+});
+
+// Google OAuth Routes
+app.get('/api/auth/google/config', (req, res) => {
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
+  res.json({
+    redirectUri,
+    clientId: process.env.GOOGLE_CLIENT_ID || null,
+    configured: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)
+  });
+});
+
+app.get('/api/auth/google', (req, res) => {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  if (!clientId) {
+    return res.redirect('/?error=google_not_configured');
+  }
+  
+  // Use explicit redirect URI or construct from request
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
+  const scope = 'email profile';
+  const state = `state_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+  
+  // Store state for verification
+  oauthStateStore.set(state, { timestamp: Date.now() });
+  
+  console.log(`[Google OAuth] Initiating auth with redirect_uri: ${redirectUri}`);
+  
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+    `client_id=${encodeURIComponent(clientId)}&` +
+    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+    `response_type=code&` +
+    `scope=${encodeURIComponent(scope)}&` +
+    `state=${encodeURIComponent(state)}&` +
+    `access_type=offline&` +
+    `prompt=select_account`;
+  
+  res.redirect(authUrl);
+});
+
+app.get('/api/auth/google/callback', async (req, res) => {
+  const { code, state, error } = req.query;
+  
+  if (error) {
+    console.error('[Google OAuth] Error:', error);
+    return res.redirect('/?error=google_auth_failed');
+  }
+  
+  if (!code) {
+    return res.redirect('/?error=no_code');
+  }
+  
+  // Verify state
+  if (!state || !oauthStateStore.has(state)) {
+    return res.redirect('/?error=invalid_state');
+  }
+  oauthStateStore.delete(state);
+  
+  try {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
+    
+    console.log(`[Google OAuth] Using redirect_uri for token exchange: ${redirectUri}`);
+    
+    // Exchange code for tokens
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code'
+      })
+    });
+    
+    const tokenData = await tokenResponse.json();
+    
+    if (!tokenResponse.ok) {
+      console.error('[Google OAuth] Token error:', tokenData);
+      return res.redirect('/?error=token_exchange_failed');
+    }
+    
+    // Get user info
+    const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
+    });
+    
+    const userData = await userResponse.json();
+    
+    if (!userResponse.ok) {
+      console.error('[Google OAuth] User info error:', userData);
+      return res.redirect('/?error=user_info_failed');
+    }
+    
+    const { email, name, picture } = userData;
+    
+    // Check if user exists
+    let user = getUserByEmail(email.toLowerCase());
+    
+    if (!user) {
+      // Create new user from Google account
+      user = {
+        email: email.toLowerCase(),
+        name: name || email.split('@')[0],
+        passwordHash: await bcrypt.hash(Math.random().toString(36), 10), // Random hash (not used)
+        googleId: userData.id,
+        picture: picture || null,
+        provider: 'google',
+        createdAt: new Date().toISOString()
+      };
+      addUser(user);
+      console.log(`✓ [Google OAuth] New user created: ${email}`);
+    } else {
+      // Update existing user with Google info if not already set
+      if (!user.googleId) {
+        const users = loadUsers();
+        const userIndex = users.findIndex(u => u.email === email.toLowerCase());
+        if (userIndex !== -1) {
+          users[userIndex].googleId = userData.id;
+          users[userIndex].picture = picture || users[userIndex].picture;
+          saveUsers(users);
+        }
+      }
+      console.log(`✓ [Google OAuth] User logged in: ${email}`);
+    }
+    
+    // Create session
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    sessions.set(sessionId, {
+      email: user.email,
+      name: user.name,
+      picture: user.picture || picture,
+      provider: 'google',
+      createdAt: new Date().toISOString(),
+      lastActivity: new Date().toISOString()
+    });
+    
+    saveSessions();
+    
+    // Redirect to admin with session
+    res.redirect(`/admin?sessionId=${sessionId}`);
+  } catch (error) {
+    console.error('[Google OAuth] Error:', error);
+    res.redirect('/?error=authentication_failed');
+  }
+});
+
+// Privacy policy route
+app.get('/privacy-policy', (req, res) => {
+  res.sendFile(path.join(__dirname, 'privacy-policy.html'));
+});
+
+// Admin route (same as main page)
+// ========================================
+// ADMIN PANEL ROUTES
+// ========================================
+
+// Super Admin Panel - manages all businesses
+app.get('/admin', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+
+  // Read file and inject version tag to bust cache
+  const filePath = path.join(__dirname, 'admin-super.html');
+  let html = fs.readFileSync(filePath, 'utf8');
+
+  // Add version meta tag to force browser refresh
+  html = html.replace('<head>', `<head>\n    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">\n    <meta http-equiv="Pragma" content="no-cache">\n    <meta http-equiv="Expires" content="0">`);
+
+  res.send(html);
+});
+
+// Business Owner Panel - manages own business
+app.get('/business', (req, res) => {
+  res.redirect('/business-dashboard/');
+});
+
+// Legacy route - redirect to business panel
+app.get('/admin-new.html', (req, res) => {
+  res.redirect('/business');
+});
+
+// Serve connections UI JavaScript
+app.get('/connections-ui.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.sendFile(path.join(__dirname, 'connections-ui.js'));
+});
+
+// Test endpoint to verify server is working
+app.get('/admin-test', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.send(`
+    <!DOCTYPE html>
+    <html><head><title>Admin Test</title></head>
+    <body style="font-family: Arial; padding: 50px; background: #f0f0f0;">
+      <h1>✅ Server is Working!</h1>
+      <p>Time: ${new Date().toISOString()}</p>
+      <p>If you can see this, the server is responding correctly.</p>
+      <p><a href="/admin">Go to Admin Panel</a></p>
+      <p><a href="/">Go to Login</a></p>
+    </body>
+    </html>
+  `);
+});
+
+// Static files AFTER explicit routes
+app.use(express.static(__dirname));
+
+// Simple root health check for Railway deployment
+app.get('/api/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
+// --- TWILIO WHATSAPP INCOMING WEBHOOK ---
+app.post('/webhook/twilio', async (req, res) => {
+  try {
+    const incomingMsg = req.body.Body;
+    const fromNumber = req.body.From;
+
+    console.log(`[Twilio] Received from ${fromNumber}: ${incomingMsg}`);
+
+    if (!incomingMsg) return res.status(200).send('OK');
+
+    // Generate AI Response using your free core engine module
+    const aiResponse = await getAIResponse(fromNumber.toString(), incomingMsg);
+
+    // Send Reply via Twilio API
+    const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+
+    await client.messages.create({
+      body: aiResponse,
+      from: process.env.TWILIO_PHONE_NUMBER, // your twilio sandbox configuration string
+      to: fromNumber
+    });
+
+    // Sync state internally with dashboard architecture tracking
+    chatLogs.unshift({
+      platform: 'twilio-whatsapp',
+      userId: fromNumber,
+      userMessage: incomingMsg,
+      aiResponse,
+      timestamp: new Date().toISOString()
+    });
+    if (chatLogs.length > 100) chatLogs.pop();
+
+    updateMessageStats();
+
+    // Track incoming message in analytics
+    analyticsManager.trackMessage({
+      platform: 'whatsapp',
+      direction: 'incoming',
+      userId: fromNumber,
+      messageText: incomingMsg,
+      conversationId: fromNumber
+    });
+
+    // Track outgoing AI response in analytics
+    analyticsManager.trackMessage({
+      platform: 'whatsapp',
+      direction: 'outgoing',
+      userId: fromNumber,
+      messageText: aiResponse,
+      aiResponse: aiResponse,
+      aiResponseSuccess: true,
+      conversationId: fromNumber
+    });
+
+    console.log(`[Twilio] Sent reply to ${fromNumber}`);
+    res.status(200).send('OK');
+  } catch (error) {
+    console.error('[Twilio Error]', error);
+    res.status(500).send('Error');
+  }
+});
+
+// --- ADMIN SYSTEM CONFIGURATION APIS ---
+
+// Get business settings
+app.get('/api/admin/settings', (req, res) => {
+  try {
+    const data = fs.readFileSync(path.join(__dirname, 'business-info.json'), 'utf8');
+    res.json(JSON.parse(data));
+  } catch (error) {
+    console.error('[Admin] Error reading settings:', error.message);
+    res.status(500).json({ error: 'Error reading settings' });
+  }
+});
+
+// Save business settings
+app.post('/api/admin/settings', (req, res) => {
+  try {
+    const data = JSON.stringify(req.body, null, 2);
+    fs.writeFileSync(path.join(__dirname, 'business-info.json'), data, 'utf8');
+    console.log('[Admin] Settings updated successfully');
+    res.json({ success: true, message: 'Settings saved successfully' });
+  } catch (error) {
+    console.error('[Admin] Error saving settings:', error.message);
+    res.status(500).json({ error: 'Error saving settings' });
+  }
+});
+
+// Save business info (simplified format)
+app.post('/api/admin/business-info', (req, res) => {
+  try {
+    const { name, description, products, hours, contact, faqs } = req.body;
+
+    const productsList = products.split('\n').filter(p => p.trim()).map(p => {
+      const parts = p.split('-');
+      return {
+        name: parts[0]?.trim() || '',
+        description: '',
+        price: parts[1]?.trim() || ''
+      };
+    });
+
+    const faqsList = faqs.split('\n').filter(f => f.trim()).map(f => {
+      const parts = f.split('|');
+      return {
+        question: parts[0]?.replace('Q:', '').trim() || '',
+        answer: parts[1]?.replace('A:', '').trim() || ''
+      };
+    });
+
+    const businessData = {
+      business: {
+        name,
+        description,
+        hours: hours.split('\n').reduce((acc, line) => {
+          const [day, time] = line.split(':');
+          if (day && time) {
+            acc[day.trim().toLowerCase()] = time.trim();
+          }
+          return acc;
+        }, {}),
+        services: productsList,
+        contact: {
+          phone: contact.split(',')[0]?.trim() || '',
+          email: contact.split(',')[1]?.trim() || '',
+          address: contact.split(',')[2]?.trim() || '',
+          website: ''
+        },
+        faqs: faqsList
+      }
+    };
+
+    fs.writeFileSync(
+      path.join(__dirname, 'business-info.json'),
+      JSON.stringify(businessData, null, 2),
+      'utf8'
+    );
+
+    console.log('[Admin] Business info updated');
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Admin] Error saving business info:', error.message);
+    res.status(500).json({ error: 'Error saving business info' });
+  }
+});
+
+// Save AI settings
+app.post('/api/admin/ai-settings', (req, res) => {
+  try {
+    const settingsPath = path.join(__dirname, 'ai-settings.json');
+    fs.writeFileSync(settingsPath, JSON.stringify(req.body, null, 2), 'utf8');
+    console.log('[Admin] AI settings updated');
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Admin] Error saving AI settings:', error.message);
+    res.status(500).json({ error: 'Error saving AI settings' });
+  }
+});
+
+
+
+// --- ADMIN BOOKING APIS ---
+app.post('/api/admin/bookings', (req, res) => {
+  try {
+    const { customerName, customerPhone, service, date, time, notes = '', platform = 'admin', userId = '' } = req.body;
+    if (!customerName || !customerPhone || !service || !date || !time) {
+      return res.status(400).json({ error: 'customerName, customerPhone, service, date, and time are required' });
+    }
+
+    const availableSlots = getAvailableSlotsFor(date, service);
+    if (!availableSlots.includes(time)) {
+      return res.status(409).json({ error: 'Time slot is not available' });
+    }
+
+    const store = readBookingsStore();
+    const booking = {
+      id: generateBookingId(),
+      customerName,
+      customerPhone,
+      service,
+      date,
+      time,
+      notes,
+      platform,
+      userId: String(userId || ''),
+      status: 'confirmed',
+      createdAt: new Date().toISOString()
+    };
+    store.bookings.unshift(booking);
+    writeBookingsStore(store);
+
+    chatLogs.unshift({
+      platform,
+      userId,
+      userName: customerName,
+      userMessage: `Booking created: ${service} on ${date} at ${time}`,
+      aiResponse: `Confirmed booking for ${customerName}.`,
+      timestamp: new Date().toISOString(),
+      type: 'booking'
+    });
+    if (chatLogs.length > 100) chatLogs.pop();
+
+    res.json({ success: true, booking });
+  } catch (error) {
+    console.error('[Bookings] Create error:', error.message);
+    res.status(500).json({ error: 'Error creating booking' });
+  }
+});
+
+app.get('/api/admin/bookings/available', (req, res) => {
+  try {
+    const { date, service } = req.query;
+    if (!date) return res.status(400).json({ error: 'date is required' });
+    res.json({ slots: getAvailableSlotsFor(date, service) });
+  } catch (error) {
+    console.error('[Bookings] Availability error:', error.message);
+    res.status(500).json({ error: 'Error getting available slots' });
+  }
+});
+
+app.get('/api/admin/bookings', (req, res) => {
+  try {
+    const { date } = req.query;
+    let bookings = readBookingsStore().bookings;
+    if (date) bookings = bookings.filter(b => b.date === date);
+    res.json({ bookings });
+  } catch (error) {
+    console.error('[Bookings] List error:', error.message);
+    res.status(500).json({ error: 'Error reading bookings' });
+  }
+});
+
+app.get('/api/admin/bookings/:id', (req, res) => {
+  try {
+    const booking = readBookingsStore().bookings.find(b => b.id === req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    res.json({ booking });
+  } catch (error) {
+    res.status(500).json({ error: 'Error reading booking' });
+  }
+});
+
+
+app.patch('/api/admin/bookings/:id', (req, res) => {
+  try {
+    const allowedStatuses = new Set(['pending', 'confirmed', 'completed', 'cancelled']);
+    const { status, notes } = req.body;
+    const store = readBookingsStore();
+    const booking = store.bookings.find(b => b.id === req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (status) {
+      if (!allowedStatuses.has(status)) return res.status(400).json({ error: 'Invalid status' });
+      booking.status = status;
+      if (status === 'cancelled') booking.cancelledAt = new Date().toISOString();
+    }
+    if (typeof notes === 'string') booking.notes = notes;
+    booking.updatedAt = new Date().toISOString();
+    writeBookingsStore(store);
+    res.json({ success: true, booking });
+  } catch (error) {
+    console.error('[Bookings] Update error:', error.message);
+    res.status(500).json({ error: 'Error updating booking' });
+  }
+});
+
+app.delete('/api/admin/bookings/:id', (req, res) => {
+  try {
+    const store = readBookingsStore();
+    const booking = store.bookings.find(b => b.id === req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    booking.status = 'cancelled';
+    booking.cancelledAt = new Date().toISOString();
+    writeBookingsStore(store);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Bookings] Cancel error:', error.message);
+    res.status(500).json({ error: 'Error cancelling booking' });
+  }
+});
+
+// Dynamic Platform Connection Webhooks
+app.get('/api/admin/connect/whatsapp/qr', async (req, res) => {
+  // Beta placeholder. This route is intentionally shaped like a real QR provider response
+  // so it can be swapped later for WhatsApp Business API QR generation.
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+      <rect width="200" height="200" fill="#fff"/>
+      <rect x="12" y="12" width="48" height="48" fill="#111" rx="4"/>
+      <rect x="140" y="12" width="48" height="48" fill="#111" rx="4"/>
+      <rect x="12" y="140" width="48" height="48" fill="#111" rx="4"/>
+      <rect x="24" y="24" width="24" height="24" fill="#25D366"/>
+      <rect x="152" y="24" width="24" height="24" fill="#25D366"/>
+      <rect x="24" y="152" width="24" height="24" fill="#25D366"/>
+      <g fill="#111">
+        <rect x="78" y="22" width="12" height="12"/><rect x="102" y="22" width="12" height="12"/><rect x="78" y="46" width="12" height="12"/>
+        <rect x="74" y="78" width="14" height="14"/><rect x="100" y="78" width="14" height="14"/><rect x="126" y="78" width="14" height="14"/>
+        <rect x="78" y="110" width="12" height="12"/><rect x="110" y="110" width="12" height="12"/><rect x="146" y="110" width="12" height="12"/>
+        <rect x="82" y="142" width="16" height="16"/><rect x="116" y="142" width="12" height="12"/><rect x="154" y="142" width="18" height="18"/>
+        <rect x="98" y="172" width="12" height="12"/><rect x="134" y="170" width="14" height="14"/><rect x="170" y="172" width="10" height="10"/>
+      </g>
+      <text x="100" y="102" fill="#128C7E" font-family="Arial" font-size="13" font-weight="700" text-anchor="middle">REPLAI</text>
+    </svg>`;
+  res.json({ qr: `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}` });
+});
+
+// ============================================
+// ENHANCED TELEGRAM CONNECTION ENDPOINTS
+// ============================================
+
+/**
+ * POST /api/admin/telegram/connect
+ * Connect Telegram bot with token validation
+ */
+app.post('/api/admin/telegram/connect', async (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        error: 'Bot token is required',
+        hint: 'Get your bot token from @BotFather on Telegram'
+      });
+    }
+
+    console.log('[Telegram] Connecting with bot token...');
+    
+    const connector = connectionManager.getConnector('telegram');
+    const connectionState = await connector.connect(token);
+    
+    // Update in-memory state
+    platformConnections.telegram = {
+      connected: true,
+      token: token,
+      botUsername: connectionState.metadata.botUsername,
+      botName: connectionState.metadata.botFirstName
+    };
+    
+    console.log('[Telegram] ✓ Connected successfully');
+    console.log('[Telegram] Bot: @' + connectionState.metadata.botUsername);
+    
+    res.json({
+      success: true,
+      message: 'Telegram bot connected successfully',
+      bot: {
+        username: connectionState.metadata.botUsername,
+        name: connectionState.metadata.botFirstName,
+        id: connectionState.metadata.botId
+      }
+    });
+  } catch (error) {
+    console.error('[Telegram Connect] Error:', error.message);
+    
+    // Provide helpful error messages
+    let hint = '';
+    if (error.message.includes('Invalid')) {
+      hint = 'Please check your bot token format. It should look like: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz';
+    } else if (error.message.includes('Unauthorized') || error.message.includes('Not Found')) {
+      hint = 'The bot token is invalid or the bot was deleted. Get a new token from @BotFather.';
+    } else {
+      hint = 'Please verify your bot token and try again.';
+    }
+    
+    res.status(400).json({
+      success: false,
+      error: error.message,
+      hint: hint
+    });
+  }
+});
+
+/**
+ * POST /api/admin/telegram/validate
+ * Validate Telegram bot token (for wizard step-by-step validation)
+ */
+app.post('/api/admin/telegram/validate', async (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    if (!token) {
+      return res.status(400).json({
+        valid: false,
+        error: 'Bot token is required'
+      });
+    }
+
+    console.log('[Telegram] Validating bot token...');
+    
+    const connector = connectionManager.getConnector('telegram');
+    const validation = await connector.validateToken(token);
+    
+    if (!validation.valid) {
+      return res.json({
+        valid: false,
+        error: validation.error,
+        hint: 'Make sure you copied the full token from @BotFather'
+      });
+    }
+    
+    console.log('[Telegram] ✓ Token is valid');
+    console.log('[Telegram] Bot: @' + validation.bot.username);
+    
+    res.json({
+      valid: true,
+      bot: {
+        id: validation.bot.id,
+        username: validation.bot.username,
+        firstName: validation.bot.first_name,
+        canJoinGroups: validation.bot.can_join_groups,
+        canReadAllGroupMessages: validation.bot.can_read_all_group_messages,
+        supportsInlineQueries: validation.bot.supports_inline_queries
+      }
+    });
+  } catch (error) {
+    console.error('[Telegram Validate] Error:', error.message);
+    res.status(500).json({
+      valid: false,
+      error: 'Failed to validate token: ' + error.message
+    });
+  }
+});
+
+/**
+ * GET /api/admin/telegram/status
+ * Get current Telegram connection status
+ */
+app.get('/api/admin/telegram/status', async (req, res) => {
+  try {
+    const connector = connectionManager.getConnector('telegram');
+    const state = connector.getConnectionState();
+    
+    if (!state.connected) {
+      return res.json({
+        connected: false,
+        message: 'No Telegram bot connected'
+      });
+    }
+    
+    // Validate current connection
+    const validation = await connector.validate();
+    
+    res.json({
+      connected: validation.valid,
+      bot: validation.valid ? {
+        username: validation.botUsername,
+        name: validation.botName
+      } : null,
+      error: validation.valid ? null : validation.reason
+    });
+  } catch (error) {
+    console.error('[Telegram Status] Error:', error.message);
+    res.status(500).json({
+      connected: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/admin/telegram/disconnect
+ * Disconnect Telegram bot
+ */
+app.post('/api/admin/telegram/disconnect', async (req, res) => {
+  try {
+    const connector = connectionManager.getConnector('telegram');
+    await connector.disconnect();
+    
+    platformConnections.telegram = { connected: false };
+    
+    console.log('[Telegram] Disconnected');
+    
+    res.json({
+      success: true,
+      message: 'Telegram bot disconnected successfully'
+    });
+  } catch (error) {
+    console.error('[Telegram Disconnect] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Legacy endpoint for backward compatibility
+app.post('/api/admin/connect/telegram', async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ error: 'Token is required' });
+
+    const connector = connectionManager.getConnector('telegram');
+    const connectionState = await connector.connect(token);
+    
+    platformConnections.telegram = {
+      connected: true,
+      token: token,
+      botUsername: connectionState.metadata.botUsername
+    };
+    
+    res.json({ success: true, message: 'Telegram connected' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Instagram connection now uses OAuth 2.0 flow only
+// See endpoints:
+//   - GET  /api/admin/instagram/oauth/auth-url
+//   - GET  /api/admin/instagram/oauth/callback
+//   - POST /api/admin/instagram/oauth/exchange
+//   - POST /api/admin/instagram/oauth/refresh
+// Old username/password login permanently disabled
+
+app.get('/api/admin/instagram/status', async (req, res) => {
+  try {
+    updateInstagramConnectionFromEnv();
+    const status = {
+      instagram: platformConnections.instagram.connected,
+      connected: platformConnections.instagram.connected,
+      username: platformConnections.instagram.username,
+      expiresAt: process.env.INSTAGRAM_TOKEN_EXPIRES_AT || null
+    };
+    res.json(status);
+  } catch (error) {
+    res.json({ instagram: false, connected: false, error: error.message });
+  }
+});
+
+// Connect Instagram using a manually provided access token (no OAuth needed)
+app.post('/api/admin/instagram/connect-token', async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ error: 'Access token is required' });
+    const usernameRes = await fetch(`${INSTAGRAM_GRAPH_ME_URL}?fields=user_id,username&access_token=${encodeURIComponent(token)}`);
+    const usernameData = await usernameRes.json();
+    if (!usernameRes.ok || usernameData.error) {
+      return res.status(401).json({ error: usernameData.error?.message || 'Invalid or expired token' });
+    }
+
+    const username = usernameData.username || 'Instagram';
+    upsertEnvValues({
+      INSTAGRAM_ACCESS_TOKEN: token,
+      INSTAGRAM_IG_USER_ID: usernameData.user_id || '',
+      INSTAGRAM_USERNAME: username,
+      INSTAGRAM_TOKEN_EXPIRES_AT: ''
+    });
+
+    updateInstagramConnectionFromEnv();
+    console.log(`✓ [Instagram] Token connected as @${username} (User ID: ${usernameData.user_id || 'unknown'})`);
+    res.json({ success: true, username });
+  } catch (error) {
+    console.error('[Instagram Token Connect] Error:', error.message);
+    res.status(500).json({ error: 'Connection failed: ' + error.message });
+  }
+});
+
+// ============================================
+// ENHANCED INSTAGRAM OAUTH ENDPOINTS
+// ============================================
+
+/**
+ * GET /api/admin/instagram/oauth/start
+ * Initiate Instagram OAuth flow (enhanced with connection manager)
+ */
+app.get('/api/admin/instagram/oauth/start', (req, res) => {
+  try {
+    console.log('[Instagram OAuth] Starting OAuth flow...');
+    
+    const connector = connectionManager.getConnector('instagram');
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    const authUrl = connector.getAuthUrl(baseUrl);
+    
+    console.log('[Instagram OAuth] Auth URL generated');
+    
+    res.json({
+      success: true,
+      authUrl,
+      instructions: 'Open this URL in a popup to connect your Instagram Business account.'
+    });
+  } catch (error) {
+    console.error('[Instagram OAuth Start] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      hint: error.message.includes('FACEBOOK_APP_ID') ? 
+        'Please configure FACEBOOK_APP_ID in your .env file' : 
+        'Please check your Instagram configuration'
+    });
+  }
+});
+
+// Legacy endpoint for backward compatibility
+app.get('/api/admin/instagram/oauth/auth-url', (req, res) => {
+  try {
+    const connector = connectionManager.getConnector('instagram');
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const authUrl = connector.getAuthUrl(baseUrl);
+    res.json({ authUrl });
+  } catch (error) {
+    console.error('[Instagram OAuth] Error generating auth URL:', error.message);
+    res.status(500).json({ error: 'Failed to generate auth URL: ' + error.message });
+  }
+});
+
+/**
+ * GET /api/admin/instagram/oauth/callback
+ * Handle Instagram OAuth callback (enhanced with better error handling)
+ */
+app.get('/api/admin/instagram/oauth/callback', async (req, res) => {
+  try {
+    const { code, state, error, error_description } = req.query;
+    
+    console.log('[Instagram OAuth Callback] Received callback');
+    
+    // Handle OAuth errors
+    if (error) {
+      console.error('[Instagram OAuth] Error:', error, error_description);
+      return res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Instagram Connection Failed</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+              margin: 0;
+              background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            }
+            .container {
+              background: white;
+              padding: 48px;
+              border-radius: 16px;
+              box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+              text-align: center;
+              max-width: 500px;
+            }
+            .icon { font-size: 64px; margin-bottom: 24px; }
+            h1 { color: #ef4444; margin: 0 0 16px 0; font-size: 28px; }
+            p { color: #64748b; line-height: 1.6; margin-bottom: 24px; }
+            .error-code {
+              background: #fee;
+              padding: 12px;
+              border-radius: 8px;
+              font-family: monospace;
+              font-size: 14px;
+              color: #dc2626;
+              margin-bottom: 24px;
+            }
+            button {
+              background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+              color: white;
+              border: none;
+              padding: 14px 32px;
+              border-radius: 12px;
+              font-size: 16px;
+              font-weight: 600;
+              cursor: pointer;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="icon">❌</div>
+            <h1>Connection Failed</h1>
+            <p>Instagram authorization was not successful.</p>
+            <div class="error-code">${error}: ${error_description || 'Unknown error'}</div>
+            <button onclick="window.close()">Close Window</button>
+          </div>
+          <script>
+            setTimeout(() => {
+              if (window.opener) {
+                window.opener.postMessage({ 
+                  type: 'instagram_oauth_error', 
+                  error: '${error}',
+                  description: '${error_description || ''}' 
+                }, '*');
+              }
+              window.close();
+            }, 5000);
+          </script>
+        </body>
+        </html>
+      `);
+    }
+    
+    if (!code || !state) {
+      return res.status(400).send('<h1>Invalid callback</h1><p>Missing code or state</p>');
+    }
+    
+    // Exchange code for tokens using connection manager
+    console.log('[Instagram OAuth] Exchanging authorization code...');
+    const connector = connectionManager.getConnector('instagram');
+    const connectionState = await connector.handleCallback(code, state);
+    
+    console.log('[Instagram OAuth] ✓ Connection successful');
+    console.log('[Instagram OAuth] Username: @' + connectionState.metadata.username);
+    
+    // Update in-memory platform connections
+    platformConnections.instagram = {
+      connected: true,
+      username: connectionState.metadata.username,
+      accessToken: connectionState.accessToken,
+      userId: connectionState.metadata.instagramId,
+      expiresAt: connectionState.expiresAt
+    };
+    
+    // Send success page
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Instagram Connected!</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+          }
+          .container {
+            background: white;
+            padding: 48px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+            animation: slideIn 0.4s ease;
+          }
+          @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          .icon { font-size: 64px; margin-bottom: 24px; }
+          h1 { color: #10b981; margin: 0 0 16px 0; font-size: 28px; }
+          p { color: #64748b; line-height: 1.6; }
+          .details {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 24px 0;
+            text-align: left;
+          }
+          .details-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+          }
+          .details-row:last-child { border-bottom: none; }
+          .label { font-weight: 600; color: #475569; }
+          .value { color: #f5576c; font-weight: 600; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="icon">✅</div>
+          <h1>Instagram Connected!</h1>
+          <p>Your Instagram Business account has been successfully connected.</p>
+          <div class="details">
+            <div class="details-row">
+              <span class="label">Username:</span>
+              <span class="value">@${connectionState.metadata.username}</span>
+            </div>
+            <div class="details-row">
+              <span class="label">Followers:</span>
+              <span class="value">${connectionState.metadata.followersCount || 'N/A'}</span>
+            </div>
+            <div class="details-row">
+              <span class="label">Token Expires:</span>
+              <span class="value">${new Date(connectionState.expiresAt).toLocaleDateString()}</span>
+            </div>
+          </div>
+          <p style="color: #94a3b8; font-size: 14px;">This window will close automatically...</p>
+        </div>
+        <script>
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'instagram_oauth_success',
+              data: ${JSON.stringify(connectionState.metadata)}
+            }, '*');
+          }
+          setTimeout(() => window.close(), 3000);
+        </script>
+      </body>
+      </html>
+    `);
+    
+  } catch (error) {
+    console.error('[Instagram OAuth Callback] Error:', error.message);
+    
+    // Send detailed error page
+    res.status(500).send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Connection Error</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          }
+          .container {
+            background: white;
+            padding: 48px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+          }
+          .icon { font-size: 64px; margin-bottom: 24px; }
+          h1 { color: #ef4444; margin: 0 0 16px 0; }
+          .error {
+            background: #fee;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            color: #dc2626;
+            margin: 24px 0;
+            text-align: left;
+          }
+          .hint {
+            background: #fef3c7;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #92400e;
+            margin-bottom: 24px;
+          }
+          button {
+            background: #0061ff;
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="icon">❌</div>
+          <h1>Connection Error</h1>
+          <p>Failed to complete Instagram connection.</p>
+          <div class="error">${error.message}</div>
+          ${error.message.includes('No Facebook Pages') ? `
+            <div class="hint">
+              💡 Make sure your Instagram account is:<br>
+              1. Converted to a Business account<br>
+              2. Connected to a Facebook Page<br>
+              3. The Facebook Page is managed by you
+            </div>
+          ` : ''}
+          <button onclick="window.close()">Close Window</button>
+        </div>
+        <script>
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'instagram_oauth_error',
+              error: '${error.message}'
+            }, '*');
+          }
+        </script>
+      </body>
+      </html>
+    `);
+  }
+});
+
+app.post('/api/admin/instagram/oauth/exchange', async (req, res) => {
+  try {
+    const { code } = req.body;
+    const appId = process.env.INSTAGRAM_APP_ID;
+    const appSecret = process.env.INSTAGRAM_APP_SECRET;
+    const redirectUri = getInstagramRedirectUri(req);
+    const cleanCode = String(code || '').replace(/#_+$/, '').trim();
+
+    if (!appId || !appSecret) {
+      return res.status(400).json({ error: 'Instagram OAuth credentials not configured' });
+    }
+
+    const form = new URLSearchParams({
+      client_id: appId,
+      client_secret: appSecret,
+      grant_type: 'authorization_code',
+      redirect_uri: redirectUri,
+      code: cleanCode
+    });
+    const shortResponse = await fetch(INSTAGRAM_OAUTH_TOKEN_URL, {
+      method: 'POST',
+      body: form
+    });
+    const shortData = await shortResponse.json();
+
+    if (!shortResponse.ok || !shortData.access_token) {
+      console.error('[Instagram OAuth] Token exchange failed:', shortData);
+      return res.status(400).json({ error: shortData.error?.message || 'Failed to get access token' });
+    }
+
+    const longUrl = `${INSTAGRAM_GRAPH_ACCESS_TOKEN_URL}?grant_type=ig_exchange_token&client_secret=${encodeURIComponent(appSecret)}&access_token=${encodeURIComponent(shortData.access_token)}`;
+    const longResponse = await fetch(longUrl);
+    const longData = await longResponse.json();
+
+    if (!longResponse.ok || !longData.access_token) {
+      console.error('[Instagram OAuth] Long-lived token exchange failed:', longData);
+      return res.status(400).json({ error: longData.error?.message || 'Failed to get long-lived token' });
+    }
+
+    const expiresIn = Number(longData.expires_in || 5184000);
+    const profileResponse = await fetch(`${INSTAGRAM_GRAPH_ME_URL}?fields=user_id,username&access_token=${encodeURIComponent(longData.access_token)}`);
+    const profileData = await profileResponse.json();
+    if (!profileResponse.ok || profileData.error) {
+      return res.status(400).json({ error: profileData.error?.message || 'Failed to fetch Instagram profile' });
+    }
+
+    const username = profileData.username || 'Instagram';
+    const expirationDate = new Date(Date.now() + expiresIn * 1000);
+
+    upsertEnvValues({
+      INSTAGRAM_IG_USER_ID: profileData.user_id || '',
+      INSTAGRAM_ACCESS_TOKEN: longData.access_token,
+      INSTAGRAM_USERNAME: username,
+      INSTAGRAM_TOKEN_EXPIRES_AT: expirationDate.toISOString()
+    });
+
+    updateInstagramConnectionFromEnv();
+    console.log('✓ [Instagram] OAuth flow completed successfully');
+    console.log(`✓ [Instagram] Connected as @${username}`);
+    console.log(`✓ [Instagram] Token expires: ${expirationDate.toLocaleString()}`);
+    
+    res.json({ success: true, username, expiresAt: expirationDate.toISOString() });
+  } catch (error) {
+    console.error('[Instagram OAuth] Exchange error:', error.message);
+    res.status(500).json({ error: 'Failed to complete OAuth flow: ' + error.message });
+  }
+});
+
+app.post('/api/instagram/poll', async (req, res) => {
+  const result = await pollInstagramDirectInbox();
+  res.json({ success: !result.error, ...result });
+});
+
+// Token refresh endpoint for long-lived tokens (enhanced)
+app.post('/api/admin/instagram/oauth/refresh', async (req, res) => {
+  try {
+    console.log('[Instagram] Refreshing access token...');
+    
+    const connector = connectionManager.getConnector('instagram');
+    const result = await connector.refresh();
+    
+    // Update in-memory state
+    const state = connector.getConnectionState();
+    platformConnections.instagram = {
+      connected: true,
+      username: state.metadata.username,
+      accessToken: state.accessToken,
+      userId: state.metadata.instagramId,
+      expiresAt: state.expiresAt
+    };
+    
+    console.log('[Instagram] ✓ Token refreshed successfully');
+    console.log('[Instagram] New expiration:', new Date(result.expiresAt).toLocaleString());
+    
+    res.json({
+      success: true,
+      message: 'Token refreshed successfully',
+      expiresAt: result.expiresAt
+    });
+  } catch (error) {
+    console.error('[Instagram Refresh] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      hint: error.message.includes('No connection') ? 
+        'Please reconnect your Instagram account' : 
+        'Token refresh failed. You may need to reconnect.'
+    });
+  }
+});
+
+/**
+ * POST /api/admin/instagram/validate
+ * Validate current Instagram connection
+ */
+app.post('/api/admin/instagram/validate', async (req, res) => {
+  try {
+    const connector = connectionManager.getConnector('instagram');
+    const validation = await connector.validate();
+    res.json(validation);
+  } catch (error) {
+    console.error('[Instagram Validate] Error:', error.message);
+    res.status(500).json({ valid: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/admin/instagram/disconnect
+ * Disconnect Instagram
+ */
+app.post('/api/admin/instagram/disconnect', async (req, res) => {
+  try {
+    const connector = connectionManager.getConnector('instagram');
+    await connector.disconnect();
+    
+    platformConnections.instagram = { connected: false };
+    
+    res.json({ success: true, message: 'Instagram disconnected successfully' });
+  } catch (error) {
+    console.error('[Instagram Disconnect] Error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/admin/instagram/toggle-bot
+ * Enable or disable Instagram auto-replies
+ */
+app.post('/api/admin/instagram/toggle-bot', async (req, res) => {
+  try {
+    const { enabled } = req.body;
+
+    // Update environment variable
+    process.env.INSTAGRAM_BOT_ENABLED = enabled ? 'true' : 'false';
+
+    // Update .env file for persistence
+    const envPath = path.join(__dirname, '.env');
+    let envContent = fs.readFileSync(envPath, 'utf8');
+
+    if (envContent.includes('INSTAGRAM_BOT_ENABLED=')) {
+      envContent = envContent.replace(
+        /INSTAGRAM_BOT_ENABLED=.*/,
+        `INSTAGRAM_BOT_ENABLED=${enabled ? 'true' : 'false'}`
+      );
+    } else {
+      envContent += `\nINSTAGRAM_BOT_ENABLED=${enabled ? 'true' : 'false'}\n`;
+    }
+
+    fs.writeFileSync(envPath, envContent);
+
+    console.log(`[Instagram] Bot ${enabled ? 'enabled' : 'disabled'}`);
+
+    res.json({
+      success: true,
+      enabled,
+      message: `Instagram bot ${enabled ? 'enabled' : 'disabled'} successfully`
+    });
+  } catch (error) {
+    console.error('[Instagram Toggle] Error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/admin/instagram/bot-status
+ * Get current Instagram bot status
+ */
+app.get('/api/admin/instagram/bot-status', (req, res) => {
+  const enabled = process.env.INSTAGRAM_BOT_ENABLED !== 'false';
+  res.json({ enabled });
+});
+
+app.post('/api/instagram/poll', async (req, res) => {
+  const result = await pollInstagramDirectInbox();
+  res.json({ success: !result.error, ...result });
+});
+
+app.post('/api/admin/connect/whatsapp', async (req, res) => {
+  try {
+    const { token, phone_id } = req.body;
+    
+    if (!token) return res.status(400).json({ error: 'Access token is required' });
+    if (!phone_id) return res.status(400).json({ error: 'Phone number ID is required' });
+
+    // Validate token by making test API call
+    console.log('[whatsapp] Validating credentials...');
+    try {
+      const testUrl = facebookGraphUrl(`${phone_id}?fields=id,display_phone_number`);
+      const testRes = await fetch(testUrl, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      const testData = await testRes.json();
+      
+      if (!testRes.ok || testData.error) {
+        const errorMsg = testData.error?.message || 'Invalid token or phone ID';
+        console.error('[whatsapp] Validation failed:', errorMsg);
+        return res.status(401).json({ error: errorMsg, code: testData.error?.code });
+      }
+      
+      console.log('[whatsapp] ✓ Credentials validated');
+      console.log('[whatsapp] Phone number:', testData.display_phone_number);
+    } catch (error) {
+      console.error('[whatsapp] Validation error:', error.message);
+      return res.status(400).json({ error: 'Failed to validate credentials' });
+    }
+
+    // Save credentials
+    upsertEnvValues({
+      WHATSAPP_ACCESS_TOKEN: token,
+      WHATSAPP_PHONE_ID: phone_id
+    });
+    
+    platformConnections.whatsapp = { 
+      connected: true, 
+      token, 
+      phone_id 
+    };
+    
+    res.json({ success: true, message: 'WhatsApp connected successfully' });
+  } catch (error) {
+    console.error('[WhatsApp Connect] Error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/admin/connect/whatsapp/settings', async (req, res) => {
+  try {
+    const agentActive = Boolean(req.body.agentActive);
+    const groupReply = Boolean(req.body.groupReply);
+
+    upsertEnvValues({
+      WHATSAPP_AGENT_ACTIVE: agentActive,
+      WHATSAPP_GROUP_REPLY: groupReply
+    });
+
+    const settingsPath = path.join(__dirname, 'whatsapp-settings.json');
+    fs.writeFileSync(settingsPath, JSON.stringify({ agentActive, groupReply }, null, 2), 'utf8');
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[WhatsApp] Settings save error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// NEW OAUTH ENDPOINTS - WHATSAPP
+// ============================================
+
+/**
+ * GET /api/admin/whatsapp/oauth/start
+ * Initiate WhatsApp OAuth flow with QR code popup
+ */
+app.get('/api/admin/whatsapp/oauth/start', async (req, res) => {
+  try {
+    console.log('[WhatsApp OAuth] Starting OAuth flow...');
+    
+    const connector = connectionManager.getConnector('whatsapp');
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    const authUrl = connector.getAuthUrl(baseUrl);
+    
+    console.log('[WhatsApp OAuth] Auth URL generated');
+    
+    res.json({
+      success: true,
+      authUrl,
+      instructions: 'Open this URL in a popup window. Scan QR code with WhatsApp mobile app to connect.'
+    });
+  } catch (error) {
+    console.error('[WhatsApp OAuth Start] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/admin/whatsapp/oauth/callback
+ * Handle WhatsApp OAuth callback after user authorizes
+ */
+app.get('/api/admin/whatsapp/oauth/callback', async (req, res) => {
+  try {
+    const { code, state, error, error_description } = req.query;
+    
+    console.log('[WhatsApp OAuth Callback] Received callback');
+    
+    // Handle OAuth errors
+    if (error) {
+      console.error('[WhatsApp OAuth] Error:', error, error_description);
+      return res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>WhatsApp Connection Failed</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+              margin: 0;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+            .container {
+              background: white;
+              padding: 48px;
+              border-radius: 16px;
+              box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+              text-align: center;
+              max-width: 500px;
+            }
+            .icon {
+              font-size: 64px;
+              margin-bottom: 24px;
+            }
+            h1 {
+              color: #ef4444;
+              margin: 0 0 16px 0;
+              font-size: 28px;
+            }
+            p {
+              color: #64748b;
+              line-height: 1.6;
+              margin-bottom: 24px;
+            }
+            .error-code {
+              background: #fee;
+              padding: 12px;
+              border-radius: 8px;
+              font-family: monospace;
+              font-size: 14px;
+              color: #dc2626;
+              margin-bottom: 24px;
+            }
+            button {
+              background: linear-gradient(135deg, #60efff 0%, #0061ff 100%);
+              color: white;
+              border: none;
+              padding: 14px 32px;
+              border-radius: 12px;
+              font-size: 16px;
+              font-weight: 600;
+              cursor: pointer;
+              transition: all 0.2s;
+            }
+            button:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 10px 20px rgba(0,97,255,0.3);
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="icon">❌</div>
+            <h1>Connection Failed</h1>
+            <p>WhatsApp authorization was not successful.</p>
+            <div class="error-code">${error}: ${error_description || 'Unknown error'}</div>
+            <button onclick="window.close()">Close Window</button>
+          </div>
+          <script>
+            setTimeout(() => {
+              if (window.opener) {
+                window.opener.postMessage({ 
+                  type: 'whatsapp_oauth_error', 
+                  error: '${error}',
+                  description: '${error_description || ''}' 
+                }, '*');
+              }
+              window.close();
+            }, 5000);
+          </script>
+        </body>
+        </html>
+      `);
+    }
+    
+    if (!code || !state) {
+      return res.status(400).send('<h1>Invalid callback</h1><p>Missing code or state</p>');
+    }
+    
+    // Exchange code for tokens
+    console.log('[WhatsApp OAuth] Exchanging authorization code...');
+    const connector = connectionManager.getConnector('whatsapp');
+    const connectionState = await connector.handleCallback(code, state);
+    
+    console.log('[WhatsApp OAuth] ✓ Connection successful');
+    console.log('[WhatsApp OAuth] Phone:', connectionState.metadata.phoneNumber);
+    
+    // Update in-memory platform connections
+    platformConnections.whatsapp = {
+      connected: true,
+      token: connectionState.accessToken,
+      phone_id: connectionState.metadata.phoneNumberId,
+      phoneNumber: connectionState.metadata.phoneNumber,
+      verifiedName: connectionState.metadata.verifiedName
+    };
+    
+    // Send success page
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>WhatsApp Connected!</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #60efff 0%, #0061ff 100%);
+          }
+          .container {
+            background: white;
+            padding: 48px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+            animation: slideIn 0.4s ease;
+          }
+          @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          .icon {
+            font-size: 64px;
+            margin-bottom: 24px;
+          }
+          h1 {
+            color: #10b981;
+            margin: 0 0 16px 0;
+            font-size: 28px;
+          }
+          p {
+            color: #64748b;
+            line-height: 1.6;
+          }
+          .details {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 24px 0;
+            text-align: left;
+          }
+          .details-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+          }
+          .details-row:last-child {
+            border-bottom: none;
+          }
+          .label {
+            font-weight: 600;
+            color: #475569;
+          }
+          .value {
+            color: #0061ff;
+            font-weight: 600;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="icon">✅</div>
+          <h1>WhatsApp Connected!</h1>
+          <p>Your WhatsApp Business account has been successfully connected.</p>
+          <div class="details">
+            <div class="details-row">
+              <span class="label">Phone:</span>
+              <span class="value">${connectionState.metadata.phoneNumber}</span>
+            </div>
+            <div class="details-row">
+              <span class="label">Name:</span>
+              <span class="value">${connectionState.metadata.verifiedName}</span>
+            </div>
+          </div>
+          <p style="color: #94a3b8; font-size: 14px;">This window will close automatically...</p>
+        </div>
+        <script>
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'whatsapp_oauth_success',
+              data: ${JSON.stringify(connectionState.metadata)}
+            }, '*');
+          }
+          setTimeout(() => window.close(), 3000);
+        </script>
+      </body>
+      </html>
+    `);
+    
+  } catch (error) {
+    console.error('[WhatsApp OAuth Callback] Error:', error.message);
+    res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
+  }
+});
+
+/**
+ * POST /api/admin/whatsapp/validate
+ * Validate current WhatsApp connection
+ */
+app.post('/api/admin/whatsapp/validate', async (req, res) => {
+  try {
+    const connector = connectionManager.getConnector('whatsapp');
+    const validation = await connector.validate();
+    res.json(validation);
+  } catch (error) {
+    console.error('[WhatsApp Validate] Error:', error.message);
+    res.status(500).json({ valid: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/admin/whatsapp/oauth/exchange
+ * Exchange FB SDK authorization code for WhatsApp Business access token
+ * This is for Embedded Signup v4 with Facebook JavaScript SDK
+ */
+app.post('/api/admin/whatsapp/oauth/exchange', async (req, res) => {
+  try {
+    const { code, signupData } = req.body;
+    
+    if (!code) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Authorization code is required' 
+      });
+    }
+    
+    console.log('[WhatsApp Exchange] Exchanging authorization code...');
+    console.log('[WhatsApp Exchange] Signup data:', signupData);
+    
+    // Exchange code for long-lived access token
+    const redirectUri = `${req.protocol}://${req.get('host')}/api/admin/whatsapp/oauth/callback`;
+    
+    const tokenResponse = await axios.get('https://graph.facebook.com/v21.0/oauth/access_token', {
+      params: {
+        client_id: process.env.FACEBOOK_APP_ID,
+        client_secret: process.env.FACEBOOK_APP_SECRET,
+        code: code,
+        redirect_uri: redirectUri
+      }
+    });
+    
+    const accessToken = tokenResponse.data.access_token;
+    console.log('[WhatsApp Exchange] ✓ Got access token');
+    
+    // Get WABA ID and phone number ID from signup data or fetch from API
+    let wabaId = signupData?.waba_id;
+    let phoneNumberId = signupData?.phone_number_id;
+    let businessId = signupData?.business_id;
+    
+    // If we don't have signup data, try to fetch it using the token
+    if (!wabaId || !phoneNumberId) {
+      console.log('[WhatsApp Exchange] Fetching WABA info from Graph API...');
+      
+      try {
+        // Get the user's businesses
+        const businessesResponse = await axios.get('https://graph.facebook.com/v21.0/me/businesses', {
+          params: {
+            access_token: accessToken
+          }
+        });
+        
+        if (businessesResponse.data.data && businessesResponse.data.data.length > 0) {
+          businessId = businessesResponse.data.data[0].id;
+          console.log('[WhatsApp Exchange] Business ID:', businessId);
+          
+          // Get WhatsApp Business Accounts for this business
+          const wabaResponse = await axios.get(`https://graph.facebook.com/v21.0/${businessId}/owned_whatsapp_business_accounts`, {
+            params: {
+              access_token: accessToken
+            }
+          });
+          
+          if (wabaResponse.data.data && wabaResponse.data.data.length > 0) {
+            wabaId = wabaResponse.data.data[0].id;
+            console.log('[WhatsApp Exchange] WABA ID:', wabaId);
+            
+            // Get phone numbers for this WABA
+            const phonesResponse = await axios.get(`https://graph.facebook.com/v21.0/${wabaId}/phone_numbers`, {
+              params: {
+                access_token: accessToken
+              }
+            });
+            
+            if (phonesResponse.data.data && phonesResponse.data.data.length > 0) {
+              phoneNumberId = phonesResponse.data.data[0].id;
+              console.log('[WhatsApp Exchange] Phone Number ID:', phoneNumberId);
+            }
+          }
+        }
+      } catch (fetchError) {
+        console.error('[WhatsApp Exchange] Error fetching WABA info:', fetchError.response?.data || fetchError.message);
+      }
+    }
+    
+    if (!phoneNumberId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Could not retrieve phone number ID. Please ensure you completed the signup flow.'
+      });
+    }
+    
+    // Get phone number details
+    let phoneNumber = '';
+    let verifiedName = '';
+    let displayName = '';
+    
+    try {
+      const phoneDetailsResponse = await axios.get(`https://graph.facebook.com/v21.0/${phoneNumberId}`, {
+        params: {
+          access_token: accessToken,
+          fields: 'id,verified_name,display_phone_number,quality_rating'
+        }
+      });
+      
+      phoneNumber = phoneDetailsResponse.data.display_phone_number || '';
+      verifiedName = phoneDetailsResponse.data.verified_name || '';
+      displayName = phoneDetailsResponse.data.display_phone_number || phoneNumber;
+      
+      console.log('[WhatsApp Exchange] Phone details:');
+      console.log('  - Number:', phoneNumber);
+      console.log('  - Verified Name:', verifiedName);
+      console.log('  - Quality Rating:', phoneDetailsResponse.data.quality_rating);
+    } catch (detailsError) {
+      console.error('[WhatsApp Exchange] Error fetching phone details:', detailsError.response?.data || detailsError.message);
+    }
+    
+    // Save connection state
+    const connector = connectionManager.getConnector('whatsapp');
+    await connector.connect({
+      accessToken,
+      wabaId,
+      phoneNumberId,
+      phoneNumber,
+      verifiedName,
+      businessId
+    });
+    
+    // Update in-memory platform connections
+    platformConnections.whatsapp = {
+      connected: true,
+      token: accessToken,
+      phone_id: phoneNumberId,
+      waba_id: wabaId,
+      phoneNumber: phoneNumber,
+      verifiedName: verifiedName,
+      displayName: displayName
+    };
+    
+    console.log('[WhatsApp Exchange] ✓ Connection saved successfully');
+    
+    res.json({
+      success: true,
+      message: 'WhatsApp connected successfully',
+      connection: {
+        phoneNumber: phoneNumber,
+        verifiedName: verifiedName,
+        phoneNumberId: phoneNumberId,
+        wabaId: wabaId
+      }
+    });
+    
+  } catch (error) {
+    console.error('[WhatsApp Exchange] Error:', error.response?.data || error.message);
+    res.status(500).json({
+      success: false,
+      error: error.response?.data?.error?.message || error.message,
+      details: error.response?.data
+    });
+  }
+});
+
+/**
+ * POST /api/admin/whatsapp/disconnect
+ * Disconnect WhatsApp
+ */
+app.post('/api/admin/whatsapp/disconnect', async (req, res) => {
+  try {
+    const connector = connectionManager.getConnector('whatsapp');
+    await connector.disconnect();
+    
+    platformConnections.whatsapp = { connected: false };
+    
+    res.json({ success: true, message: 'WhatsApp disconnected successfully' });
+  } catch (error) {
+    console.error('[WhatsApp Disconnect] Error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/admin/connect/tiktok', async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ error: 'Token is required' });
+
+    const envPath = path.join(__dirname, '.env');
+    let envContent = fs.readFileSync(envPath, 'utf8');
+
+    if (envContent.includes('TIKTOK_ACCESS_TOKEN=')) {
+      envContent = envContent.replace(/TIKTOK_ACCESS_TOKEN=.*/g, `TIKTOK_ACCESS_TOKEN=${token}`);
+    } else {
+      envContent += `\nTIKTOK_ACCESS_TOKEN=${token}`;
+    }
+    fs.writeFileSync(envPath, envContent, 'utf8');
+    platformConnections.tiktok = { connected: true, token };
+    res.json({ success: true, message: 'TikTok connected' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// WEB WIDGET ENDPOINTS
+// ============================================
+
+/**
+ * POST /api/admin/widget/enable
+ * Enable web widget with custom settings
+ */
+app.post('/api/admin/widget/enable', async (req, res) => {
+  try {
+    const { theme, position, greeting, color } = req.body;
+    
+    console.log('[Widget] Enabling web widget...');
+    
+    const connector = connectionManager.getConnector('widget');
+    const connectionState = await connector.enable({
+      theme: theme || 'light',
+      position: position || 'bottom-right',
+      greeting: greeting || 'Hi! How can we help you today?',
+      color: color || '#0061ff'
+    });
+    
+    console.log('[Widget] ✓ Widget enabled');
+    console.log('[Widget] API Key:', connectionState.apiKey.substring(0, 20) + '...');
+    
+    res.json({
+      success: true,
+      message: 'Web widget enabled successfully',
+      apiKey: connectionState.apiKey,
+      embedCode: connectionState.metadata.embedCode,
+      settings: connectionState.metadata.settings
+    });
+  } catch (error) {
+    console.error('[Widget Enable] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/admin/widget/status
+ * Get widget connection status and embed code
+ */
+app.get('/api/admin/widget/status', async (req, res) => {
+  try {
+    const connector = connectionManager.getConnector('widget');
+    const validation = await connector.validate();
+    
+    if (!validation.valid) {
+      return res.json({
+        enabled: false,
+        message: validation.reason
+      });
+    }
+    
+    const state = connector.getConnectionState();
+    
+    res.json({
+      enabled: true,
+      apiKey: validation.apiKey,
+      embedCode: validation.embedCode,
+      settings: state.metadata.settings
+    });
+  } catch (error) {
+    console.error('[Widget Status] Error:', error.message);
+    res.status(500).json({
+      enabled: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/admin/widget/refresh
+ * Regenerate widget API key
+ */
+app.post('/api/admin/widget/refresh', async (req, res) => {
+  try {
+    const connector = connectionManager.getConnector('widget');
+    const result = await connector.refresh();
+    
+    console.log('[Widget] ✓ API key refreshed');
+    
+    res.json({
+      success: true,
+      message: 'API key regenerated successfully',
+      newApiKey: result.newApiKey,
+      embedCode: result.embedCode
+    });
+  } catch (error) {
+    console.error('[Widget Refresh] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/admin/widget/disconnect
+ * Disable web widget
+ */
+app.post('/api/admin/widget/disconnect', async (req, res) => {
+  try {
+    const connector = connectionManager.getConnector('widget');
+    await connector.disconnect();
+    
+    console.log('[Widget] Disabled');
+    
+    res.json({
+      success: true,
+      message: 'Web widget disabled successfully'
+    });
+  } catch (error) {
+    console.error('[Widget Disconnect] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ============================================
+// UNIFIED CONNECTION STATUS
+// ============================================
+
+/**
+ * GET /api/admin/connections/all
+ * Get status of all platform connections
+ */
+app.get('/api/admin/connections/all', async (req, res) => {
+  try {
+    const connections = connectionManager.getAllConnections();
+    
+    // Validate all connections
+    const validations = await connectionManager.validateAll();
+    
+    // Combine state and validation
+    const result = {};
+    for (const [platform, state] of Object.entries(connections)) {
+      result[platform] = {
+        ...state,
+        validation: validations[platform]
+      };
+    }
+    
+    res.json(result);
+  } catch (error) {
+    console.error('[Connections All] Error:', error.message);
+    res.status(500).json({
+      error: error.message
+    });
+  }
+});
+
+app.get('/api/admin/platform-status', (req, res) => {
+  res.json({
+    telegram: platformConnections.telegram.connected,
+    instagram: platformConnections.instagram.connected,
+    whatsapp: platformConnections.whatsapp.connected,
+    tiktok: platformConnections.tiktok.connected
+  });
+});
+
+app.get('/api/telegram/webhook-info', async (req, res) => {
+  try {
+    const token = platformConnections.telegram.token || process.env.TELEGRAM_BOT_TOKEN;
+    if (!token) return res.status(400).json({ error: 'TELEGRAM_BOT_TOKEN is not configured' });
+
+    const response = await fetch(`https://api.telegram.org/bot${token}/getWebhookInfo`);
+    const data = await response.json();
+    res.status(response.ok ? 200 : 502).json(data);
+  } catch (error) {
+    res.status(500).json({ error: 'Error getting Telegram webhook info' });
+  }
+});
+
+app.get('/api/instagram/account-info', async (req, res) => {
+  res.json({
+    success: platformConnections.instagram.connected,
+    account: {
+      username: platformConnections.instagram.username,
+      method: 'oauth'
+    }
+  });
+});
+
+app.post('/api/telegram/set-webhook', async (req, res) => {
+  try {
+    const token = platformConnections.telegram.token || process.env.TELEGRAM_BOT_TOKEN;
+    const webhookUrl = req.body.url;
+
+    if (!token) return res.status(400).json({ error: 'TELEGRAM_BOT_TOKEN is not configured' });
+    if (!webhookUrl || !webhookUrl.startsWith('https://')) return res.status(400).json({ error: 'A public HTTPS webhook url is required' });
+
+    const response = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: webhookUrl })
+    });
+    const data = await response.json();
+
+    if (data.ok) platformConnections.telegram = { connected: true, token };
+    res.status(response.ok && data.ok ? 200 : 502).json(data);
+  } catch (error) {
+    res.status(500).json({ error: 'Error setting Telegram webhook' });
+  }
+});
+
+app.get('/api/admin/stats', (req, res) => {
+  resetDailyStats();
+  
+  // Calculate platform breakdown
+  const platformBreakdown = chatLogs.reduce((acc, log) => {
+    const platform = log.platform || 'unknown';
+    acc[platform] = (acc[platform] || 0) + 1;
+    return acc;
+  }, {});
+  
+  // Calculate today's messages from logs
+  const today = new Date().toDateString();
+  const todayLogsCount = chatLogs.filter(log => {
+    return new Date(log.timestamp).toDateString() === today;
+  }).length;
+  
+  // Calculate hourly breakdown for today
+  const hourlyBreakdown = Array(24).fill(0);
+  chatLogs.forEach(log => {
+    const logDate = new Date(log.timestamp);
+    if (logDate.toDateString() === today) {
+      const hour = logDate.getHours();
+      hourlyBreakdown[hour]++;
+    }
+  });
+  
+  // Get peak hour
+  const peakHour = hourlyBreakdown.indexOf(Math.max(...hourlyBreakdown));
+  
+  res.json({
+    totalMessages: stats.totalMessages,
+    todayMessages: stats.todayMessages,
+    platformBreakdown,
+    hourlyBreakdown,
+    peakHour: peakHour === -1 ? 12 : peakHour,
+    connectedPlatforms: Object.keys(platformConnections).filter(p => platformConnections[p].connected).length,
+    recentLogs: chatLogs.slice(0, 10)
+  });
+});
+app.get('/api/admin/chat-logs', (req, res) => res.json(chatLogs));
+
+// ============================================
+// ANALYTICS API ENDPOINTS
+// ============================================
+
+/**
+ * GET /api/analytics/hourly
+ * Returns hourly message counts for last 24 hours
+ */
+app.get('/api/analytics/hourly', (req, res) => {
+  try {
+    const data = analyticsManager.getHourlyData();
+    res.json(data);
+  } catch (error) {
+    console.error('[Analytics API] Hourly error:', error.message);
+    res.status(500).json({ error: 'Failed to get hourly data' });
+  }
+});
+
+/**
+ * GET /api/analytics/platforms
+ * Returns platform distribution for donut chart
+ */
+app.get('/api/analytics/platforms', (req, res) => {
+  try {
+    const data = analyticsManager.getPlatformDistribution();
+    res.json(data);
+  } catch (error) {
+    console.error('[Analytics API] Platforms error:', error.message);
+    res.status(500).json({ error: 'Failed to get platform data' });
+  }
+});
+
+/**
+ * GET /api/analytics/daily
+ * Returns daily message counts for last 7 days
+ */
+app.get('/api/analytics/daily', (req, res) => {
+  try {
+    const data = analyticsManager.getDailyData();
+    res.json(data);
+  } catch (error) {
+    console.error('[Analytics API] Daily error:', error.message);
+    res.status(500).json({ error: 'Failed to get daily data' });
+  }
+});
+
+/**
+ * GET /api/analytics/summary
+ * Returns summary statistics
+ */
+app.get('/api/analytics/summary', (req, res) => {
+  try {
+    const data = analyticsManager.getSummary();
+    res.json(data);
+  } catch (error) {
+    console.error('[Analytics API] Summary error:', error.message);
+    res.status(500).json({ error: 'Failed to get summary' });
+  }
+});
+
+/**
+ * POST /api/analytics/generate-test-data
+ * Generate test data for development (200 messages across all platforms)
+ */
+app.post('/api/analytics/generate-test-data', (req, res) => {
+  try {
+    const count = req.body.count || 200;
+    const result = analyticsManager.generateTestData(count);
+    res.json(result);
+  } catch (error) {
+    console.error('[Analytics API] Generate test data error:', error.message);
+    res.status(500).json({ error: 'Failed to generate test data' });
+  }
+});
+
+/**
+ * POST /api/analytics/clear
+ * Clear all analytics data (for testing)
+ */
+app.post('/api/analytics/clear', (req, res) => {
+  try {
+    const result = analyticsManager.clearData();
+    res.json(result);
+  } catch (error) {
+    console.error('[Analytics API] Clear data error:', error.message);
+    res.status(500).json({ error: 'Failed to clear data' });
+  }
+});
+
+// --- MULTI-PLATFORM MESSAGING BACKEND INTERFACING ---
+
+async function sendResponseToPlatform(platform, userId, message) {
+  try {
+    if (platform === 'telegram' && platformConnections.telegram.connected) {
+      const telegramUrl = `https://api.telegram.org/bot${platformConnections.telegram.token}/sendMessage`;
+      const response = await fetch(telegramUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: userId, text: message })
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        return { ok: false, platform, status: response.status, error: errorData.description || 'Telegram send failed' };
+      }
+      return { ok: true, platform };
+    } else if ((platform === 'instagram-unofficial' || platform === 'instagram')) {
+      // Check if Instagram bot is enabled
+      const botEnabled = process.env.INSTAGRAM_BOT_ENABLED !== 'false';
+      if (!botEnabled) {
+        console.log('[instagram] Bot is disabled, not sending reply');
+        return { ok: false, platform, error: 'Instagram bot is disabled' };
+      }
+
+      // Instagram DMs should use the official Instagram Messaging API. The old
+      // private API path is intentionally not used because it triggers 467 blocks.
+      const igAccessToken = process.env.INSTAGRAM_ACCESS_TOKEN;
+      if (igAccessToken) {
+        const response = await fetch(INSTAGRAM_MESSAGE_SEND_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recipient: { id: String(userId) },
+            message: { text: String(message).slice(0, 1000) }
+          })
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          const graphError = data.error || {};
+          console.error('[instagram] Instagram message send failed:', {
+            status: response.status,
+            code: graphError.code,
+            subcode: graphError.error_subcode,
+            message: graphError.message,
+            type: graphError.type
+          });
+          
+          // Check if token expired
+          if (graphError.code === 190 || graphError.type === 'OAuthException') {
+            console.error('[instagram] ⚠ Token may be expired or invalid. Please reconnect Instagram.');
+          }
+          
+          return {
+            ok: false,
+            platform,
+            status: response.status,
+            error: graphError.message || 'Instagram message send failed',
+            code: graphError.code,
+            subcode: graphError.error_subcode
+          };
+        }
+
+        console.log(`[instagram] ✓ Sent via Instagram Messaging API to ${userId}`);
+        return { ok: true, platform, response: data };
+      } else {
+        const error = 'Configure INSTAGRAM_ACCESS_TOKEN to send Instagram replies.';
+        console.warn(`[instagram] Cannot send message: ${error}`);
+        return { ok: false, platform, error };
+      }
+    } else if (platform === 'whatsapp' && platformConnections.whatsapp.connected) {
+      const whatsappPhoneId = platformConnections.whatsapp.phone_id;
+      const whatsappToken = platformConnections.whatsapp.token;
+      
+      if (!whatsappPhoneId || !whatsappToken) {
+        const error = 'WhatsApp not properly configured (missing phone_id or token)';
+        console.error('[whatsapp]', error);
+        return { ok: false, platform, error };
+      }
+      
+      const whatsappUrl = facebookGraphUrl(`${whatsappPhoneId}/messages`);
+      
+      try {
+        const response = await fetch(whatsappUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${whatsappToken}`
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            to: String(userId),  // Phone number with country code
+            type: 'text',
+            text: { body: String(message).slice(0, 1024) }  // Meta max 1024 chars
+          })
+        });
+        
+        const responseData = await response.json().catch(() => ({}));
+        
+        if (!response.ok) {
+          const errorMsg = responseData.error?.message || 'Unknown error';
+          const errorCode = responseData.error?.code;
+          console.error('[whatsapp] Message send failed:', {
+            status: response.status,
+            code: errorCode,
+            message: errorMsg,
+            to: userId
+          });
+          return { ok: false, platform, status: response.status, error: errorMsg, code: errorCode };
+        }
+        
+        console.log(`[whatsapp] ✓ Message sent to ${userId}`);
+        return { ok: true, platform, response: responseData };
+      } catch (error) {
+        console.error('[whatsapp] Send error:', error.message);
+        return { ok: false, platform, error: error.message };
+      }
+    }
+    return { ok: false, platform, error: `${platform} is not connected` };
+  } catch (error) {
+    console.error(`[${platform}] Error sending response:`, error.message);
+    return { ok: false, platform, error: error.message };
+  }
+}
+
+// Webhook verification endpoint (for WhatsApp/Facebook Meta Dashboard setup validation)
+app.get('/webhook/:platform', (req, res) => {
+  try {
+    const platform = req.params.platform;
+    const mode = req.query['hub.mode'];
+    const token = req.query['hub.verify_token'];
+    const challenge = req.query['hub.challenge'];
+
+    const VERIFY_TOKEN = process.env.WEBHOOK_VERIFY_TOKEN;
+
+    if (!VERIFY_TOKEN) {
+      console.error(`[${platform}] WEBHOOK_VERIFY_TOKEN is not configured`);
+      return res.sendStatus(500);
+    }
+
+    if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+      console.log(`✓ [${platform}] Webhook verified successfully!`);
+      res.status(200).send(challenge);
+    } else if (mode === 'subscribe') {
+      console.log(`✗ [${platform}] Webhook verification failed! Token mismatch.`);
+      res.sendStatus(403);
+    } else {
+      // For platforms that don't use hub.verify_token, just respond OK
+      res.sendStatus(200);
+    }
+  } catch (error) {
+    console.error('[Webhook] Verification error:', error.message);
+    res.sendStatus(500);
+  }
+});
+
+app.get('/api/instagram/webhook', (req, res) => {
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+  const verifyToken = process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN || process.env.WEBHOOK_VERIFY_TOKEN;
+
+  if (!verifyToken) {
+    console.error('[Instagram Webhook] INSTAGRAM_WEBHOOK_VERIFY_TOKEN or WEBHOOK_VERIFY_TOKEN is not configured');
+    return res.sendStatus(500);
+  }
+
+  if (mode === 'subscribe' && token === verifyToken) {
+    return res.status(200).send(challenge);
+  }
+
+  if (mode === 'subscribe') {
+    return res.sendStatus(403);
+  }
+
+  res.sendStatus(200);
+});
+
+app.post('/api/instagram/webhook', async (req, res) => {
+  const originalUrl = req.url;
+  req.url = '/webhook/instagram';
+  app._router.handle(req, res, () => {
+    req.url = originalUrl;
+    res.sendStatus(404);
+  });
+});
+
+// Generic multi-platform incoming message handling webhook
+app.post('/webhook/:platform', async (req, res) => {
+  try {
+    const platform = req.params.platform;
+    const body = req.body;
+
+    // Log raw webhook data for debugging
+    console.log(`[Webhook:${platform}] Received:`, JSON.stringify(body).substring(0, 500));
+
+    let userMessage, userId, userName, messageId;
+
+    // Validate WhatsApp signature (Meta API)
+    if (platform === 'whatsapp') {
+      const appSecret = process.env.INSTAGRAM_APP_SECRET;
+      if (!appSecret) {
+        console.error('[whatsapp] INSTAGRAM_APP_SECRET not configured');
+        return res.sendStatus(500);
+      }
+      
+      if (!validateMetaSignature(req, appSecret)) {
+        console.warn('[whatsapp] Invalid signature - rejecting request');
+        return res.sendStatus(403);
+      }
+    }
+
+    if (platform === 'telegram') {
+      userMessage = body.message?.text;
+      userId = body.message?.from?.id;
+      userName = body.message?.from?.first_name;
+      messageId = `tg_${body.message?.message_id}`;
+    } else if (platform === 'instagram') {
+      // Instagram Graph API webhook structure
+      const entry = body.entry?.[0];
+      const messaging = entry?.messaging?.[0] || entry?.standby?.[0];
+
+      // Check for comments
+      if (body.object === 'instagram' && entry?.changes?.[0]?.field === 'comments') {
+        const change = entry.changes[0];
+        const comment = change.value;
+
+        console.log('[Instagram Webhook] Comment received:', JSON.stringify(comment).substring(0, 200));
+
+        // Process comment through rules system
+        const businesses = await db.getAllBusinesses();
+    const business = businesses[0];
+
+        if (business && comment.text) {
+          await processInstagramMessage(business, {
+            id: comment.id,
+            text: comment.text,
+            senderId: comment.from?.id || comment.from
+          }, true); // isComment = true
+        }
+
+        return res.sendStatus(200);
+      }
+
+      if (messaging?.message?.is_echo) {
+        console.log('[instagram] Ignoring echo message from this business account.');
+        return res.sendStatus(200);
+      }
+
+      if (messaging?.message) {
+        userMessage = messaging.message.text;
+        userId = messaging.sender?.id;
+        messageId = `ig_${messaging.message.mid}`;
+      } else if (messaging?.postback) {
+        userMessage = messaging.postback.payload;
+        userId = messaging.sender?.id;
+        messageId = `ig_pb_${messaging.timestamp}`;
+      }
+
+      // Also check for direct webhook format
+      if (!userMessage && body.object === 'instagram') {
+        const change = entry?.changes?.[0];
+        if (change?.value?.messages?.[0]) {
+          const msg = change.value.messages[0];
+          userMessage = msg.text?.body || msg.text?.text;
+          userId = msg.from;
+          messageId = `ig_${msg.id}`;
+        }
+      }
+    } else if (platform === 'whatsapp') {
+      // Extract from Meta WhatsApp Cloud API format
+      const entry = body.entry?.[0];
+      const change = entry?.changes?.[0];
+      const value = change?.value;
+      
+      const message = value?.messages?.[0];
+      if (!message) {
+        // Webhook verification or status update (ACK)
+        console.log('[whatsapp] Webhook event received (no message)');
+        return res.sendStatus(200);
+      }
+      
+      messageId = `wa_${message.id}`;
+      userMessage = message.text?.body;
+      userId = message.from;
+      
+      // Status update - skip processing
+      if (value?.statuses?.[0] && !message) {
+        console.log('[whatsapp] Status update received, skipping');
+        return res.sendStatus(200);
+      }
+    }
+
+    // Deduplication: Check if we've already processed this message
+    if (messageId && isMessageProcessed(messageId)) {
+      console.log(`[${platform}] Duplicate message (${messageId}), skipping`);
+      return res.sendStatus(200);
+    }
+
+    if (userMessage && userId) {
+      // Mark as processed
+      if (messageId) markMessageProcessed(messageId);
+      
+      console.log(`[${platform}] ${userId}: "${userMessage}"`);
+
+      const aiResponse = await getAIResponse(userId.toString(), userMessage);
+
+      chatLogs.unshift({
+        platform,
+        userId,
+        userName,
+        userMessage,
+        aiResponse,
+        timestamp: new Date().toISOString()
+      });
+
+      // Keep only last 100 logs
+      if (chatLogs.length > 100) chatLogs.pop();
+
+      updateMessageStats();
+
+      const sendResult = await sendResponseToPlatform(platform, userId, aiResponse);
+      if (sendResult.ok) {
+        console.log(`[${platform}] AI reply sent to ${userId}`);
+      } else {
+        console.error(`[${platform}] AI reply was generated but not sent to ${userId}: ${sendResult.error}`);
+      }
+    }
+
+    res.sendStatus(200);
+  } catch (error) {
+    console.error('[Webhook] Error:', error.message);
+    res.sendStatus(500);
+  }
+});
+
+// Direct API configuration interface (for customized integrations)
+app.post('/api/ai-response', async (req, res) => {
+  try {
+    const { message, user_id } = req.body;
+    if (!message) return res.status(400).json({ error: 'Message is required' });
+
+    const userId = user_id || 'unknown';
+    const aiResponse = await getAIResponse(userId.toString(), message);
+
+    chatLogs.unshift({
+      platform: 'whatsapp-salebot',
+      userId,
+      userMessage: message,
+      aiResponse,
+      timestamp: new Date().toISOString()
+    });
+
+    stats.totalMessages++;
+    stats.todayMessages++;
+
+    res.json({ response: aiResponse, success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Error generating response' });
+  }
+});
+
+// Salebot dynamic automated middleware parser
+app.post('/webhook/salebot', async (req, res) => {
+  try {
+    const message = req.body;
+    const userMessage = message.message || message.text || message.body;
+    const userId = message.client_id || message.user_id || message.from;
+    const clientName = message.client_name || 'Customer';
+
+    if (userMessage && userId) {
+      const aiResponse = await getAIResponse(userId.toString(), userMessage);
+
+      chatLogs.unshift({
+        platform: 'whatsapp-salebot',
+        userId,
+        userName: clientName,
+        userMessage,
+        aiResponse,
+        timestamp: new Date().toISOString()
+      });
+
+      stats.totalMessages++;
+      stats.todayMessages++;
+
+      res.json({ response: aiResponse, success: true });
+    } else {
+      res.sendStatus(200);
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Error processing message' });
+  }
+});
+
+// ========================================
+// BUSINESS OWNER DASHBOARD API ENDPOINTS
+// ========================================
+
+// --- BUSINESS STORAGE HELPERS ---
+const BUSINESSES_FILE = path.join(__dirname, 'businesses.json');
+const BUSINESS_SESSIONS_FILE = path.join(__dirname, 'businessSessions.json');
+
+function ensureBusinessesFile() {
+  if (!fs.existsSync(BUSINESSES_FILE)) {
+    fs.writeFileSync(BUSINESSES_FILE, JSON.stringify({ businesses: [] }, null, 2), 'utf8');
+  }
+}
+
+// Database functions - replaced with Prisma calls
+async function readBusinessesStore() {
+  try {
+    const businesses = await db.getAllBusinesses();
+    return { businesses };
+  } catch (error) {
+    console.error('[DB] Error reading businesses:', error.message);
+    return { businesses: [] };
+  }
+}
+
+async function writeBusinessesStore(store) {
+  // This function is deprecated - individual businesses are saved via db.updateBusiness()
+  console.warn('[DB] writeBusinessesStore() is deprecated. Updates happen via Prisma automatically.');
+}
+
+function ensureBusinessSessionsFile() {
+  if (!fs.existsSync(BUSINESS_SESSIONS_FILE)) {
+    fs.writeFileSync(BUSINESS_SESSIONS_FILE, JSON.stringify({ sessions: [] }, null, 2), 'utf8');
+  }
+}
+
+function readBusinessSessions() {
+  ensureBusinessSessionsFile();
+  try {
+    const parsed = JSON.parse(fs.readFileSync(BUSINESS_SESSIONS_FILE, 'utf8'));
+    return new Map(Array.isArray(parsed.sessions) ? parsed.sessions : []);
+  } catch (error) {
+    console.error('[Business] Error reading businessSessions.json:', error.message);
+    return new Map();
+  }
+}
+
+function saveBusinessSessions(sessionsMap) {
+  const sessions = Array.from(sessionsMap.entries());
+  fs.writeFileSync(BUSINESS_SESSIONS_FILE, JSON.stringify({ sessions }, null, 2), 'utf8');
+}
+
+// Business sessions in memory
+const businessSessions = readBusinessSessions();
+
+// Save business sessions periodically (every 5 minutes)
+setInterval(() => {
+  saveBusinessSessions(businessSessions);
+}, 5 * 60 * 1000);
+
+// Business authentication middleware
+function requireBusinessAuth(req, res, next) {
+  const token = req.headers['x-business-token'];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Unauthorized - No token provided' });
+  }
+
+  const session = businessSessions.get(token);
+
+  if (!session) {
+    return res.status(401).json({ error: 'Unauthorized - Invalid token' });
+  }
+
+  // Check if session expired (24 hours)
+  const expiresAt = new Date(session.expiresAt).getTime();
+  if (Date.now() > expiresAt) {
+    businessSessions.delete(token);
+    saveBusinessSessions(businessSessions);
+    return res.status(401).json({ error: 'Unauthorized - Session expired' });
+  }
+
+  // Attach business info to request
+  req.businessId = session.businessId;
+  req.business = session.business;
+
+  next();
+}
+
+// Generate business session token
+function generateBusinessToken() {
+  return `bst_${Date.now()}_${Math.random().toString(36).slice(2, 15)}`;
+}
+
+// --- BUSINESS AUTH ENDPOINTS ---
+
+// Business owner login
+app.post('/api/business/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    const businesses = await db.getAllBusinesses();
+    const business = businesses.find(b => b.email === email);
+
+    if (!business) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    if (!business.active) {
+      return res.status(403).json({ error: 'Account is suspended' });
+    }
+
+    // Verify password
+    const passwordMatch = await bcrypt.compare(password, business.passwordHash);
+
+    if (!passwordMatch) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Create session
+    const token = generateBusinessToken();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
+
+    businessSessions.set(token, {
+      businessId: business.id,
+      business: {
+        id: business.id,
+        name: business.name,
+        ownerName: business.ownerName,
+        email: business.email,
+        phone: business.phone,
+        address: business.address,
+        instagram: business.instagram,
+        city: business.city
+      },
+      createdAt: new Date().toISOString(),
+      expiresAt
+    });
+
+    saveBusinessSessions(businessSessions);
+
+    console.log(`[Business] Login successful: ${business.name} (${email})`);
+
+    res.json({
+      success: true,
+      token,
+      business: {
+        id: business.id,
+        name: business.name,
+        ownerName: business.ownerName
+      }
+    });
+  } catch (error) {
+    console.error('[Business] Login error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Verify business session
+app.get('/api/business/auth/verify', requireBusinessAuth, (req, res) => {
+  res.json({
+    valid: true,
+    business: req.business
+  });
+});
+
+// Business owner logout
+app.post('/api/business/auth/logout', (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (token && businessSessions.has(token)) {
+      businessSessions.delete(token);
+      saveBusinessSessions(businessSessions);
+      console.log('[Business] Logout successful');
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Business] Logout error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- BUSINESS DASHBOARD ENDPOINTS ---
+
+// Get dashboard data (today's bookings, stats, recent messages)
+app.get('/api/business/dashboard', requireBusinessAuth, (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const bookingsStore = readBookingsStore();
+
+    // Get today's bookings
+    const todayBookings = bookingsStore.bookings
+      .filter(b => b.date === today)
+      .sort((a, b) => {
+        const timeA = a.time || '00:00';
+        const timeB = b.time || '00:00';
+        return timeA.localeCompare(timeB);
+      });
+
+    // Calculate stats
+    const stats = {
+      total: todayBookings.length,
+      completed: todayBookings.filter(b => b.status === 'completed').length,
+      confirmed: todayBookings.filter(b => b.status === 'confirmed').length,
+      cancelled: todayBookings.filter(b => b.status === 'cancelled').length,
+      remaining: todayBookings.filter(b => b.status !== 'completed' && b.status !== 'cancelled').length
+    };
+
+    // Get recent messages (last 10)
+    const recentMessages = chatLogs.slice(0, 10).map(log => ({
+      platform: log.platform,
+      userId: log.userId,
+      userName: log.userName || 'Customer',
+      userMessage: log.userMessage,
+      aiResponse: log.aiResponse,
+      timestamp: log.timestamp
+    }));
+
+    res.json({
+      todayBookings,
+      stats,
+      recentMessages,
+      business: {
+        name: req.business.name,
+        ownerName: req.business.ownerName
+      }
+    });
+  } catch (error) {
+    console.error('[Business] Dashboard error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- BUSINESS BOOKINGS ENDPOINTS ---
+
+// Get bookings for a specific date
+app.get('/api/business/bookings', requireBusinessAuth, (req, res) => {
+  try {
+    const { date } = req.query;
+    const targetDate = date || new Date().toISOString().split('T')[0];
+
+    const bookingsStore = readBookingsStore();
+    const bookings = bookingsStore.bookings
+      .filter(b => b.date === targetDate)
+      .sort((a, b) => {
+        const timeA = a.time || '00:00';
+        const timeB = b.time || '00:00';
+        return timeA.localeCompare(timeB);
+      });
+
+    // Get available slots for today or future dates
+    const availableSlots = getAvailableSlotsFor(targetDate, null);
+
+    res.json({
+      bookings,
+      availableSlots,
+      date: targetDate
+    });
+  } catch (error) {
+    console.error('[Business] Get bookings error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Create new booking
+app.post('/api/business/bookings', requireBusinessAuth, async (req, res) => {
+  try {
+    const { customerName, customerPhone, service, date, time, notes } = req.body;
+
+    if (!customerName || !service || !date || !time) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const bookingsStore = readBookingsStore();
+
+    // Check if time slot is available
+    const existingBooking = bookingsStore.bookings.find(
+      b => b.date === date && b.time === time && b.status !== 'cancelled'
+    );
+
+    if (existingBooking) {
+      return res.status(400).json({ error: 'Time slot already booked' });
+    }
+
+    // Create new booking
+    const booking = {
+      id: generateBookingId(),
+      customerName,
+      customerPhone: customerPhone || '',
+      service,
+      date,
+      time,
+      notes: notes || '',
+      platform: 'business-dashboard',
+      userId: '',
+      status: 'confirmed',
+      createdAt: new Date().toISOString()
+    };
+
+    bookingsStore.bookings.push(booking);
+    writeBookingsStore(bookingsStore);
+
+    console.log(`[Business] New booking created: ${customerName} - ${service} on ${date} at ${time}`);
+
+    res.json({
+      success: true,
+      booking
+    });
+  } catch (error) {
+    console.error('[Business] Create booking error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update booking status
+app.patch('/api/business/bookings/:id', requireBusinessAuth, (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!status || !['confirmed', 'completed', 'cancelled'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+
+    const bookingsStore = readBookingsStore();
+    const booking = bookingsStore.bookings.find(b => b.id === id);
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    booking.status = status;
+
+    if (status === 'completed') {
+      booking.completedAt = new Date().toISOString();
+    } else if (status === 'cancelled') {
+      booking.cancelledAt = new Date().toISOString();
+    }
+
+    writeBookingsStore(bookingsStore);
+
+    console.log(`[Business] Booking ${id} status updated to: ${status}`);
+
+    res.json({
+      success: true,
+      booking
+    });
+  } catch (error) {
+    console.error('[Business] Update booking error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Delete booking
+app.delete('/api/business/bookings/:id', requireBusinessAuth, (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const bookingsStore = readBookingsStore();
+    const index = bookingsStore.bookings.findIndex(b => b.id === id);
+
+    if (index === -1) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    bookingsStore.bookings.splice(index, 1);
+    writeBookingsStore(bookingsStore);
+
+    console.log(`[Business] Booking ${id} deleted`);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Business] Delete booking error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- BUSINESS MESSAGES ENDPOINTS ---
+
+// Get chat messages/conversations
+app.get('/api/business/messages', requireBusinessAuth, (req, res) => {
+  try {
+    const { platform = 'all', limit = 50 } = req.query;
+
+    let messages = chatLogs;
+
+    // Filter by platform if specified
+    if (platform !== 'all') {
+      messages = messages.filter(msg => msg.platform === platform);
+    }
+
+    // Limit results
+    messages = messages.slice(0, parseInt(limit));
+
+    res.json({
+      messages: messages.map(log => ({
+        platform: log.platform,
+        userId: log.userId,
+        userName: log.userName || 'Customer',
+        userMessage: log.userMessage,
+        aiResponse: log.aiResponse,
+        timestamp: log.timestamp
+      }))
+    });
+  } catch (error) {
+    console.error('[Business] Get messages error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- BUSINESS SETTINGS ENDPOINTS ---
+
+// Get business settings
+app.get('/api/business/settings', requireBusinessAuth, (req, res) => {
+  try {
+    const businessData = getBusinessData();
+    const aiSettings = JSON.parse(fs.readFileSync(path.join(__dirname, 'ai-settings.json'), 'utf8'));
+
+    res.json({
+      business: req.business,
+      services: businessData.business.services || [],
+      hours: businessData.business.hours || {},
+      aiSettings: {
+        language: aiSettings.language || 'auto',
+        style: aiSettings.style || 'professional'
+      }
+    });
+  } catch (error) {
+    console.error('[Business] Get settings error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update business settings
+app.post('/api/business/settings', requireBusinessAuth, async (req, res) => {
+  try {
+    const { name, phone, address, hours, services, aiLanguage } = req.body;
+
+    // Update business info in businesses.json
+    const businesses = await db.getAllBusinesses();
+    const business = businessesStore.businesses.find(b => b.id === req.businessId);
+
+    if (business) {
+      if (name) business.name = name;
+      if (phone) business.phone = phone;
+      if (address) business.address = address;
+
+      // Data saved automatically via Prisma
+    }
+
+    // Update business-info.json (hours and services)
+    if (hours || services) {
+      const businessData = getBusinessData();
+
+      if (hours) {
+        businessData.business.hours = hours;
+      }
+
+      if (services) {
+        businessData.business.services = services;
+      }
+
+      fs.writeFileSync(
+        path.join(__dirname, 'business-info.json'),
+        JSON.stringify(businessData, null, 2),
+        'utf8'
+      );
+    }
+
+    // Update AI settings
+    if (aiLanguage) {
+      const aiSettings = JSON.parse(fs.readFileSync(path.join(__dirname, 'ai-settings.json'), 'utf8'));
+      aiSettings.language = aiLanguage;
+      fs.writeFileSync(
+        path.join(__dirname, 'ai-settings.json'),
+        JSON.stringify(aiSettings, null, 2),
+        'utf8'
+      );
+    }
+
+    console.log(`[Business] Settings updated for: ${req.business.name}`);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Business] Update settings error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- SUPER ADMIN BUSINESS MANAGEMENT ENDPOINTS ---
+
+// Get all businesses (super admin only)
+app.get('/api/admin/businesses', async (req, res) => {
+  try {
+    // Temporarily allow without session for testing
+    // TODO: Add proper admin authentication later
+    
+    const businesses = await db.getAllBusinesses();
+    const limit = parseInt(req.query.limit) || 1000;
+
+    // Get real stats from database
+    const now = new Date();
+    const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000);
+    const oneWeekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+    const oneMonthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+
+    // Format businesses with proper structure for admin panel
+    const formattedBusinesses = businesses.map(business => ({
+      id: business.id,
+      name: business.name,
+      ownerName: business.ownerName || business.name,
+      ownerEmail: business.email,
+      email: business.email,
+      plan: business.plan || 'free',
+      status: business.status || 'active',
+      messageCount: business.messageCount || 0,
+      country: 'Kyrgyzstan',
+      industry: business.industry || 'General',
+      createdAt: business.createdAt,
+      lastActivity: business.updatedAt,
+      channels: {
+        instagram: {
+          connected: !!business.instagram,
+          username: business.instagram ? '@akt4n.o' : null
+        },
+        telegram: {
+          connected: !!business.telegram,
+          botName: business.telegram ? 'REPLAI Bot' : null
+        },
+        whatsapp: {
+          connected: !!business.whatsapp,
+          phone: business.whatsapp || null
+        }
+      }
+    }));
+
+    // Calculate real growth stats
+    const activeToday = formattedBusinesses.filter(b => 
+      new Date(b.lastActivity) > oneDayAgo
+    ).length;
+
+    const createdThisMonth = formattedBusinesses.filter(b =>
+      new Date(b.createdAt) > oneMonthAgo
+    ).length;
+
+    const messagesThisWeek = formattedBusinesses.reduce((sum, b) => 
+      sum + (b.messageCount || 0), 0
+    );
+
+    res.json({
+      success: true,
+      data: formattedBusinesses.slice(0, limit),
+      total: formattedBusinesses.length,
+      stats: {
+        total: formattedBusinesses.length,
+        activeToday,
+        totalMessages: messagesThisWeek,
+        growth: {
+          monthly: createdThisMonth > 0 ? Math.round((createdThisMonth / formattedBusinesses.length) * 100) : 0,
+          weekly: activeToday > 0 ? Math.round((activeToday / formattedBusinesses.length) * 100) : 0
+        }
+      }
+    });
+  } catch (error) {
+    console.error('[Admin] Get businesses error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Internal server error',
+      details: error.message 
+    });
+  }
+});
+
+// Create new business (super admin only)
+app.post('/api/admin/businesses', async (req, res) => {
+  try {
+    // Temporarily allow without session for testing
+    // TODO: Add proper admin authentication later
+    
+    const { name, ownerName, email, password, phone, industry, plan, ownerEmail } = req.body;
+
+    // Support both 'email' and 'ownerEmail' from the form
+    const businessEmail = email || ownerEmail;
+    
+    // Auto-generate password if not provided
+    const businessPassword = password || Math.random().toString(36).slice(-8);
+
+    if (!name || !businessEmail) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Business name and email are required' 
+      });
+    }
+
+    // Check if email already exists
+    const existingBusiness = await db.findBusinessByEmail(businessEmail);
+    if (existingBusiness) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Email already exists' 
+      });
+    }
+
+    // Generate business ID
+    const businessId = `biz_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(businessPassword, 10);
+
+    // Create new business using Prisma directly
+    const newBusiness = await prisma.business.create({
+      data: {
+        id: businessId,
+        name: name.trim(),
+        email: businessEmail.trim(),
+        password: passwordHash,
+        ownerName: ownerName ? ownerName.trim() : name.trim(),
+        industry: industry || null,
+        plan: plan || 'free',
+        status: 'active',
+        messageCount: 0,
+        whatsapp: null,
+        instagram: phone ? JSON.stringify({ phone }) : null,
+        telegram: null,
+        updatedAt: new Date()
+      },
+    });
+
+    console.log(`[Admin] New business created: ${name} (${businessEmail})`);
+
+    res.json({
+      success: true,
+      business: newBusiness,
+      credentials: {
+        email: businessEmail,
+        password: businessPassword
+      },
+      message: `Business created! Email: ${businessEmail}, Password: ${businessPassword}`
+    });
+  } catch (error) {
+    console.error('[Admin] Create business error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Internal server error',
+      details: error.message 
+    });
+  }
+});
+
+// Update business (super admin only)
+app.patch('/api/admin/businesses/:id', async (req, res) => {
+  try {
+    const sessionId = req.headers['x-session-id'];
+    const session = sessions.get(sessionId);
+
+    if (!session) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { id } = req.params;
+    const { active, plan, name, phone, address } = req.body;
+
+    const businesses = await db.getAllBusinesses();
+    const business = businesses.find(b => b.id === id);
+
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    // Update fields
+    if (typeof active === 'boolean') business.active = active;
+    if (plan) business.plan = plan;
+    if (name) business.name = name;
+    if (phone) business.phone = phone;
+    if (address) business.address = address;
+    // Data saved automatically via Prisma
+
+    console.log(`[Admin] Business ${id} updated`);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Admin] Update business error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ========================================
+// BUSINESSES MANAGEMENT ADMIN APIS
+// ========================================
+
+// Get all businesses with filtering and search
+app.get('/api/admin/businesses', async (req, res) => {
+  try {
+    const { search, filter, sort, order, page, limit } = req.query;
+
+    let businesses = await db.getAllBusinesses();
+    businesses = businesses || [];
+
+    // Add statistics for each business
+    businesses = businesses.map(business => {
+      const messageCount = (business.conversations || []).reduce((total, conv) => {
+        return total + (conv.messages || []).length;
+      }, 0);
+
+      const lastActivity = (business.conversations || []).reduce((latest, conv) => {
+        const convMessages = conv.messages || [];
+        if (convMessages.length > 0) {
+          const lastMsg = convMessages[convMessages.length - 1];
+          const msgTime = new Date(lastMsg.timestamp || 0).getTime();
+          return Math.max(latest, msgTime);
+        }
+        return latest;
+      }, 0);
+
+      return {
+        id: business.id,
+        name: business.name || 'Unnamed Business',
+        ownerName: business.ownerName || business.owner_name || 'Unknown',
+        ownerEmail: business.ownerEmail || business.owner_email || 'N/A',
+        phone: business.phone || business.contact?.phone || 'N/A',
+        country: business.country || 'Kyrgyzstan',
+        registrationDate: business.registrationDate || business.createdAt || new Date().toISOString(),
+        lastActivity: lastActivity ? new Date(lastActivity).toISOString() : null,
+        channels: {
+          instagram: {
+            connected: business.instagram?.connected || false,
+            username: business.instagram?.username || null
+          },
+          whatsapp: {
+            connected: business.whatsapp?.connected || false,
+            username: business.whatsapp?.phone_number || null
+          },
+          telegram: {
+            connected: business.telegram?.connected || false,
+            username: business.telegram?.bot_username || null
+          }
+        },
+        messageCount: messageCount,
+        status: business.active !== false ? 'active' : 'inactive',
+        plan: business.plan || 'free'
+      };
+    });
+
+    // Apply search filter
+    if (search) {
+      const searchLower = search.toLowerCase();
+      businesses = businesses.filter(b =>
+        b.name.toLowerCase().includes(searchLower) ||
+        b.ownerEmail.toLowerCase().includes(searchLower) ||
+        b.ownerName.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Apply connection filter
+    if (filter && filter !== 'all') {
+      businesses = businesses.filter(b => {
+        const connectedCount = Object.values(b.channels).filter(ch => ch.connected).length;
+        if (filter === 'connected') return connectedCount === 3;
+        if (filter === 'partially') return connectedCount > 0 && connectedCount < 3;
+        if (filter === 'disconnected') return connectedCount === 0;
+        return true;
+      });
+    }
+
+    // Apply sorting
+    const sortField = sort || 'registrationDate';
+    const sortOrder = order || 'desc';
+    businesses.sort((a, b) => {
+      let aVal = a[sortField];
+      let bVal = b[sortField];
+
+      if (sortField === 'name' || sortField === 'ownerName') {
+        aVal = (aVal || '').toLowerCase();
+        bVal = (bVal || '').toLowerCase();
+        return sortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      }
+
+      if (sortField === 'registrationDate' || sortField === 'lastActivity') {
+        aVal = new Date(aVal || 0).getTime();
+        bVal = new Date(bVal || 0).getTime();
+      }
+
+      return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+    });
+
+    // Pagination
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 10;
+    const startIdx = (pageNum - 1) * limitNum;
+    const endIdx = startIdx + limitNum;
+    const paginatedBusinesses = businesses.slice(startIdx, endIdx);
+
+    res.json({
+      success: true,
+      data: paginatedBusinesses,
+      total: businesses.length,
+      page: pageNum,
+      pages: Math.ceil(businesses.length / limitNum)
+    });
+  } catch (error) {
+    console.error('[Admin] Error fetching businesses:', error);
+    res.status(500).json({ error: 'Failed to fetch businesses' });
+  }
+});
+
+// Get dashboard statistics
+app.get('/api/admin/statistics', async (req, res) => {
+  try {
+    const businesses = await db.getAllBusinesses();
+
+    const totalBusinesses = businesses.length;
+
+    // Count active businesses today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayTime = today.getTime();
+
+    let activeToday = 0;
+    let totalMessagesProcessed = 0;
+    let connectedChannels = 0;
+    let totalChannels = 0;
+
+    businesses.forEach(business => {
+      const conversations = business.conversations || [];
+      let hasActivityToday = false;
+
+      conversations.forEach(conv => {
+        const messages = conv.messages || [];
+        totalMessagesProcessed += messages.length;
+
+        messages.forEach(msg => {
+          const msgDate = new Date(msg.timestamp || 0);
+          msgDate.setHours(0, 0, 0, 0);
+          if (msgDate.getTime() === todayTime) {
+            hasActivityToday = true;
+          }
+        });
+      });
+
+      if (hasActivityToday) activeToday++;
+
+      // Count connected channels
+      if (business.instagram?.connected) connectedChannels++;
+      if (business.whatsapp?.connected) connectedChannels++;
+      if (business.telegram?.connected) connectedChannels++;
+      totalChannels += 3;
+    });
+
+    const connectionHealth = totalChannels > 0
+      ? Math.round((connectedChannels / totalChannels) * 100)
+      : 0;
+
+    res.json({
+      success: true,
+      data: {
+        totalBusinesses,
+        activeToday,
+        totalMessagesProcessed,
+        connectionHealth,
+        trends: {
+          businesses: '+0',
+          active: '+0',
+          messages: '+0',
+          health: '0'
+        }
+      }
+    });
+  } catch (error) {
+    console.error('[Admin] Error fetching statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch statistics' });
+  }
+});
+
+// Get single business details
+app.get('/api/admin/businesses/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const businesses = await db.getAllBusinesses();
+    const business = businesses.find(b => b.id === id);
+
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    res.json({
+      success: true,
+      data: business
+    });
+  } catch (error) {
+    console.error('[Admin] Error fetching business:', error);
+    res.status(500).json({ error: 'Failed to fetch business details' });
+  }
+});
+
+// Create new business
+app.post('/api/admin/businesses', async (req, res) => {
+  try {
+    const { name, ownerName, ownerEmail, phone, country } = req.body;
+
+    // Validation
+    if (!name || !ownerName || !ownerEmail) {
+      return res.status(400).json({ error: 'Name, owner name, and owner email are required' });
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(ownerEmail)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    const businesses = await db.getAllBusinesses();
+
+    const newBusiness = {
+      id: 'business_' + Date.now(),
+      name,
+      ownerName,
+      ownerEmail,
+      owner_email: ownerEmail,
+      owner_name: ownerName,
+      phone: phone || '',
+      country: country || 'Kyrgyzstan',
+      registrationDate: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      active: true,
+      plan: 'free',
+      instagram: { connected: false, username: null },
+      whatsapp: { connected: false, phone_number: null },
+      telegram: { connected: false, bot_username: null },
+      conversations: [],
+      services: [],
+      hours: {}
+    };
+
+    businesses.push(newBusiness);
+    // Data saved automatically via Prisma
+
+    console.log(`[Admin] New business created: ${name} (${ownerEmail})`);
+
+    res.json({
+      success: true,
+      data: newBusiness,
+      message: 'Business created successfully'
+    });
+  } catch (error) {
+    console.error('[Admin] Error creating business:', error);
+    res.status(500).json({ error: 'Failed to create business' });
+  }
+});
+
+// Update business
+app.put('/api/admin/businesses/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, ownerName, ownerEmail, phone, country, plan, active, instagram, telegram, whatsapp } = req.body;
+
+    // Find business
+    const business = await db.findBusinessById(id);
+    if (!business) {
+      return res.status(404).json({ success: false, error: 'Business not found' });
+    }
+
+    // Prepare update data
+    const updateData = {};
+    
+    if (name) updateData.name = name;
+    if (ownerName) updateData.ownerName = ownerName;
+    if (ownerEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(ownerEmail)) {
+        return res.status(400).json({ success: false, error: 'Invalid email format' });
+      }
+      updateData.email = ownerEmail;
+    }
+    if (phone !== undefined) updateData.phone = phone;
+    if (plan) updateData.plan = plan;
+    if (typeof active === 'boolean') updateData.status = active ? 'active' : 'inactive';
+    
+    // Handle platform connections
+    if (instagram !== undefined) {
+      updateData.instagram = instagram ? JSON.stringify(instagram) : null;
+    }
+    if (telegram !== undefined) {
+      updateData.telegram = telegram ? JSON.stringify(telegram) : null;
+    }
+    if (whatsapp !== undefined) {
+      updateData.whatsapp = whatsapp ? JSON.stringify(whatsapp) : null;
+    }
+    
+    // Update in database
+    const updatedBusiness = await db.updateBusiness(id, updateData);
+
+    console.log(`[Admin] Business updated: ${id} - Platforms: ${Object.keys(updateData).filter(k => ['instagram','telegram','whatsapp'].includes(k)).join(',')}`);
+
+    res.json({
+      success: true,
+      data: updatedBusiness,
+      message: 'Business updated successfully'
+    });
+  } catch (error) {
+    console.error('[Admin] Error updating business:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to update business',
+      details: error.message 
+    });
+  }
+});
+
+// Delete business
+app.delete('/api/admin/businesses/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const businesses = await db.getAllBusinesses();
+    const businessIndex = businesses.findIndex(b => b.id === id);
+
+    if (businessIndex === -1) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    const deletedBusiness = businesses[businessIndex];
+    businesses.splice(businessIndex, 1);
+    // Data saved automatically via Prisma
+
+    console.log(`[Admin] Business deleted: ${deletedBusiness.name} (${id})`);
+
+    res.json({
+      success: true,
+      message: 'Business deleted successfully'
+    });
+  } catch (error) {
+    console.error('[Admin] Error deleting business:', error);
+    res.status(500).json({ error: 'Failed to delete business' });
+  }
+});
+
+// Get channel health for a business
+app.get('/api/admin/channel-health/:businessId', async (req, res) => {
+  try {
+    const { businessId } = req.params;
+    const businesses = await db.getAllBusinesses();
+    const business = businesses.find(b => b.id === businessId);
+
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    const conversations = business.conversations || [];
+    const instagramMsgs = conversations.filter(c => c.platform === 'instagram').reduce((sum, c) => sum + (c.messages || []).length, 0);
+    const whatsappMsgs = conversations.filter(c => c.platform === 'whatsapp').reduce((sum, c) => sum + (c.messages || []).length, 0);
+    const telegramMsgs = conversations.filter(c => c.platform === 'telegram').reduce((sum, c) => sum + (c.messages || []).length, 0);
+
+    res.json({
+      success: true,
+      data: {
+        businessId,
+        channels: {
+          instagram: {
+            connected: business.instagram?.connected || false,
+            lastSync: business.instagram?.lastSync || null,
+            messagesSent: instagramMsgs,
+            username: business.instagram?.username || null
+          },
+          whatsapp: {
+            connected: business.whatsapp?.connected || false,
+            lastSync: business.whatsapp?.lastSync || null,
+            messagesSent: whatsappMsgs,
+            error: business.whatsapp?.error || null
+          },
+          telegram: {
+            connected: business.telegram?.connected || false,
+            lastSync: business.telegram?.lastSync || null,
+            messagesSent: telegramMsgs,
+            username: business.telegram?.bot_username || null
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.error('[Admin] Error fetching channel health:', error);
+    res.status(500).json({ error: 'Failed to fetch channel health' });
+  }
+});
+
+// ========================================
+// BUSINESSES MANAGEMENT ADMIN APIS
+// ========================================
+
+// Get all businesses with filtering and search
+
+// Get dashboard statistics
+app.get('/api/admin/statistics', async (req, res) => {
+  try {
+    const businesses = await db.getAllBusinesses();
+
+    const totalBusinesses = businesses.length;
+
+    // Count active businesses today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayTime = today.getTime();
+
+    let activeToday = 0;
+    let totalMessagesProcessed = 0;
+    let connectedChannels = 0;
+    let totalChannels = 0;
+
+    businesses.forEach(business => {
+      const conversations = business.conversations || [];
+      let hasActivityToday = false;
+
+      conversations.forEach(conv => {
+        const messages = conv.messages || [];
+        totalMessagesProcessed += messages.length;
+
+        messages.forEach(msg => {
+          const msgDate = new Date(msg.timestamp || 0);
+          msgDate.setHours(0, 0, 0, 0);
+          if (msgDate.getTime() === todayTime) {
+            hasActivityToday = true;
+          }
+        });
+      });
+
+      if (hasActivityToday) activeToday++;
+
+      // Count connected channels
+      if (business.instagram?.connected) connectedChannels++;
+      if (business.whatsapp?.connected) connectedChannels++;
+      if (business.telegram?.connected) connectedChannels++;
+      totalChannels += 3;
+    });
+
+    const connectionHealth = totalChannels > 0
+      ? Math.round((connectedChannels / totalChannels) * 100)
+      : 0;
+
+    res.json({
+      success: true,
+      data: {
+        totalBusinesses,
+        activeToday,
+        totalMessagesProcessed,
+        connectionHealth
+      }
+    });
+  } catch (error) {
+    console.error('[Admin] Error fetching statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch statistics' });
+  }
+});
+
+// Get single business details
+app.get('/api/admin/businesses/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const businesses = await db.getAllBusinesses();
+    const business = businesses.find(b => b.id === id);
+
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    res.json({
+      success: true,
+      data: business
+    });
+  } catch (error) {
+    console.error('[Admin] Error fetching business:', error);
+    res.status(500).json({ error: 'Failed to fetch business details' });
+  }
+});
+
+// Create new business
+app.post('/api/admin/businesses', async (req, res) => {
+  try {
+    const { name, ownerName, ownerEmail, phone, country } = req.body;
+
+    // Validation
+    if (!name || !ownerName || !ownerEmail) {
+      return res.status(400).json({ error: 'Name, owner name, and owner email are required' });
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(ownerEmail)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    const businesses = await db.getAllBusinesses();
+
+    const newBusiness = {
+      id: 'business_' + Date.now(),
+      name,
+      ownerName,
+      ownerEmail,
+      owner_email: ownerEmail,
+      owner_name: ownerName,
+      phone: phone || '',
+      country: country || 'Kyrgyzstan',
+      registrationDate: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      active: true,
+      plan: 'free',
+      instagram: { connected: false, username: null },
+      whatsapp: { connected: false, phone_number: null },
+      telegram: { connected: false, bot_username: null },
+      conversations: [],
+      services: [],
+      hours: {}
+    };
+
+    businesses.push(newBusiness);
+    // Data saved automatically via Prisma
+
+    console.log(`[Admin] New business created: ${name} (${ownerEmail})`);
+
+    res.json({
+      success: true,
+      data: newBusiness,
+      message: 'Business created successfully'
+    });
+  } catch (error) {
+    console.error('[Admin] Error creating business:', error);
+    res.status(500).json({ error: 'Failed to create business' });
+  }
+});
+
+// Update business
+app.put('/api/admin/businesses/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, ownerName, ownerEmail, phone, country, plan, active, instagram, telegram, whatsapp } = req.body;
+
+    // Find business
+    const business = await db.findBusinessById(id);
+    if (!business) {
+      return res.status(404).json({ success: false, error: 'Business not found' });
+    }
+
+    // Prepare update data
+    const updateData = {};
+    
+    if (name) updateData.name = name;
+    if (ownerName) updateData.ownerName = ownerName;
+    if (ownerEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(ownerEmail)) {
+        return res.status(400).json({ success: false, error: 'Invalid email format' });
+      }
+      updateData.email = ownerEmail;
+    }
+    if (phone !== undefined) updateData.phone = phone;
+    if (plan) updateData.plan = plan;
+    if (typeof active === 'boolean') updateData.status = active ? 'active' : 'inactive';
+    
+    // Handle platform connections
+    if (instagram !== undefined) {
+      updateData.instagram = instagram ? JSON.stringify(instagram) : null;
+    }
+    if (telegram !== undefined) {
+      updateData.telegram = telegram ? JSON.stringify(telegram) : null;
+    }
+    if (whatsapp !== undefined) {
+      updateData.whatsapp = whatsapp ? JSON.stringify(whatsapp) : null;
+    }
+    
+    // Update in database
+    const updatedBusiness = await db.updateBusiness(id, updateData);
+
+    console.log(`[Admin] Business updated: ${id} - Platforms: ${Object.keys(updateData).filter(k => ['instagram','telegram','whatsapp'].includes(k)).join(',')}`);
+
+    res.json({
+      success: true,
+      data: updatedBusiness,
+      message: 'Business updated successfully'
+    });
+  } catch (error) {
+    console.error('[Admin] Error updating business:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to update business',
+      details: error.message 
+    });
+  }
+});
+
+// Delete business
+app.delete('/api/admin/businesses/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const businesses = await db.getAllBusinesses();
+    const businessIndex = businesses.findIndex(b => b.id === id);
+
+    if (businessIndex === -1) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    const deletedBusiness = businesses[businessIndex];
+    businesses.splice(businessIndex, 1);
+    // Data saved automatically via Prisma
+
+    console.log(`[Admin] Business deleted: ${deletedBusiness.name} (${id})`);
+
+    res.json({
+      success: true,
+      message: 'Business deleted successfully'
+    });
+  } catch (error) {
+    console.error('[Admin] Error deleting business:', error);
+    res.status(500).json({ error: 'Failed to delete business' });
+  }
+});
+
+// Serve business dashboard static files
+app.use('/business', express.static(path.join(__dirname, 'business-dashboard')));
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    provider: provider,
+    platforms: {
+      telegram: platformConnections.telegram.connected,
+      instagram: platformConnections.instagram.connected,
+      whatsapp: platformConnections.whatsapp.connected,
+      salebot: Boolean(process.env.SALEBOT_API_TOKEN)
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
+// ============= PLATFORM SETTINGS APIs =============
+
+// Helper function to read platform settings
+function readPlatformSettings() {
+  try {
+    const data = fs.readFileSync(path.join(__dirname, 'platform-settings.json'), 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    // Return defaults if file doesn't exist
+    return {
+      general: {
+        platformName: "REPLAI",
+        defaultLanguage: "English",
+        timeZone: "(UTC+05:00) Tashkent"
+      },
+      security: {
+        twoFactorEnabled: false,
+        loginNotifications: true
+      },
+      notifications: {
+        newBusinessRegistration: true,
+        systemAlerts: true,
+        weeklyReports: false
+      },
+      billing: {
+        currentPlan: "professional",
+        monthlyLimit: 100000,
+        currentUsage: 65000,
+        resetDate: "2026-11-01",
+        pricePerMonth: 99
+      }
+    };
+  }
+}
+
+// Helper function to write platform settings
+function writePlatformSettings(settings) {
+  fs.writeFileSync(
+    path.join(__dirname, 'platform-settings.json'),
+    JSON.stringify(settings, null, 2),
+    'utf8'
+  );
+}
+
+// Get all platform settings
+app.get('/api/admin/platform-settings', (req, res) => {
+  try {
+    const settings = readPlatformSettings();
+    res.json({ success: true, data: settings });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update general settings
+app.put('/api/admin/platform-settings/general', (req, res) => {
+  try {
+    const { platformName, defaultLanguage, timeZone } = req.body;
+    const settings = readPlatformSettings();
+
+    settings.general = {
+      platformName,
+      defaultLanguage,
+      timeZone
+    };
+
+    writePlatformSettings(settings);
+    res.json({ success: true, data: settings.general });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update security settings
+app.put('/api/admin/platform-settings/security', (req, res) => {
+  try {
+    const { twoFactorEnabled, loginNotifications } = req.body;
+    const settings = readPlatformSettings();
+
+    settings.security = {
+      twoFactorEnabled: Boolean(twoFactorEnabled),
+      loginNotifications: Boolean(loginNotifications)
+    };
+
+    writePlatformSettings(settings);
+    res.json({ success: true, data: settings.security });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update notification preferences
+app.put('/api/admin/platform-settings/notifications', (req, res) => {
+  try {
+    const { newBusinessRegistration, systemAlerts, weeklyReports } = req.body;
+    const settings = readPlatformSettings();
+
+    settings.notifications = {
+      newBusinessRegistration: Boolean(newBusinessRegistration),
+      systemAlerts: Boolean(systemAlerts),
+      weeklyReports: Boolean(weeklyReports)
+    };
+
+    writePlatformSettings(settings);
+    res.json({ success: true, data: settings.notifications });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update admin password
+app.post('/api/admin/update-password', async (req, res) => {
+  try {
+    const { currentPassword, newPassword, email } = req.body;
+
+    // Read users file
+    const usersData = fs.readFileSync(path.join(__dirname, 'users.json'), 'utf8');
+    const users = JSON.parse(usersData);
+
+    // Find admin user
+    const admin = users.users.find(u => u.email === email && u.role === 'admin');
+
+    if (!admin) {
+      return res.status(404).json({ success: false, error: 'Admin user not found' });
+    }
+
+    // Verify current password
+    const isValid = await bcrypt.compare(currentPassword, admin.passwordHash);
+    if (!isValid) {
+      return res.status(401).json({ success: false, error: 'Current password is incorrect' });
+    }
+
+    // Hash new password
+    const newHash = await bcrypt.hash(newPassword, 10);
+    admin.passwordHash = newHash;
+
+    // Save users file
+    fs.writeFileSync(
+      path.join(__dirname, 'users.json'),
+      JSON.stringify(users, null, 2),
+      'utf8'
+    );
+
+    res.json({ success: true, message: 'Password updated successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ============= API KEYS Management =============
+
+// Helper function to read API keys
+function readAPIKeys() {
+  try {
+    const data = fs.readFileSync(path.join(__dirname, 'api-keys.json'), 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    return { keys: [] };
+  }
+}
+
+// Helper function to write API keys
+function writeAPIKeys(data) {
+  fs.writeFileSync(
+    path.join(__dirname, 'api-keys.json'),
+    JSON.stringify(data, null, 2),
+    'utf8'
+  );
+}
+
+// Get all API keys
+app.get('/api/admin/api-keys', (req, res) => {
+  try {
+    const data = readAPIKeys();
+    res.json({ success: true, data: data.keys });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Generate new API key
+app.post('/api/admin/api-keys/generate', (req, res) => {
+  try {
+    const data = readAPIKeys();
+
+    // Generate random API key
+    const randomString = crypto.randomBytes(20).toString('hex');
+    const newKey = {
+      id: `key_${Date.now()}`,
+      name: req.body.name || 'Production API Key',
+      key: `rpl_live_sk_${randomString}`,
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      lastUsedAt: null
+    };
+
+    data.keys.push(newKey);
+    writeAPIKeys(data);
+
+    res.json({ success: true, data: newKey });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Revoke API key
+app.delete('/api/admin/api-keys/:keyId', (req, res) => {
+  try {
+    const data = readAPIKeys();
+    const keyIndex = data.keys.findIndex(k => k.id === req.params.keyId);
+
+    if (keyIndex === -1) {
+      return res.status(404).json({ success: false, error: 'API key not found' });
+    }
+
+    data.keys[keyIndex].status = 'revoked';
+    writeAPIKeys(data);
+
+    res.json({ success: true, message: 'API key revoked' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update API usage tracking
+app.post('/api/admin/platform-settings/billing/usage', (req, res) => {
+  try {
+    const { increment } = req.body;
+    const settings = readPlatformSettings();
+
+    settings.billing.currentUsage += (increment || 1);
+    writePlatformSettings(settings);
+
+    res.json({ success: true, data: settings.billing });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ============= AI PROVIDER KEYS Management =============
+import { aiKeyManager } from './ai-key-manager.js';
+
+// Get all AI provider keys
+app.get('/api/admin/ai-provider-keys', (req, res) => {
+  try {
+    const keys = aiKeyManager.getAllKeys();
+
+    // Mask API keys in response (show only first 10 chars)
+    const maskedKeys = keys.map(k => ({
+      ...k,
+      apiKey: k.apiKey.substring(0, 10) + '•'.repeat(20)
+    }));
+
+    res.json({ success: true, data: maskedKeys });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Add new AI provider key
+app.post('/api/admin/ai-provider-keys', async (req, res) => {
+  try {
+    const { provider, name, apiKey, priority, skipValidation } = req.body;
+
+    if (!provider || !name || !apiKey) {
+      return res.status(400).json({ success: false, error: 'Missing required fields' });
+    }
+
+    // Test the key before adding (optional - can be skipped)
+    if (!skipValidation) {
+      console.log(`[AI Keys] Testing ${provider} key before adding...`);
+      const isValid = await testAIProviderKey(provider, apiKey);
+      if (!isValid) {
+        console.log(`[AI Keys] ❌ ${provider} key validation failed`);
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Invalid API key or unable to verify. Please check the key and try again, or add without validation.' 
+        });
+      }
+      console.log(`[AI Keys] ✅ ${provider} key validation passed`);
+    } else {
+      console.log(`[AI Keys] ⚠️  Skipping validation for ${provider} key (skipValidation=true)`);
+    }
+
+    const newKey = aiKeyManager.addKey({ provider, name, apiKey, priority });
+
+    // Mask key in response
+    res.json({
+      success: true,
+      data: {
+        ...newKey,
+        apiKey: newKey.apiKey.substring(0, 10) + '•'.repeat(20)
+      }
+    });
+  } catch (error) {
+    console.error('[AI Keys] Error adding key:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update AI provider key (name, priority)
+app.put('/api/admin/ai-provider-keys/:keyId', (req, res) => {
+  try {
+    const { name, priority } = req.body;
+    const updatedKey = aiKeyManager.updateKey(req.params.keyId, { name, priority });
+
+    res.json({
+      success: true,
+      data: {
+        ...updatedKey,
+        apiKey: updatedKey.apiKey.substring(0, 10) + '•'.repeat(20)
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Delete/disable AI provider key
+app.delete('/api/admin/ai-provider-keys/:keyId', (req, res) => {
+  try {
+    aiKeyManager.deleteKey(req.params.keyId);
+    res.json({ success: true, message: 'AI provider key disabled' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Reset rate limit for a key
+app.post('/api/admin/ai-provider-keys/:keyId/reset-rate-limit', (req, res) => {
+  try {
+    aiKeyManager.resetRateLimit(req.params.keyId);
+    res.json({ success: true, message: 'Rate limit reset' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Test AI provider key
+app.post('/api/admin/ai-provider-keys/test', async (req, res) => {
+  try {
+    const { provider, apiKey } = req.body;
+    const isValid = await testAIProviderKey(provider, apiKey);
+    res.json({ success: true, valid: isValid });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Helper function to test AI provider key
+async function testAIProviderKey(provider, apiKey) {
+  const testConfigs = {
+    'groq': {
+      url: 'https://api.groq.com/openai/v1/models',
+      headers: { 'Authorization': `Bearer ${apiKey}` }
+    },
+    'openrouter': {
+      url: 'https://openrouter.ai/api/v1/models',
+      headers: { 'Authorization': `Bearer ${apiKey}` }
+    },
+    'together': {
+      url: 'https://api.together.xyz/v1/models',
+      headers: { 'Authorization': `Bearer ${apiKey}` }
+    },
+    'huggingface': {
+      url: 'https://api-inference.huggingface.co/models/gpt2',
+      headers: { 'Authorization': `Bearer ${apiKey}` }
+    }
+  };
+
+  const config = testConfigs[provider];
+  if (!config) {
+    console.error(`[AI Key Test] Unknown provider: ${provider}`);
+    return false;
+  }
+
+  try {
+    console.log(`[AI Key Test] Testing ${provider} at ${config.url}...`);
+    const response = await fetch(config.url, {
+      method: 'GET',
+      headers: config.headers,
+      timeout: 10000 // 10 second timeout
+    });
+
+    console.log(`[AI Key Test] ${provider} responded with status: ${response.status}`);
+    
+    if (response.ok) {
+      console.log(`[AI Key Test] ✅ ${provider} key is valid`);
+      return true;
+    } else {
+      const errorText = await response.text().catch(() => 'No error details');
+      console.error(`[AI Key Test] ❌ ${provider} returned error ${response.status}: ${errorText.substring(0, 200)}`);
+      return false;
+    }
+  } catch (error) {
+    console.error(`[AI Key Test] ❌ Failed to test ${provider} key:`, error.message);
+    return false;
+  }
+}
+
+// Instagram OAuth 2.0 status check
+if (platformConnections.instagram.connected) {
+  console.log('✓ [Instagram] Connected via OAuth 2.0 - Official Meta Graph API v23.0');
+  console.log(`✓ [Instagram] Username: @${platformConnections.instagram.username || 'N/A'}`);
+  console.log(`✓ [Instagram] Business Account ID: ${platformConnections.instagram.businessAccountId || 'N/A'}`);
+} else {
+  console.log('⚠️  [Instagram] Not connected. Use OAuth 2.0 flow in admin panel to connect.');
+  console.log('   Visit http://localhost:3000 and click "Connect Instagram"');
+}
+
+console.log('[Instagram] Using official Meta Graph API v23.0 for messaging');
+console.log('[Instagram] Webhooks: /webhook/instagram');
+
+// Start listening engine
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log('🤖 REPLAI Messaging Hub is starting...');
+  console.log(`🧠 Using AI Provider: ${provider.toUpperCase()}`);
+  console.log(`✅ Server running at: http://localhost:${PORT}`);
+  console.log(`⚙️  Admin Panel: http://localhost:${PORT}`);
+  console.log('\nPress Ctrl+C to stop.');
+});
+
+server.on('error', (error) => {
+  console.error('❌ Server error:', error);
+  process.exit(1);
+});
+
+// Save sessions on shutdown
+process.on('SIGINT', () => {
+  console.log('\n\n🛑 Shutting down...');
+  saveSessions();
+  console.log('✓ Sessions saved');
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('\n\n🛑 Shutting down...');
+  saveSessions();
+  console.log('✓ Sessions saved');
+  process.exit(0);
+});
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+  console.log('\n👋 Shutting down server...');
+  process.exit(0);
+});

@@ -370,6 +370,25 @@ export async function incrementKeyUsage(keyId) {
 // ============================================
 
 /**
+ * CRITICAL FIX #3: Safe JSON parsing with error handling
+ * Prevents server crashes from corrupted JSON in database
+ * @param {string} jsonString - JSON string to parse
+ * @param {string} fieldName - Field name for error logging
+ * @returns {object|null} Parsed object or null on error
+ */
+function safeParseJSON(jsonString, fieldName = 'unknown') {
+  if (!jsonString) return null;
+
+  try {
+    return JSON.parse(jsonString);
+  } catch (error) {
+    console.error(`[DB] Invalid JSON in ${fieldName}:`, error.message);
+    console.error(`[DB] Corrupted data:`, jsonString.substring(0, 100));
+    return null; // Return null instead of crashing
+  }
+}
+
+/**
  * Parse business object (convert JSON strings to objects)
  * @param {Object} business
  * @returns {Object}
@@ -377,9 +396,9 @@ export async function incrementKeyUsage(keyId) {
 function parseBusiness(business) {
   return {
     ...business,
-    whatsapp: business.whatsapp ? JSON.parse(business.whatsapp) : null,
-    instagram: business.instagram ? JSON.parse(business.instagram) : null,
-    telegram: business.telegram ? JSON.parse(business.telegram) : null,
+    whatsapp: safeParseJSON(business.whatsapp, 'business.whatsapp'),
+    instagram: safeParseJSON(business.instagram, 'business.instagram'),
+    telegram: safeParseJSON(business.telegram, 'business.telegram'),
   };
 }
 
@@ -391,7 +410,7 @@ function parseBusiness(business) {
 function parseSession(session) {
   return {
     ...session,
-    history: session.history ? JSON.parse(session.history) : [],
+    history: safeParseJSON(session.history, 'session.history') || [],
   };
 }
 

@@ -1,0 +1,37 @@
+Hi Claude!
+
+I'm migrating REPLAI (Node.js messaging hub) from JSON files to PostgreSQL + Prisma.
+
+DONE:
+✅ Created Supabase account
+✅ Got DATABASE_URL and added to .env
+✅ Installed: @prisma/client prisma bcryptjs jsonwebtoken
+
+CURRENT STEP:
+[Tell Claude where you are, e.g.:]
+- "Day 3: Need help creating prisma/schema.prisma"
+- "Day 5: Need to migrate data from businesses.json"
+- "Day 6: Need to update server-new.js to use Prisma"
+
+MY FILES:
+- server-new.js (main backend)
+- businesses.json (business data)
+- sessions.json (conversation history)
+
+MY DATA STRUCTURE:
+Business = {id, email, name, password, whatsapp{}, instagram{}, telegram{}, plan, messageCount}
+Session = {businessId, userId, history[]}
+
+GUIDE I'M FOLLOWING:
+/Users/ak/replai/AI-POWERED-MIGRATION-GUIDE.md
+
+HOW TO HELP:
+1. Give EXACT code (not pseudocode)
+2. Show WHERE to put it (file + location)
+3. Explain briefly what it does
+4. Give terminal commands to run
+5. Help me test it works
+
+I'm NOT a professional dev - need copy-paste solutions!
+
+Ready? Here's my question: [YOUR QUESTION]
