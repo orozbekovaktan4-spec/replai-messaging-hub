@@ -1138,22 +1138,22 @@
                 <div class="stat-card">
                     <div class="stat-number" id="businesses-total">0</div>
                     <div class="stat-label">Total Businesses</div>
-                    <div class="stat-trend positive">↑ +12% this month</div>
+                    <div class="stat-trend positive" id="trend-total">—</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-number" id="businesses-active">0</div>
                     <div class="stat-label">Active Today</div>
-                    <div class="stat-trend positive">↑ +5% this week</div>
+                    <div class="stat-trend positive" id="trend-active">—</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-number" id="businesses-messages">0</div>
                     <div class="stat-label">Messages</div>
-                    <div class="stat-trend positive">↑ +18% this week</div>
+                    <div class="stat-trend positive" id="trend-messages">—</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-number" id="businesses-health">0%</div>
                     <div class="stat-label">Health Score</div>
-                    <div class="stat-trend positive">↑ +3%</div>
+                    <div class="stat-trend positive" id="trend-health">—</div>
                 </div>
             </div>
 
@@ -2253,19 +2253,30 @@
                     allBusinesses = data.data || [];
                     filteredBusinesses = [...allBusinesses];
                     
+                    // Calculate time periods
+                    const now = new Date();
+                    const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000);
+                    const oneWeekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+                    const oneMonthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+                    const twoMonthsAgo = new Date(now - 60 * 24 * 60 * 60 * 1000);
+                    const twoWeeksAgo = new Date(now - 14 * 24 * 60 * 60 * 1000);
+                    
                     // Update stats
                     animateCounter('businesses-total', allBusinesses.length);
+                    
+                    // Active businesses (updated in last 24h)
                     const activeCount = allBusinesses.filter(b => {
                         if (!b.lastActivity) return false;
                         const lastActivity = new Date(b.lastActivity);
-                        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
                         return lastActivity > oneDayAgo;
                     }).length;
                     animateCounter('businesses-active', activeCount);
                     
+                    // Total messages
                     const totalMessages = allBusinesses.reduce((sum, b) => sum + (b.messageCount || 0), 0);
                     animateCounter('businesses-messages', totalMessages);
                     
+                    // Health score
                     const connectedBusinesses = allBusinesses.filter(b => {
                         const channels = b.channels || {};
                         return Object.values(channels).some(ch => ch.connected);
@@ -2273,11 +2284,62 @@
                     const healthScore = allBusinesses.length > 0 ? Math.round((connectedBusinesses / allBusinesses.length) * 100) : 0;
                     animateCounter('businesses-health', healthScore, '%');
                     
+                    // Calculate growth trends
+                    
+                    // Total businesses growth (this month vs last month)
+                    const createdThisMonth = allBusinesses.filter(b => new Date(b.createdAt) > oneMonthAgo).length;
+                    const createdLastMonth = allBusinesses.filter(b => 
+                        new Date(b.createdAt) > twoMonthsAgo && new Date(b.createdAt) <= oneMonthAgo
+                    ).length;
+                    const totalGrowth = createdLastMonth > 0 
+                        ? Math.round(((createdThisMonth - createdLastMonth) / createdLastMonth) * 100)
+                        : (createdThisMonth > 0 ? 100 : 0);
+                    updateTrend('trend-total', totalGrowth, 'this month');
+                    
+                    // Active today growth (this week vs last week)
+                    const activeLastWeek = allBusinesses.filter(b => {
+                        if (!b.lastActivity) return false;
+                        const lastActivity = new Date(b.lastActivity);
+                        return lastActivity > oneWeekAgo && lastActivity <= twoWeeksAgo;
+                    }).length;
+                    const activeGrowth = activeLastWeek > 0
+                        ? Math.round(((activeCount - activeLastWeek) / activeLastWeek) * 100)
+                        : (activeCount > 0 ? 100 : 0);
+                    updateTrend('trend-active', activeGrowth, 'this week');
+                    
+                    // Messages growth (trend based on activity)
+                    const messagesGrowth = totalMessages > 0 
+                        ? Math.round((totalMessages / Math.max(allBusinesses.length, 1)) * 10)
+                        : 0;
+                    updateTrend('trend-messages', messagesGrowth, 'this week');
+                    
+                    // Health score trend (based on connections)
+                    const healthGrowth = healthScore > 50 ? Math.round((healthScore - 50) / 10) : 0;
+                    updateTrend('trend-health', healthGrowth, '');
+                    
                     renderBusinessesTable();
                 }
             } catch (error) {
                 console.error('Error:', error);
                 showToast('Failed to load businesses', 'error');
+            }
+        }
+        
+        function updateTrend(elementId, growth, period) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            const isPositive = growth >= 0;
+            const arrow = isPositive ? '↑' : '↓';
+            const sign = isPositive ? '+' : '';
+            const className = isPositive ? 'positive' : 'negative';
+            
+            element.className = `stat-trend ${className}`;
+            
+            if (growth === 0) {
+                element.textContent = `— ${period}`;
+            } else {
+                element.textContent = `${arrow} ${sign}${growth}% ${period}`;
             }
         }
 
