@@ -2417,7 +2417,18 @@
 
                 if (data.success) {
                     closeQuickAdd();
-                    showToast(`${businessData.name} created successfully!`, 'success');
+                    const msg = data.credentials 
+                        ? `${businessData.name} создан! 📧 Email: ${data.credentials.email}, 🔑 Пароль: ${data.credentials.password}` 
+                        : `${businessData.name} создан успешно!`;
+                    showToast(msg, 'success');
+                    
+                    // Show credentials in alert too
+                    if (data.credentials) {
+                        setTimeout(() => {
+                            alert(`✅ Бизнес создан!\n\n📧 Email: ${data.credentials.email}\n🔑 Пароль: ${data.credentials.password}\n\n⚠️ Сохраните эти данные! Пароль показывается только один раз.`);
+                        }, 500);
+                    }
+                    
                     loadBusinessesDashboard();
                 } else {
                     showToast('Error: ' + (data.error || 'Failed to create'), 'error');

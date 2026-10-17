@@ -4186,53 +4186,50 @@ app.post('/api/admin/businesses', async (req, res) => {
     //  return res.status(401).json({ error: 'Unauthorized' });
     //}
 
-    const { name, ownerName, email, password, phone, address, instagram, city } = req.body;
+    const { name, ownerName, email, password, phone, address, instagram, city, ownerEmail, industry, plan } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: 'Name, email, and password are required' });
+    // Support both 'email' and 'ownerEmail' from the form
+    const businessEmail = email || ownerEmail;
+    
+    // Auto-generate password if not provided
+    const businessPassword = password || Math.random().toString(36).slice(-8);
+
+    if (!name || !businessEmail) {
+      return res.status(400).json({ error: 'Business name and email are required' });
     }
 
-    const businesses = await db.getAllBusinesses();
-
     // Check if email already exists
-    if (businesses.find(b => b.email === email)) {
+    const existingBusiness = await db.getBusinessByEmail(businessEmail);
+    if (existingBusiness) {
       return res.status(400).json({ error: 'Email already exists' });
     }
 
-    // Generate business ID
-    const businessId = `biz_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
-
     // Hash password
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(businessPassword, 10);
 
     // Create new business
-    const business = {
-      id: businessId,
+    const newBusiness = await db.createBusiness({
       name,
-      email,
-      passwordHash,
+      email: businessEmail,
+      password: passwordHash,
       ownerName: ownerName || name,
       phone: phone || '',
-      address: address || '',
       instagram: instagram || '',
-      city: city || 'Bishkek',
-      createdAt: new Date().toISOString(),
-      active: true,
-      plan: 'free'
-    };
+      industry: industry || '',
+      plan: plan || 'free',
+      status: 'active'
+    });
 
-    businesses.push(business);
-    // Data saved automatically via Prisma
-
-    console.log(`[Admin] New business created: ${name} (${email})`);
+    console.log(`[Admin] New business created: ${name} (${businessEmail})`);
 
     res.json({
       success: true,
-      business,
+      business: newBusiness,
       credentials: {
-        email,
-        password // Send back temp password (only shown once)
-      }
+        email: businessEmail,
+        password: businessPassword // Send back generated password (only shown once)
+      },
+      message: `Business created! Login: ${businessEmail}, Password: ${businessPassword}`
     });
   } catch (error) {
     console.error('[Admin] Create business error:', error);
