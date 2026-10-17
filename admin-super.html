@@ -1753,6 +1753,63 @@
         </div>
     </div>
 
+    <!-- Business Credentials Modal -->
+    <div id="credentials-modal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--brand-from), var(--brand-to)); padding: 32px 32px 24px; border-radius: 16px 16px 0 0;">
+                <div style="text-align: center;">
+                    <div style="width: 64px; height: 64px; background: rgba(255,255,255,0.2); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                        <i data-lucide="check-circle" style="width: 36px; height: 36px; color: white;"></i>
+                    </div>
+                    <h2 style="color: white; font-size: 24px; font-weight: 600; margin: 0;">✅ Бизнес создан!</h2>
+                </div>
+            </div>
+            <div class="modal-body" style="padding: 32px;">
+                <div style="background: var(--bg-secondary); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                        <div style="width: 40px; height: 40px; background: var(--primary-light); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                            <i data-lucide="mail" style="width: 20px; height: 20px; color: var(--primary);"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px;">Email</div>
+                            <div style="font-size: 16px; font-weight: 500; color: var(--text-primary); font-family: monospace;" id="cred-email">—</div>
+                        </div>
+                        <button onclick="copyToClipboard(document.getElementById('cred-email').textContent, 'Email')" style="background: none; border: none; cursor: pointer; padding: 8px;">
+                            <i data-lucide="copy" style="width: 18px; height: 18px; color: var(--text-secondary);"></i>
+                        </button>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 40px; height: 40px; background: var(--success-light); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                            <i data-lucide="key" style="width: 20px; height: 20px; color: var(--success);"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px;">Пароль</div>
+                            <div style="font-size: 16px; font-weight: 500; color: var(--text-primary); font-family: monospace;" id="cred-password">—</div>
+                        </div>
+                        <button onclick="copyToClipboard(document.getElementById('cred-password').textContent, 'Пароль')" style="background: none; border: none; cursor: pointer; padding: 8px;">
+                            <i data-lucide="copy" style="width: 18px; height: 18px; color: var(--text-secondary);"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div style="background: var(--warning-light); border-left: 3px solid var(--warning); border-radius: 8px; padding: 16px; display: flex; gap: 12px;">
+                    <i data-lucide="alert-triangle" style="width: 20px; height: 20px; color: var(--warning); flex-shrink: 0; margin-top: 2px;"></i>
+                    <div>
+                        <div style="font-weight: 600; color: var(--warning); margin-bottom: 4px;">⚠️ Важно!</div>
+                        <div style="font-size: 14px; color: var(--text-primary);">Сохраните эти данные! Пароль показывается только один раз и не может быть восстановлен.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 16px 32px 32px; justify-content: center;">
+                <button class="btn-primary-large" onclick="closeCredentialsModal()" style="min-width: 200px;">
+                    <i data-lucide="check" style="width: 20px; height: 20px;"></i>
+                    Понятно, я сохранил
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Global State
         let selectedPlan = 'pro';
@@ -2107,6 +2164,21 @@
             document.getElementById('confirm-modal').classList.remove('show');
         }
 
+        // Credentials Modal
+        function closeCredentialsModal() {
+            document.getElementById('credentials-modal').classList.remove('show');
+            showToast('Учетные данные сохранены! Теперь войдите в систему.', 'success');
+        }
+
+        function copyToClipboard(text, label) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(`${label} скопирован в буфер обмена!`, 'success');
+            }).catch(err => {
+                console.error('Copy failed:', err);
+                showToast('Не удалось скопировать', 'error');
+            });
+        }
+
         // Loading Overlay
         function showLoadingOverlay(message = 'Loading...') {
             const overlay = document.createElement('div');
@@ -2417,16 +2489,15 @@
 
                 if (data.success) {
                     closeQuickAdd();
-                    const msg = data.credentials 
-                        ? `${businessData.name} создан! 📧 Email: ${data.credentials.email}, 🔑 Пароль: ${data.credentials.password}` 
-                        : `${businessData.name} создан успешно!`;
-                    showToast(msg, 'success');
                     
-                    // Show credentials in alert too
+                    // Show credentials in beautiful modal
                     if (data.credentials) {
-                        setTimeout(() => {
-                            alert(`✅ Бизнес создан!\n\n📧 Email: ${data.credentials.email}\n🔑 Пароль: ${data.credentials.password}\n\n⚠️ Сохраните эти данные! Пароль показывается только один раз.`);
-                        }, 500);
+                        document.getElementById('cred-email').textContent = data.credentials.email;
+                        document.getElementById('cred-password').textContent = data.credentials.password;
+                        document.getElementById('credentials-modal').classList.add('show');
+                        lucide.createIcons();
+                    } else {
+                        showToast(`${businessData.name} создан успешно!`, 'success');
                     }
                     
                     loadBusinessesDashboard();
