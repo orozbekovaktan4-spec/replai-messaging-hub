@@ -12,6 +12,7 @@ import { connectionManager } from './connection-manager.js';
 import { analyticsManager } from './analytics-manager.js';
 // Database imports (Prisma)
 import * as db from './db.js';
+import { prisma } from './db.js';
 
 // Load environment variables
 dotenv.config();
@@ -4180,13 +4181,8 @@ app.post('/api/admin/businesses', async (req, res) => {
   try {
     // Temporarily allow without session for testing
     // TODO: Add proper admin authentication later
-    //const sessionId = req.headers['x-session-id'];
-    //const session = sessions.get(sessionId);
-    //if (!session) {
-    //  return res.status(401).json({ error: 'Unauthorized' });
-    //}
-
-    const { name, ownerName, email, password, phone, address, instagram, city, ownerEmail, industry, plan } = req.body;
+    
+    const { name, ownerName, email, password, phone, industry, plan, ownerEmail } = req.body;
 
     // Support both 'email' and 'ownerEmail' from the form
     const businessEmail = email || ownerEmail;
@@ -4195,29 +4191,44 @@ app.post('/api/admin/businesses', async (req, res) => {
     const businessPassword = password || Math.random().toString(36).slice(-8);
 
     if (!name || !businessEmail) {
-      return res.status(400).json({ error: 'Business name and email are required' });
+      return res.status(400).json({ 
+        success: false,
+        error: 'Business name and email are required' 
+      });
     }
 
     // Check if email already exists
-    const existingBusiness = await db.getBusinessByEmail(businessEmail);
+    const existingBusiness = await db.findBusinessByEmail(businessEmail);
     if (existingBusiness) {
-      return res.status(400).json({ error: 'Email already exists' });
+      return res.status(400).json({ 
+        success: false,
+        error: 'Email already exists' 
+      });
     }
+
+    // Generate business ID
+    const businessId = `biz_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
 
     // Hash password
     const passwordHash = await bcrypt.hash(businessPassword, 10);
 
-    // Create new business
-    const newBusiness = await db.createBusiness({
-      name,
-      email: businessEmail,
-      password: passwordHash,
-      ownerName: ownerName || name,
-      phone: phone || '',
-      instagram: instagram || '',
-      industry: industry || '',
-      plan: plan || 'free',
-      status: 'active'
+    // Create new business using Prisma directly
+    const newBusiness = await prisma.business.create({
+      data: {
+        id: businessId,
+        name: name.trim(),
+        email: businessEmail.trim(),
+        password: passwordHash,
+        ownerName: ownerName ? ownerName.trim() : name.trim(),
+        industry: industry || null,
+        plan: plan || 'free',
+        status: 'active',
+        messageCount: 0,
+        whatsapp: null,
+        instagram: phone ? JSON.stringify({ phone }) : null,
+        telegram: null,
+        updatedAt: new Date()
+      },
     });
 
     console.log(`[Admin] New business created: ${name} (${businessEmail})`);
@@ -4227,13 +4238,17 @@ app.post('/api/admin/businesses', async (req, res) => {
       business: newBusiness,
       credentials: {
         email: businessEmail,
-        password: businessPassword // Send back generated password (only shown once)
+        password: businessPassword
       },
-      message: `Business created! Login: ${businessEmail}, Password: ${businessPassword}`
+      message: `Business created! Email: ${businessEmail}, Password: ${businessPassword}`
     });
   } catch (error) {
     console.error('[Admin] Create business error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ 
+      success: false,
+      error: 'Internal server error',
+      details: error.message 
+    });
   }
 });
 
