@@ -14,10 +14,15 @@ class AIKeyManager {
 
   loadKeysFile() {
     try {
+      // Check if file exists first
+      if (!fs.existsSync(this.keysFilePath)) {
+        console.log('⚠️  api-keys.json not found - using environment variables for API keys');
+        return { replaiKeys: [], aiProviderKeys: [] };
+      }
       const data = fs.readFileSync(this.keysFilePath, 'utf8');
       return JSON.parse(data);
     } catch (error) {
-      console.error('Failed to load api-keys.json:', error);
+      console.log('⚠️  Could not load api-keys.json - using environment variables for API keys');
       return { replaiKeys: [], aiProviderKeys: [] };
     }
   }
