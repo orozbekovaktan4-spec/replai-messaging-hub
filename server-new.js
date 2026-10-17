@@ -4601,45 +4601,58 @@ app.post('/api/admin/businesses', async (req, res) => {
 app.put('/api/admin/businesses/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, ownerName, ownerEmail, phone, country, plan, active } = req.body;
+    const { name, ownerName, ownerEmail, phone, country, plan, active, instagram, telegram, whatsapp } = req.body;
 
-    const businesses = await db.getAllBusinesses();
-    const business = businesses.find(b => b.id === id);
-
+    // Find business
+    const business = await db.findBusinessById(id);
     if (!business) {
-      return res.status(404).json({ error: 'Business not found' });
+      return res.status(404).json({ success: false, error: 'Business not found' });
     }
 
-    // Update fields
-    if (name) business.name = name;
-    if (ownerName) {
-      business.ownerName = ownerName;
-      business.owner_name = ownerName;
-    }
+    // Prepare update data
+    const updateData = {};
+    
+    if (name) updateData.name = name;
+    if (ownerName) updateData.ownerName = ownerName;
     if (ownerEmail) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(ownerEmail)) {
-        return res.status(400).json({ error: 'Invalid email format' });
+        return res.status(400).json({ success: false, error: 'Invalid email format' });
       }
-      business.ownerEmail = ownerEmail;
-      business.owner_email = ownerEmail;
+      updateData.email = ownerEmail;
     }
-    if (phone !== undefined) business.phone = phone;
-    if (country) business.country = country;
-    if (plan) business.plan = plan;
-    if (typeof active === 'boolean') business.active = active;
-    // Data saved automatically via Prisma
+    if (phone !== undefined) updateData.phone = phone;
+    if (plan) updateData.plan = plan;
+    if (typeof active === 'boolean') updateData.status = active ? 'active' : 'inactive';
+    
+    // Handle platform connections
+    if (instagram !== undefined) {
+      updateData.instagram = instagram ? JSON.stringify(instagram) : null;
+    }
+    if (telegram !== undefined) {
+      updateData.telegram = telegram ? JSON.stringify(telegram) : null;
+    }
+    if (whatsapp !== undefined) {
+      updateData.whatsapp = whatsapp ? JSON.stringify(whatsapp) : null;
+    }
+    
+    // Update in database
+    const updatedBusiness = await db.updateBusiness(id, updateData);
 
-    console.log(`[Admin] Business updated: ${id}`);
+    console.log(`[Admin] Business updated: ${id} - Platforms: ${Object.keys(updateData).filter(k => ['instagram','telegram','whatsapp'].includes(k)).join(',')}`);
 
     res.json({
       success: true,
-      data: business,
+      data: updatedBusiness,
       message: 'Business updated successfully'
     });
   } catch (error) {
     console.error('[Admin] Error updating business:', error);
-    res.status(500).json({ error: 'Failed to update business' });
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to update business',
+      details: error.message 
+    });
   }
 });
 
@@ -4866,45 +4879,58 @@ app.post('/api/admin/businesses', async (req, res) => {
 app.put('/api/admin/businesses/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, ownerName, ownerEmail, phone, country, plan, active } = req.body;
+    const { name, ownerName, ownerEmail, phone, country, plan, active, instagram, telegram, whatsapp } = req.body;
 
-    const businesses = await db.getAllBusinesses();
-    const business = businesses.find(b => b.id === id);
-
+    // Find business
+    const business = await db.findBusinessById(id);
     if (!business) {
-      return res.status(404).json({ error: 'Business not found' });
+      return res.status(404).json({ success: false, error: 'Business not found' });
     }
 
-    // Update fields
-    if (name) business.name = name;
-    if (ownerName) {
-      business.ownerName = ownerName;
-      business.owner_name = ownerName;
-    }
+    // Prepare update data
+    const updateData = {};
+    
+    if (name) updateData.name = name;
+    if (ownerName) updateData.ownerName = ownerName;
     if (ownerEmail) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(ownerEmail)) {
-        return res.status(400).json({ error: 'Invalid email format' });
+        return res.status(400).json({ success: false, error: 'Invalid email format' });
       }
-      business.ownerEmail = ownerEmail;
-      business.owner_email = ownerEmail;
+      updateData.email = ownerEmail;
     }
-    if (phone !== undefined) business.phone = phone;
-    if (country) business.country = country;
-    if (plan) business.plan = plan;
-    if (typeof active === 'boolean') business.active = active;
-    // Data saved automatically via Prisma
+    if (phone !== undefined) updateData.phone = phone;
+    if (plan) updateData.plan = plan;
+    if (typeof active === 'boolean') updateData.status = active ? 'active' : 'inactive';
+    
+    // Handle platform connections
+    if (instagram !== undefined) {
+      updateData.instagram = instagram ? JSON.stringify(instagram) : null;
+    }
+    if (telegram !== undefined) {
+      updateData.telegram = telegram ? JSON.stringify(telegram) : null;
+    }
+    if (whatsapp !== undefined) {
+      updateData.whatsapp = whatsapp ? JSON.stringify(whatsapp) : null;
+    }
+    
+    // Update in database
+    const updatedBusiness = await db.updateBusiness(id, updateData);
 
-    console.log(`[Admin] Business updated: ${id}`);
+    console.log(`[Admin] Business updated: ${id} - Platforms: ${Object.keys(updateData).filter(k => ['instagram','telegram','whatsapp'].includes(k)).join(',')}`);
 
     res.json({
       success: true,
-      data: business,
+      data: updatedBusiness,
       message: 'Business updated successfully'
     });
   } catch (error) {
     console.error('[Admin] Error updating business:', error);
-    res.status(500).json({ error: 'Failed to update business' });
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to update business',
+      details: error.message 
+    });
   }
 });
 
