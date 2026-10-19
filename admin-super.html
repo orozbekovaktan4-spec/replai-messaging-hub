@@ -1074,21 +1074,21 @@
             </div>
         </div>
         <div class="menu-section">
-            <div class="section-header">MANAGEMENT</div>
+            <div class="section-header" data-i18n="nav_management">MANAGEMENT</div>
             <div class="menu-item active" onclick="showSection('businesses')">
                 <i data-lucide="building-2" style="width: 18px; height: 18px;"></i>
-                <span>Businesses Management</span>
+                <span data-i18n="nav_businesses">Businesses Management</span>
             </div>
             <div class="menu-item" onclick="showSection('analytics')">
                 <i data-lucide="bar-chart-3" style="width: 18px; height: 18px;"></i>
-                <span>Platform Analytics</span>
+                <span data-i18n="nav_analytics">Platform Analytics</span>
             </div>
         </div>
         <div class="menu-section">
-            <div class="section-header">CONFIGURATION</div>
+            <div class="section-header" data-i18n="nav_configuration">CONFIGURATION</div>
             <div class="menu-item" onclick="showSection('settings')">
                 <i data-lucide="settings" style="width: 18px; height: 18px;"></i>
-                <span>System Settings</span>
+                <span data-i18n="nav_settings">System Settings</span>
             </div>
         </div>
         <div style="margin-top: auto; padding: 16px 20px; border-top: 1px solid var(--border-color);">
@@ -1097,7 +1097,7 @@
                     <span style="position: absolute; width: 100%; height: 100%; border-radius: 50%; background: var(--success); animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></span>
                     <span style="position: relative; width: 8px; height: 8px; border-radius: 50%; background: var(--success);"></span>
                 </span>
-                All systems operational
+                <span data-i18n="status_operational">All systems operational</span>
             </div>
         </div>
     </div>
@@ -1121,9 +1121,13 @@
                     <i data-lucide="sun" id="theme-icon-light" style="width: 16px; height: 16px; display: none;"></i>
                     <i data-lucide="moon" id="theme-icon-dark" style="width: 16px; height: 16px;"></i>
                 </button>
+                <button class="theme-toggle" onclick="toggleLanguage()" title="Switch Language" style="display: flex; align-items: center; gap: 6px; width: auto; padding: 0 12px;">
+                    <span id="lang-icon" style="font-size: 16px;">🇷🇺</span>
+                    <span id="lang-text" style="font-size: 13px; font-weight: 600;">RU</span>
+                </button>
                 <button class="btn-logout" onclick="handleLogout()">
                     <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
-                    <span>Logout</span>
+                    <span data-i18n="btn_logout">Logout</span>
                 </button>
             </div>
         </div>
@@ -1133,12 +1137,12 @@
             <!-- Header with Add Button -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
                 <div>
-                    <h1 style="margin-bottom: 4px;">Businesses Management</h1>
-                    <p style="font-size: 14px; color: var(--text-secondary);">Onboard, monitor, and manage every business on the platform.</p>
+                    <h1 style="margin-bottom: 4px;" data-i18n="business_title">Businesses Management</h1>
+                    <p style="font-size: 14px; color: var(--text-secondary);" data-i18n="business_subtitle">Onboard, monitor, and manage every business on the platform.</p>
                 </div>
                 <button class="btn-primary-large" onclick="showQuickAddBusiness()">
                     <i data-lucide="plus" style="width: 20px; height: 20px;"></i>
-                    Add New Business
+                    <span data-i18n="add_business">Add New Business</span>
                 </button>
             </div>
 
@@ -1146,22 +1150,22 @@
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-number" id="businesses-total">0</div>
-                    <div class="stat-label">Total Businesses</div>
+                    <div class="stat-label" data-i18n="stat_total">Total Businesses</div>
                     <div class="stat-trend positive" id="trend-total">—</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-number" id="businesses-active">0</div>
-                    <div class="stat-label">Active Today</div>
+                    <div class="stat-label" data-i18n="stat_active">Active Today</div>
                     <div class="stat-trend positive" id="trend-active">—</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-number" id="businesses-messages">0</div>
-                    <div class="stat-label">Messages</div>
+                    <div class="stat-label" data-i18n="stat_messages">Messages</div>
                     <div class="stat-trend positive" id="trend-messages">—</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-number" id="businesses-health">0%</div>
-                    <div class="stat-label">Health Score</div>
+                    <div class="stat-label" data-i18n="stat_health">Health Score</div>
                     <div class="stat-trend positive" id="trend-health">—</div>
                 </div>
             </div>
@@ -1169,24 +1173,24 @@
             <!-- Filters -->
             <div class="filters-bar">
                 <div class="filter-group">
-                    <label>Status</label>
+                    <label data-i18n="filter_status">Status</label>
                     <select id="filter-status" onchange="applyFilters()">
-                        <option value="all">All</option>
-                        <option value="active">Active</option>
-                        <option value="trial">Trial</option>
+                        <option value="all" data-i18n="filter_all">All</option>
+                        <option value="active" data-i18n="filter_active">Active</option>
+                        <option value="trial" data-i18n="filter_trial">Trial</option>
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label>Plan</label>
+                    <label data-i18n="filter_plan">Plan</label>
                     <select id="filter-plan" onchange="applyFilters()">
-                        <option value="all">All Plans</option>
-                        <option value="free">Free</option>
-                        <option value="pro">Pro</option>
+                        <option value="all" data-i18n="filter_all_plans">All Plans</option>
+                        <option value="free" data-i18n="plan_free">Free</option>
+                        <option value="pro" data-i18n="plan_pro">Pro</option>
                     </select>
                 </div>
                 <div class="filter-group search-group">
-                    <label>Search</label>
-                    <input type="search" id="search-businesses" placeholder="Search businesses..." oninput="applyFilters()">
+                    <label data-i18n="filter_search">Search</label>
+                    <input type="search" id="search-businesses" placeholder="Search businesses..." oninput="applyFilters()" data-i18n="search_placeholder">
                 </div>
                 <div class="filter-actions">
                     <button class="btn-icon" onclick="resetFilters()" title="Reset">↻</button>
@@ -1198,14 +1202,14 @@
                 <table class="datatable">
                     <thead>
                         <tr>
-                            <th>Business</th>
-                            <th>Owner</th>
-                            <th>Status</th>
-                            <th>Plan</th>
-                            <th>Channels</th>
-                            <th>Messages</th>
-                            <th>Health</th>
-                            <th>Actions</th>
+                            <th data-i18n="th_business">Business</th>
+                            <th data-i18n="th_owner">Owner</th>
+                            <th data-i18n="th_status">Status</th>
+                            <th data-i18n="th_plan">Plan</th>
+                            <th data-i18n="th_channels">Channels</th>
+                            <th data-i18n="th_messages">Messages</th>
+                            <th data-i18n="th_health">Health</th>
+                            <th data-i18n="th_actions">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="businesses-table-body">
@@ -1213,7 +1217,7 @@
                             <td colspan="8">
                                 <div class="loading-spinner">
                                     <div class="spinner"></div>
-                                    <div class="loading-text">Loading businesses...</div>
+                                    <div class="loading-text" data-i18n="msg_loading_businesses">Loading businesses...</div>
                                 </div>
                             </td>
                         </tr>
@@ -1310,8 +1314,8 @@
         <!-- Settings Section -->
         <div id="settings-section" class="content-section">
             <div style="margin-bottom: 32px;">
-                <h1 style="margin-bottom: 4px;">System Settings</h1>
-                <p style="font-size: 14px; color: var(--text-secondary);">Configure platform defaults, security, and billing.</p>
+                <h1 style="margin-bottom: 4px;" data-i18n="settings_title">System Settings</h1>
+                <p style="font-size: 14px; color: var(--text-secondary);" data-i18n="settings_subtitle">Configure platform defaults, security, and billing.</p>
             </div>
 
             <div style="display: grid; grid-template-columns: 240px 1fr; gap: 32px;">
@@ -1319,23 +1323,23 @@
                 <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; height: fit-content;">
                     <div class="settings-nav-item active" onclick="showSettingsTab('general')">
                         <i data-lucide="settings" style="width: 18px; height: 18px;"></i>
-                        <span>General</span>
+                        <span data-i18n="settings_general">General</span>
                     </div>
                     <div class="settings-nav-item" onclick="showSettingsTab('security')">
                         <i data-lucide="lock" style="width: 18px; height: 18px;"></i>
-                        <span>Security</span>
+                        <span data-i18n="settings_security">Security</span>
                     </div>
                     <div class="settings-nav-item" onclick="showSettingsTab('notifications')">
                         <i data-lucide="bell" style="width: 18px; height: 18px;"></i>
-                        <span>Notifications</span>
+                        <span data-i18n="settings_notifications">Notifications</span>
                     </div>
                     <div class="settings-nav-item" onclick="showSettingsTab('api')">
                         <i data-lucide="key" style="width: 18px; height: 18px;"></i>
-                        <span>API Keys</span>
+                        <span data-i18n="settings_api">API Keys</span>
                     </div>
                     <div class="settings-nav-item" onclick="showSettingsTab('billing')">
                         <i data-lucide="credit-card" style="width: 18px; height: 18px;"></i>
-                        <span>Billing</span>
+                        <span data-i18n="settings_billing">Billing</span>
                     </div>
                 </div>
 
@@ -1343,18 +1347,18 @@
                 <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 12px; padding: 32px;">
                     <!-- General Tab -->
                     <div id="settings-general" class="settings-tab active">
-                        <h2 style="margin-bottom: 8px;">General Settings</h2>
-                        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 32px;">Basic configuration that applies across the whole platform.</p>
+                        <h2 style="margin-bottom: 8px;" data-i18n="general_title">General Settings</h2>
+                        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 32px;" data-i18n="general_subtitle">Basic configuration that applies across the whole platform.</p>
 
                         <div style="display: flex; flex-direction: column; gap: 24px;">
                             <div>
-                                <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;">Platform Name</label>
+                                <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;" data-i18n="general_platform_name">Platform Name</label>
                                 <input type="text" value="REPLAI" style="width: 100%; max-width: 500px; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
-                                <p style="font-size: 12px; color: var(--text-tertiary); margin-top: 6px;">Shown in emails, the business dashboard, and the browser tab.</p>
+                                <p style="font-size: 12px; color: var(--text-tertiary); margin-top: 6px;" data-i18n="general_platform_help">Shown in emails, the business dashboard, and the browser tab.</p>
                             </div>
 
                             <div>
-                                <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;">Default Language</label>
+                                <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;" data-i18n="general_default_language">Default Language</label>
                                 <select style="width: 100%; max-width: 500px; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; cursor: pointer;">
                                     <option>English</option>
                                     <option>Русский</option>
@@ -1363,7 +1367,7 @@
                             </div>
 
                             <div>
-                                <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;">Time Zone</label>
+                                <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;" data-i18n="general_timezone">Time Zone</label>
                                 <select style="width: 100%; max-width: 500px; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; cursor: pointer;">
                                     <option>(UTC+05:00) Tashkent</option>
                                     <option>(UTC+03:00) Moscow</option>
@@ -1375,7 +1379,7 @@
                             <div style="padding-top: 16px;">
                                 <button class="btn-primary-large" onclick="saveGeneralSettings()">
                                     <i data-lucide="check" style="width: 20px; height: 20px;"></i>
-                                    Save Changes
+                                    <span data-i18n="btn_save">Save Changes</span>
                                 </button>
                             </div>
                         </div>
@@ -1383,16 +1387,16 @@
 
                     <!-- Security Tab -->
                     <div id="settings-security" class="settings-tab">
-                        <h2 style="margin-bottom: 8px;">Security Settings</h2>
-                        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 32px;">Protect the super admin account.</p>
+                        <h2 style="margin-bottom: 8px;" data-i18n="security_title">Security Settings</h2>
+                        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 32px;" data-i18n="security_subtitle">Protect the super admin account.</p>
 
                         <div style="display: flex; flex-direction: column; gap: 32px;">
                             <!-- Two-Factor Authentication -->
                             <div style="padding-bottom: 24px; border-bottom: 1px solid var(--border-color);">
                                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
                                     <div>
-                                        <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">Two-Factor Authentication</h3>
-                                        <p style="font-size: 14px; color: var(--text-secondary);">Require a one-time code from an authenticator app at sign in.</p>
+                                        <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 4px;" data-i18n="security_2fa">Two-Factor Authentication</h3>
+                                        <p style="font-size: 14px; color: var(--text-secondary);" data-i18n="security_2fa_desc">Require a one-time code from an authenticator app at sign in.</p>
                                     </div>
                                     <label class="toggle-switch">
                                         <input type="checkbox" id="toggle-2fa">
@@ -1405,8 +1409,8 @@
                             <div style="padding-bottom: 24px; border-bottom: 1px solid var(--border-color);">
                                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
                                     <div>
-                                        <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">Login Notifications</h3>
-                                        <p style="font-size: 14px; color: var(--text-secondary);">Get an email whenever a new device signs in to this account.</p>
+                                        <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 4px;" data-i18n="security_login_notif">Login Notifications</h3>
+                                        <p style="font-size: 14px; color: var(--text-secondary);" data-i18n="security_login_notif_desc">Get an email whenever a new device signs in to this account.</p>
                                     </div>
                                     <label class="toggle-switch">
                                         <input type="checkbox" id="toggle-login-notif" checked>
@@ -1417,23 +1421,23 @@
 
                             <!-- Change Password -->
                             <div>
-                                <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 24px;">Change Password</h3>
-                                
+                                <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 24px;" data-i18n="security_change_password">Change Password</h3>
+
                                 <div style="display: flex; flex-direction: column; gap: 20px;">
                                     <div>
-                                        <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;">Current password</label>
+                                        <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;" data-i18n="security_current_password">Current password</label>
                                         <input type="password" id="current-password" placeholder="Enter current password" style="width: 100%; max-width: 500px; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
                                     </div>
 
                                     <div>
-                                        <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;">New password</label>
+                                        <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;" data-i18n="security_new_password">New password</label>
                                         <input type="password" id="new-password" placeholder="Enter new password" style="width: 100%; max-width: 500px; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
-                                        <p style="font-size: 12px; color: var(--text-tertiary); margin-top: 6px;">Minimum 8 characters.</p>
+                                        <p style="font-size: 12px; color: var(--text-tertiary); margin-top: 6px;" data-i18n="security_password_help">Minimum 8 characters.</p>
                                     </div>
 
                                     <div style="padding-top: 8px;">
                                         <button class="btn-primary-large" onclick="updatePassword()">
-                                            Update Password
+                                            <span data-i18n="security_update_password">Update Password</span>
                                         </button>
                                     </div>
                                 </div>
@@ -1443,18 +1447,18 @@
 
                     <!-- Notifications Tab -->
                     <div id="settings-notifications" class="settings-tab">
-                        <h2 style="margin-bottom: 8px;">Notification Preferences</h2>
-                        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 32px;">Choose which updates land in your inbox.</p>
+                        <h2 style="margin-bottom: 8px;" data-i18n="notif_title">Notification Preferences</h2>
+                        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 32px;" data-i18n="notif_subtitle">Choose which updates land in your inbox.</p>
 
                         <div style="display: flex; flex-direction: column; gap: 24px;">
-                            <h3 style="font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary);">EMAIL NOTIFICATIONS</h3>
+                            <h3 style="font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary);" data-i18n="notif_email">EMAIL NOTIFICATIONS</h3>
 
                             <!-- New Business Registration -->
                             <div style="padding-bottom: 20px; border-bottom: 1px solid var(--border-color);">
                                 <div style="display: flex; align-items: center; justify-content: space-between;">
                                     <div>
-                                        <h4 style="font-size: 15px; font-weight: 600; margin-bottom: 4px;">New Business Registration</h4>
-                                        <p style="font-size: 14px; color: var(--text-secondary);">When a new business signs up on the platform.</p>
+                                        <h4 style="font-size: 15px; font-weight: 600; margin-bottom: 4px;" data-i18n="notif_new_business">New Business Registration</h4>
+                                        <p style="font-size: 14px; color: var(--text-secondary);" data-i18n="notif_new_business_desc">When a new business signs up on the platform.</p>
                                     </div>
                                     <label class="toggle-switch">
                                         <input type="checkbox" checked>
@@ -1467,8 +1471,8 @@
                             <div style="padding-bottom: 20px; border-bottom: 1px solid var(--border-color);">
                                 <div style="display: flex; align-items: center; justify-content: space-between;">
                                     <div>
-                                        <h4 style="font-size: 15px; font-weight: 600; margin-bottom: 4px;">System Alerts</h4>
-                                        <p style="font-size: 14px; color: var(--text-secondary);">Outages, degraded performance, and quota warnings.</p>
+                                        <h4 style="font-size: 15px; font-weight: 600; margin-bottom: 4px;" data-i18n="notif_system_alerts">System Alerts</h4>
+                                        <p style="font-size: 14px; color: var(--text-secondary);" data-i18n="notif_system_alerts_desc">Outages, degraded performance, and quota warnings.</p>
                                     </div>
                                     <label class="toggle-switch">
                                         <input type="checkbox" checked>
@@ -1481,8 +1485,8 @@
                             <div style="padding-bottom: 20px; border-bottom: 1px solid var(--border-color);">
                                 <div style="display: flex; align-items: center; justify-content: space-between;">
                                     <div>
-                                        <h4 style="font-size: 15px; font-weight: 600; margin-bottom: 4px;">Weekly Reports</h4>
-                                        <p style="font-size: 14px; color: var(--text-secondary);">A Monday summary of growth and message volume.</p>
+                                        <h4 style="font-size: 15px; font-weight: 600; margin-bottom: 4px;" data-i18n="notif_weekly_reports">Weekly Reports</h4>
+                                        <p style="font-size: 14px; color: var(--text-secondary);" data-i18n="notif_weekly_reports_desc">A Monday summary of growth and message volume.</p>
                                     </div>
                                     <label class="toggle-switch">
                                         <input type="checkbox">
@@ -1495,29 +1499,29 @@
 
                     <!-- API Tab -->
                     <div id="settings-api" class="settings-tab">
-                        <h2 style="margin-bottom: 8px;">API Keys</h2>
-                        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 48px;">Manage all API keys for REPLAI platform access and AI provider integrations.</p>
+                        <h2 style="margin-bottom: 8px;" data-i18n="api_title">API Keys</h2>
+                        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 48px;" data-i18n="api_subtitle">Manage all API keys for REPLAI platform access and AI provider integrations.</p>
 
                         <!-- REPLAI API Keys Subsection -->
                         <div style="margin-bottom: 48px;">
                             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
                                 <i data-lucide="shield" style="width: 24px; height: 24px; color: var(--primary);"></i>
-                                <h3 style="font-size: 18px; font-weight: 600;">REPLAI API Keys</h3>
+                                <h3 style="font-size: 18px; font-weight: 600;" data-i18n="api_replai_title">REPLAI API Keys</h3>
                             </div>
-                            <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 24px;">Keys grant full access to the REPLAI API for external integrations. Keep them secret.</p>
+                            <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 24px;" data-i18n="api_replai_desc">Keys grant full access to the REPLAI API for external integrations. Keep them secret.</p>
 
                             <!-- Production API Key -->
                             <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
                                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
                                     <div style="display: flex; align-items: center; gap: 12px;">
-                                        <h4 style="font-size: 16px; font-weight: 600;">Production API Key</h4>
+                                        <h4 style="font-size: 16px; font-weight: 600;" data-i18n="api_production_key">Production API Key</h4>
                                         <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; background: var(--success-light); color: var(--success);">
                                             <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--success);"></span>
-                                            Active
+                                            <span data-i18n="api_active">Active</span>
                                         </span>
                                     </div>
                                     <button style="padding: 8px 16px; border-radius: 8px; border: none; background: var(--danger); color: white; font-size: 13px; font-weight: 600; cursor: pointer;" onclick="revokeAPIKey()">
-                                        Revoke
+                                        <span data-i18n="api_revoke">Revoke</span>
                                     </button>
                                 </div>
 
@@ -1534,13 +1538,13 @@
                                 </div>
 
                                 <p style="font-size: 12px; color: var(--text-tertiary); margin-top: 12px;">
-                                    Created: Oct 11, 2026 • Last used: 2 hours ago
+                                    <span data-i18n="api_created">Created:</span> Oct 11, 2026 • <span data-i18n="api_last_used">Last used:</span> 2 hours ago
                                 </p>
                             </div>
 
                             <button class="btn-primary-large" onclick="generateNewAPIKey()">
                                 <i data-lucide="plus" style="width: 20px; height: 20px;"></i>
-                                Generate New Key
+                                <span data-i18n="api_generate">Generate New Key</span>
                             </button>
                         </div>
 
@@ -1548,13 +1552,13 @@
                         <div style="padding-top: 48px; border-top: 2px solid var(--border-color);">
                             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
                                 <i data-lucide="cpu" style="width: 24px; height: 24px; color: var(--primary);"></i>
-                                <h3 style="font-size: 18px; font-weight: 600;">AI Provider Keys</h3>
+                                <h3 style="font-size: 18px; font-weight: 600;" data-i18n="api_ai_providers">AI Provider Keys</h3>
                             </div>
                             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
-                                <p style="font-size: 14px; color: var(--text-secondary);">Manage API keys for Groq, OpenRouter, Together, and HuggingFace with automatic rotation.</p>
+                                <p style="font-size: 14px; color: var(--text-secondary);" data-i18n="api_ai_providers_desc">Manage API keys for Groq, OpenRouter, Together, and HuggingFace with automatic rotation.</p>
                                 <button class="btn-primary-large" onclick="showAddAIKeyModal()">
                                     <i data-lucide="plus" style="width: 20px; height: 20px;"></i>
-                                    Add AI Provider Key
+                                    <span data-i18n="api_add_ai_key">Add AI Provider Key</span>
                                 </button>
                             </div>
 
@@ -1563,8 +1567,8 @@
                                 <!-- Keys will be loaded here -->
                                 <div style="text-align: center; padding: 60px 20px; background: var(--bg-secondary); border: 1px dashed var(--border-color); border-radius: 12px;">
                                     <i data-lucide="key" style="width: 48px; height: 48px; color: var(--text-tertiary); margin-bottom: 16px;"></i>
-                                    <p style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">No AI provider keys yet</p>
-                                    <p style="font-size: 14px; color: var(--text-secondary);">Add your first Groq, OpenRouter, Together, or HuggingFace key to enable automatic rotation.</p>
+                                    <p style="font-size: 16px; font-weight: 600; margin-bottom: 8px;" data-i18n="api_no_keys">No AI provider keys yet</p>
+                                    <p style="font-size: 14px; color: var(--text-secondary);" data-i18n="api_no_keys_desc">Add your first Groq, OpenRouter, Together, or HuggingFace key to enable automatic rotation.</p>
                                 </div>
                             </div>
                         </div>
@@ -1572,45 +1576,45 @@
 
                     <!-- Billing Tab -->
                     <div id="settings-billing" class="settings-tab">
-                        <h2 style="margin-bottom: 8px;">Billing & Usage</h2>
-                        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 32px;">Your subscription and this month's consumption.</p>
+                        <h2 style="margin-bottom: 8px;" data-i18n="billing_title">Billing & Usage</h2>
+                        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 32px;" data-i18n="billing_subtitle">Your subscription and this month's consumption.</p>
 
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
                             <!-- Current Plan Card -->
                             <div style="background: var(--bg-primary); border: 2px solid var(--primary); border-radius: 16px; padding: 28px;">
-                                <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--primary); margin-bottom: 12px;">PROFESSIONAL PLAN</div>
+                                <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--primary); margin-bottom: 12px;" data-i18n="billing_plan">PROFESSIONAL PLAN</div>
                                 <div style="display: flex; align-items: baseline; margin-bottom: 20px;">
                                     <span style="font-size: 40px; font-weight: 700;">$99</span>
-                                    <span style="font-size: 16px; color: var(--text-secondary);">/month</span>
+                                    <span style="font-size: 16px; color: var(--text-secondary);" data-i18n="billing_per_month">/month</span>
                                 </div>
 
                                 <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
                                     <div style="display: flex; align-items: center; gap: 10px; font-size: 14px;">
                                         <i data-lucide="check" style="width: 18px; height: 18px; color: var(--success);"></i>
-                                        <span>100,000 messages per month</span>
+                                        <span data-i18n="billing_feature1">100,000 messages per month</span>
                                     </div>
                                     <div style="display: flex; align-items: center; gap: 10px; font-size: 14px;">
                                         <i data-lucide="check" style="width: 18px; height: 18px; color: var(--success);"></i>
-                                        <span>Unlimited businesses</span>
+                                        <span data-i18n="billing_feature2">Unlimited businesses</span>
                                     </div>
                                     <div style="display: flex; align-items: center; gap: 10px; font-size: 14px;">
                                         <i data-lucide="check" style="width: 18px; height: 18px; color: var(--success);"></i>
-                                        <span>All messaging channels</span>
+                                        <span data-i18n="billing_feature3">All messaging channels</span>
                                     </div>
                                     <div style="display: flex; align-items: center; gap: 10px; font-size: 14px;">
                                         <i data-lucide="check" style="width: 18px; height: 18px; color: var(--success);"></i>
-                                        <span>Priority support & SLA</span>
+                                        <span data-i18n="billing_feature4">Priority support & SLA</span>
                                     </div>
                                 </div>
 
                                 <button class="btn-primary-large" style="width: 100%;" onclick="upgradePlan()">
-                                    Upgrade Plan
+                                    <span data-i18n="billing_upgrade">Upgrade Plan</span>
                                 </button>
                             </div>
 
                             <!-- Usage This Month -->
                             <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 16px; padding: 28px;">
-                                <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 24px;">Usage This Month</h3>
+                                <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 24px;" data-i18n="billing_usage">Usage This Month</h3>
 
                                 <!-- Progress Bar -->
                                 <div style="margin-bottom: 12px;">
@@ -1620,16 +1624,16 @@
                                 </div>
 
                                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-                                    <span style="font-size: 16px; font-weight: 600;">65,000 / 100,000 messages</span>
+                                    <span style="font-size: 16px; font-weight: 600;">65,000 / 100,000 <span data-i18n="billing_messages">messages</span></span>
                                     <span style="font-size: 16px; font-weight: 600; color: var(--primary);">65%</span>
                                 </div>
 
-                                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 32px;">
+                                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 32px;" data-i18n="billing_resets">
                                     Resets on Nov 1, 2026. You'll get an alert at 80% usage.
                                 </p>
 
                                 <button style="padding: 12px 24px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; font-weight: 600; cursor: pointer; width: 100%;" onclick="viewInvoices()">
-                                    View Invoices
+                                    <span data-i18n="billing_invoices">View Invoices</span>
                                 </button>
                             </div>
                         </div>
@@ -1643,85 +1647,85 @@
     <div id="quick-add-modal" class="modal">
         <div class="modal-content wizard-modal">
             <div class="wizard-header">
-                <h2>Add New Business</h2>
+                <h2 data-i18n="modal_add_title">Add New Business</h2>
                 <div class="wizard-steps">
-                    <div class="step active" id="step-indicator-1">1. Basic Info</div>
-                    <div class="step" id="step-indicator-2">2. Contact</div>
-                    <div class="step" id="step-indicator-3">3. Setup</div>
+                    <div class="step active" id="step-indicator-1" data-i18n="wizard_step1">1. Basic Info</div>
+                    <div class="step" id="step-indicator-2" data-i18n="wizard_step2">2. Contact</div>
+                    <div class="step" id="step-indicator-3" data-i18n="wizard_step3">3. Setup</div>
                 </div>
             </div>
 
             <!-- Step 1: Basic Info -->
             <div class="wizard-step active" id="wizard-step-1">
                 <div class="form-group-large">
-                    <label>Business Name *</label>
-                    <input type="text" id="quick-business-name" placeholder="e.g., Aziz Barber Shop" autofocus>
+                    <label data-i18n="form_business_name">Business Name *</label>
+                    <input type="text" id="quick-business-name" data-i18n="form_business_placeholder" placeholder="e.g., Aziz Barber Shop" autofocus>
                 </div>
                 <div class="form-group-large">
-                    <label>Industry</label>
+                    <label data-i18n="form_industry">Industry</label>
                     <select id="quick-industry">
-                        <option>Barber Shop</option>
-                        <option>Restaurant</option>
-                        <option>Retail Store</option>
-                        <option>Salon & Spa</option>
-                        <option>Healthcare</option>
-                        <option>Other</option>
+                        <option data-i18n="industry_barber">Barber Shop</option>
+                        <option data-i18n="industry_restaurant">Restaurant</option>
+                        <option data-i18n="industry_retail">Retail Store</option>
+                        <option data-i18n="industry_salon">Salon & Spa</option>
+                        <option data-i18n="industry_healthcare">Healthcare</option>
+                        <option data-i18n="industry_other">Other</option>
                     </select>
                 </div>
                 <div class="wizard-actions">
-                    <button class="btn btn-secondary" onclick="closeQuickAdd()">Cancel</button>
-                    <button class="btn btn-primary" onclick="nextWizardStep(2)">Next →</button>
+                    <button class="btn btn-secondary" onclick="closeQuickAdd()"><span data-i18n="btn_cancel">Cancel</span></button>
+                    <button class="btn btn-primary" onclick="nextWizardStep(2)"><span data-i18n="btn_next">Next →</span></button>
                 </div>
             </div>
 
             <!-- Step 2: Contact -->
             <div class="wizard-step" id="wizard-step-2">
                 <div class="form-group-large">
-                    <label>Owner Name *</label>
-                    <input type="text" id="quick-owner-name" placeholder="e.g., Aziz Karimov">
+                    <label data-i18n="form_owner_name">Owner Name *</label>
+                    <input type="text" id="quick-owner-name" data-i18n="form_owner_placeholder" placeholder="e.g., Aziz Karimov">
                 </div>
                 <div class="form-group-large">
-                    <label>Email *</label>
-                    <input type="email" id="quick-email" placeholder="owner@business.com">
+                    <label data-i18n="form_email">Email *</label>
+                    <input type="email" id="quick-email" data-i18n="form_email_placeholder" placeholder="owner@business.com">
                 </div>
                 <div class="form-group-large">
-                    <label>Phone</label>
-                    <input type="tel" id="quick-phone" placeholder="+996 555 123 456">
+                    <label data-i18n="form_phone">Phone</label>
+                    <input type="tel" id="quick-phone" data-i18n="form_phone_placeholder" placeholder="+996 555 123 456">
                 </div>
                 <div class="wizard-actions">
-                    <button class="btn btn-secondary" onclick="prevWizardStep(1)">← Back</button>
-                    <button class="btn btn-primary" onclick="nextWizardStep(3)">Next →</button>
+                    <button class="btn btn-secondary" onclick="prevWizardStep(1)"><span data-i18n="btn_back">← Back</span></button>
+                    <button class="btn btn-primary" onclick="nextWizardStep(3)"><span data-i18n="btn_next">Next →</span></button>
                 </div>
             </div>
 
             <!-- Step 3: Setup -->
             <div class="wizard-step" id="wizard-step-3">
                 <div class="form-group-large">
-                    <label>Choose Plan</label>
+                    <label data-i18n="form_choose_plan">Choose Plan</label>
                     <div class="plan-selector">
                         <div class="plan-option" data-plan="free" onclick="selectPlan('free')">
-                            <div class="plan-name">Free</div>
+                            <div class="plan-name" data-i18n="plan_free">Free</div>
                             <div class="plan-price">$0/mo</div>
-                            <div class="plan-features">
+                            <div class="plan-features" data-i18n="plan_free_features">
                                 • 1,000 messages/mo<br>
                                 • 1 channel<br>
                                 • Basic support
                             </div>
                         </div>
                         <div class="plan-option selected" data-plan="pro" onclick="selectPlan('pro')">
-                            <div class="plan-badge">POPULAR</div>
-                            <div class="plan-name">Pro</div>
+                            <div class="plan-badge" data-i18n="plan_popular">POPULAR</div>
+                            <div class="plan-name" data-i18n="plan_pro">Pro</div>
                             <div class="plan-price">$29/mo</div>
-                            <div class="plan-features">
+                            <div class="plan-features" data-i18n="plan_pro_features">
                                 • 10,000 messages/mo<br>
                                 • 3 channels<br>
                                 • Priority support
                             </div>
                         </div>
                         <div class="plan-option" data-plan="enterprise" onclick="selectPlan('enterprise')">
-                            <div class="plan-name">Enterprise</div>
+                            <div class="plan-name" data-i18n="plan_enterprise">Enterprise</div>
                             <div class="plan-price">Custom</div>
-                            <div class="plan-features">
+                            <div class="plan-features" data-i18n="plan_enterprise_features">
                                 • Unlimited messages<br>
                                 • All channels<br>
                                 • Dedicated support
@@ -1732,14 +1736,14 @@
                 <div class="form-group-large">
                     <label class="checkbox-label">
                         <input type="checkbox" id="send-welcome-email" checked>
-                        Send welcome email with login instructions
+                        <span data-i18n="form_send_welcome">Send welcome email with login instructions</span>
                     </label>
                 </div>
                 <div class="wizard-actions">
-                    <button class="btn btn-secondary" onclick="prevWizardStep(2)">← Back</button>
+                    <button class="btn btn-secondary" onclick="prevWizardStep(2)"><span data-i18n="btn_back">← Back</span></button>
                     <button class="btn-primary-large" onclick="createBusinessQuick()">
                         <i data-lucide="check" style="width: 20px; height: 20px;"></i>
-                        Create Business
+                        <span data-i18n="btn_create">Create Business</span>
                     </button>
                 </div>
             </div>
@@ -1756,7 +1760,7 @@
                 <p id="confirm-message"></p>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+                <button class="btn btn-secondary" onclick="closeConfirmModal()"><span data-i18n="btn_cancel">Cancel</span></button>
                 <button class="btn btn-danger" id="confirm-action-btn">Confirm</button>
             </div>
         </div>
@@ -1770,7 +1774,7 @@
                     <div style="width: 64px; height: 64px; background: rgba(255,255,255,0.2); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
                         <i data-lucide="check-circle" style="width: 36px; height: 36px; color: white;"></i>
                     </div>
-                    <h2 style="color: white; font-size: 24px; font-weight: 600; margin: 0;">✅ Бизнес создан!</h2>
+                    <h2 style="color: white; font-size: 24px; font-weight: 600; margin: 0;" data-i18n="cred_title">✅ Бизнес создан!</h2>
                 </div>
             </div>
             <div class="modal-body" style="padding: 32px;">
@@ -1780,20 +1784,20 @@
                             <i data-lucide="mail" style="width: 20px; height: 20px; color: var(--primary);"></i>
                         </div>
                         <div style="flex: 1;">
-                            <div style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px;">Email</div>
+                            <div style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px;" data-i18n="cred_email">Email</div>
                             <div style="font-size: 16px; font-weight: 500; color: var(--text-primary); font-family: monospace;" id="cred-email">—</div>
                         </div>
                         <button onclick="copyToClipboard(document.getElementById('cred-email').textContent, 'Email')" style="background: none; border: none; cursor: pointer; padding: 8px;">
                             <i data-lucide="copy" style="width: 18px; height: 18px; color: var(--text-secondary);"></i>
                         </button>
                     </div>
-                    
+
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <div style="width: 40px; height: 40px; background: var(--success-light); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
                             <i data-lucide="key" style="width: 20px; height: 20px; color: var(--success);"></i>
                         </div>
                         <div style="flex: 1;">
-                            <div style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px;">Пароль</div>
+                            <div style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px;" data-i18n="cred_password">Пароль</div>
                             <div style="font-size: 16px; font-weight: 500; color: var(--text-primary); font-family: monospace;" id="cred-password">—</div>
                         </div>
                         <button onclick="copyToClipboard(document.getElementById('cred-password').textContent, 'Пароль')" style="background: none; border: none; cursor: pointer; padding: 8px;">
@@ -1803,6 +1807,110 @@
                 </div>
 
                 <div style="background: var(--warning-light); border-left: 3px solid var(--warning); border-radius: 8px; padding: 16px; display: flex; gap: 12px;">
+                    <i data-lucide="alert-triangle" style="width: 20px; height: 20px; color: var(--warning); flex-shrink: 0; margin-top: 2px;"></i>
+                    <div>
+                        <div style="font-weight: 600; color: var(--warning); margin-bottom: 4px;" data-i18n="cred_warning_title">⚠️ Важно!</div>
+                        <div style="font-size: 14px; color: var(--text-primary);" data-i18n="cred_warning_text">Сохраните эти данные! Пароль показывается только один раз и не может быть восстановлен.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 16px 32px 32px; justify-content: center;">
+                <button class="btn-primary-large" onclick="closeCredentialsModal()" style="min-width: 200px;">
+                    <i data-lucide="check" style="width: 20px; height: 20px;"></i>
+                    <span data-i18n="cred_button">Понятно, я сохранил</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Connect Platforms Modal -->
+    <div id="quick-connect-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 data-i18n="connect_title">⚡ Быстрое подключение платформ</h2>
+                <p style="margin: 8px 0 0; font-size: 14px; color: var(--text-secondary);"><span data-i18n="connect_for">Для:</span> <strong id="connect-business-name">—</strong></p>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="connect-business-id">
+
+                <!-- Instagram -->
+                <div style="margin-bottom: 24px;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                            <i data-lucide="camera" style="width: 24px; height: 24px; color: white;"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <h3 style="margin: 0; font-size: 16px;" data-i18n="connect_instagram">Instagram</h3>
+                            <p style="margin: 4px 0 0; font-size: 13px; color: var(--text-tertiary);">Вставьте токен доступа Instagram</p>
+                        </div>
+                    </div>
+                    <textarea id="connect-instagram"
+                              data-i18n="connect_instagram_placeholder"
+                              placeholder="IGAAXXXXXXXXXXXX (токен из Meta Developer Console)"
+                              style="width: 100%; min-height: 80px; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-family: monospace; font-size: 13px; resize: vertical;"></textarea>
+                    <div style="margin-top: 8px; font-size: 12px; color: var(--text-tertiary);">
+                        📖 <a href="https://developers.facebook.com/docs/instagram-basic-display-api/getting-started" target="_blank" style="color: var(--primary);" data-i18n="connect_instagram_help">Как получить токен</a>
+                    </div>
+                </div>
+
+                <!-- Telegram -->
+                <div style="margin-bottom: 24px;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                        <div style="width: 48px; height: 48px; background: #0088cc; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                            <i data-lucide="send" style="width: 24px; height: 24px; color: white;"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <h3 style="margin: 0; font-size: 16px;" data-i18n="connect_telegram">Telegram</h3>
+                            <p style="margin: 4px 0 0; font-size: 13px; color: var(--text-tertiary);">Вставьте токен бота Telegram</p>
+                        </div>
+                    </div>
+                    <input type="text"
+                           id="connect-telegram"
+                           data-i18n="connect_telegram_placeholder"
+                           placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
+                           style="width: 100%; height: 48px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-family: monospace; font-size: 14px;">
+                    <div style="margin-top: 8px; font-size: 12px; color: var(--text-tertiary);">
+                        📖 <a href="https://core.telegram.org/bots#6-botfather" target="_blank" style="color: var(--primary);" data-i18n="connect_telegram_help">Создать бота через @BotFather</a>
+                    </div>
+                </div>
+
+                <!-- WhatsApp -->
+                <div style="margin-bottom: 24px;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                        <div style="width: 48px; height: 48px; background: #25D366; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                            <i data-lucide="message-circle" style="width: 24px; height: 24px; color: white;"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <h3 style="margin: 0; font-size: 16px;" data-i18n="connect_whatsapp">WhatsApp</h3>
+                            <p style="margin: 4px 0 0; font-size: 13px; color: var(--text-tertiary);">Номер телефона WhatsApp Business</p>
+                        </div>
+                    </div>
+                    <input type="text"
+                           id="connect-whatsapp"
+                           data-i18n="connect_whatsapp_placeholder"
+                           placeholder="+996555123456"
+                           style="width: 100%; height: 48px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
+                    <div style="margin-top: 8px; font-size: 12px; color: var(--text-tertiary);">
+                        📖 <a href="https://business.whatsapp.com/" target="_blank" style="color: var(--primary);" data-i18n="connect_whatsapp_help">Настроить WhatsApp Business API</a>
+                    </div>
+                </div>
+
+                <div style="background: var(--primary-light); border-radius: 8px; padding: 16px; display: flex; gap: 12px;">
+                    <i data-lucide="zap" style="width: 20px; height: 20px; color: var(--primary); flex-shrink: 0; margin-top: 2px;"></i>
+                    <div style="font-size: 13px; color: var(--text-primary);">
+                        <strong data-i18n="connect_tip">Совет: Вставьте токены/данные, сохраните, и платформы подключатся мгновенно! ⚡</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeQuickConnect()"><span data-i18n="btn_cancel">Отмена</span></button>
+                <button class="btn-primary-large" onclick="saveQuickConnect()">
+                    <i data-lucide="zap" style="width: 20px; height: 20px;"></i>
+                    <span data-i18n="connect_button">Подключить платформы</span>
+                </button>
+            </div>
+        </div>
+    </div>
                     <i data-lucide="alert-triangle" style="width: 20px; height: 20px; color: var(--warning); flex-shrink: 0; margin-top: 2px;"></i>
                     <div>
                         <div style="font-weight: 600; color: var(--warning); margin-bottom: 4px;">⚠️ Важно!</div>
@@ -1906,6 +2014,565 @@
     </div>
 
     <script>
+        // ============= LANGUAGE SYSTEM =============
+        const translations = {
+            ru: {
+                // Navigation
+                'nav_businesses': 'Управление бизнесами',
+                'nav_analytics': 'Аналитика платформы',
+                'nav_settings': 'Настройки системы',
+                'nav_management': 'УПРАВЛЕНИЕ',
+                'nav_configuration': 'НАСТРОЙКА',
+                'status_operational': 'Все системы работают',
+
+                // Header
+                'section_businesses': 'Управление бизнесами',
+                'section_analytics': 'Аналитика платформы',
+                'section_settings': 'Настройки системы',
+                'btn_logout': 'Выход',
+
+                // Dashboard Stats
+                'stat_total': 'Всего бизнесов',
+                'stat_active': 'Активных сегодня',
+                'stat_messages': 'Сообщений',
+                'stat_health': 'Здоровье системы',
+
+                // Time periods
+                'period_month': 'этот месяц',
+                'period_week': 'эту неделю',
+
+                // Business Management
+                'business_title': 'Управление бизнесами',
+                'business_subtitle': 'Подключайте, отслеживайте и управляйте каждым бизнесом на платформе.',
+                'add_business': 'Добавить новый бизнес',
+
+                // Filters
+                'filter_status': 'Статус',
+                'filter_plan': 'План',
+                'filter_search': 'Поиск',
+                'filter_all': 'Все',
+                'filter_active': 'Активные',
+                'filter_trial': 'Пробные',
+                'filter_all_plans': 'Все планы',
+                'filter_reset': 'Сбросить',
+                'search_placeholder': 'Поиск бизнесов...',
+
+                // Table Headers
+                'th_business': 'Бизнес',
+                'th_owner': 'Владелец',
+                'th_status': 'Статус',
+                'th_plan': 'План',
+                'th_channels': 'Каналы',
+                'th_messages': 'Сообщения',
+                'th_health': 'Здоровье',
+                'th_actions': 'Действия',
+
+                // Plans
+                'plan_free': 'Бесплатный',
+                'plan_pro': 'Про',
+                'plan_enterprise': 'Корпоративный',
+
+                // Status
+                'status_active': 'активный',
+                'status_inactive': 'неактивный',
+
+                // Actions Menu
+                'action_view': 'Просмотр',
+                'action_edit': 'Редактировать',
+                'action_settings': 'Настройки',
+                'action_delete': 'Удалить',
+
+                // Empty State
+                'empty_no_businesses': 'Бизнесы не найдены',
+                'empty_add_first': 'Добавьте свой первый бизнес для начала',
+                'empty_add_button': 'Добавить бизнес',
+
+                // Analytics
+                'analytics_total': 'Всего бизнесов',
+                'analytics_active': 'Активных сегодня',
+                'analytics_total_messages': 'Всего сообщений',
+                'analytics_platform_health': 'Здоровье платформы',
+                'analytics_growth': 'Рост бизнеса',
+                'analytics_messages_platform': 'Сообщения по платформам',
+                'analytics_activity': 'Недавняя активность',
+
+                // Quick Add Business Modal
+                'modal_add_title': 'Добавить новый бизнес',
+                'wizard_step1': '1. Основная информация',
+                'wizard_step2': '2. Контакты',
+                'wizard_step3': '3. Настройка',
+                'form_business_name': 'Название бизнеса',
+                'form_business_placeholder': 'напр., Барбершоп Азиза',
+                'form_industry': 'Отрасль',
+                'form_owner_name': 'Имя владельца',
+                'form_owner_placeholder': 'напр., Азиз Каримов',
+                'form_email': 'Email',
+                'form_email_placeholder': 'owner@business.com',
+                'form_phone': 'Телефон',
+                'form_phone_placeholder': '+996 555 123 456',
+                'form_choose_plan': 'Выберите план',
+                'form_send_welcome': 'Отправить приветственное письмо с инструкциями для входа',
+
+                // Buttons
+                'btn_save': 'Сохранить',
+                'btn_cancel': 'Отмена',
+                'btn_create': 'Создать бизнес',
+                'btn_next': 'Далее →',
+                'btn_back': '← Назад',
+
+                // Plan Descriptions
+                'plan_free_features': '• 1,000 сообщений/мес<br>• 1 канал<br>• Базовая поддержка',
+                'plan_pro_features': '• 10,000 сообщений/мес<br>• 3 канала<br>• Приоритетная поддержка',
+                'plan_enterprise_features': '• Без ограничений<br>• Все каналы<br>• Выделенная поддержка',
+                'plan_popular': 'ПОПУЛЯРНЫЙ',
+
+                // Quick Connect Modal
+                'connect_title': '⚡ Быстрое подключение платформ',
+                'connect_for': 'Для:',
+                'connect_instagram': 'Instagram',
+                'connect_telegram': 'Telegram',
+                'connect_whatsapp': 'WhatsApp',
+                'connect_instagram_placeholder': 'IGAAXXXXXXXXXXXX (токен из Meta Developer Console)',
+                'connect_instagram_help': 'Как получить токен',
+                'connect_telegram_placeholder': '1234567890:ABCdefGHIjklMNOpqrsTUVwxyz',
+                'connect_telegram_help': 'Создать бота через @BotFather',
+                'connect_whatsapp_placeholder': '+996555123456',
+                'connect_whatsapp_help': 'Настроить WhatsApp Business API',
+                'connect_tip': 'Совет: Вставьте токены, сохраните, и платформы подключатся мгновенно! ⚡',
+                'connect_button': 'Подключить платформы',
+
+                // Credentials Modal
+                'cred_title': '✅ Бизнес создан!',
+                'cred_email': 'Email',
+                'cred_password': 'Пароль',
+                'cred_warning_title': '⚠️ Важно!',
+                'cred_warning_text': 'Сохраните эти данные! Пароль показывается только один раз и не может быть восстановлен.',
+                'cred_button': 'Понятно, я сохранил',
+
+                // Settings
+                'settings_title': 'Настройки системы',
+                'settings_subtitle': 'Настройте параметры платформы, безопасность и биллинг.',
+                'settings_general': 'Общие',
+                'settings_security': 'Безопасность',
+                'settings_notifications': 'Уведомления',
+                'settings_api': 'API ключи',
+                'settings_billing': 'Биллинг',
+
+                // General Settings
+                'general_title': 'Общие настройки',
+                'general_subtitle': 'Базовая конфигурация, применяемая ко всей платформе.',
+                'general_platform_name': 'Название платформы',
+                'general_platform_help': 'Отображается в письмах, панели бизнеса и вкладке браузера.',
+                'general_default_language': 'Язык по умолчанию',
+                'general_timezone': 'Часовой пояс',
+
+                // Security Settings
+                'security_title': 'Настройки безопасности',
+                'security_subtitle': 'Защитите учетную запись суперадмина.',
+                'security_2fa': 'Двухфакторная аутентификация',
+                'security_2fa_desc': 'Требовать одноразовый код из приложения аутентификатора при входе.',
+                'security_login_notif': 'Уведомления о входе',
+                'security_login_notif_desc': 'Получать письмо при каждом входе с нового устройства.',
+                'security_change_password': 'Изменить пароль',
+                'security_current_password': 'Текущий пароль',
+                'security_new_password': 'Новый пароль',
+                'security_password_help': 'Минимум 8 символов.',
+                'security_update_password': 'Обновить пароль',
+
+                // Notification Settings
+                'notif_title': 'Настройки уведомлений',
+                'notif_subtitle': 'Выберите, какие обновления получать на почту.',
+                'notif_email': 'EMAIL УВЕДОМЛЕНИЯ',
+                'notif_new_business': 'Регистрация нового бизнеса',
+                'notif_new_business_desc': 'Когда новый бизнес регистрируется на платформе.',
+                'notif_system_alerts': 'Системные оповещения',
+                'notif_system_alerts_desc': 'Сбои, снижение производительности и предупреждения о квотах.',
+                'notif_weekly_reports': 'Еженедельные отчеты',
+                'notif_weekly_reports_desc': 'Сводка роста и объема сообщений по понедельникам.',
+
+                // API Settings
+                'api_title': 'API ключи',
+                'api_subtitle': 'Управление всеми API ключами для доступа к платформе REPLAI и интеграций с AI провайдерами.',
+                'api_replai_title': 'REPLAI API ключи',
+                'api_replai_desc': 'Ключи предоставляют полный доступ к REPLAI API для внешних интеграций. Храните их в секрете.',
+                'api_production_key': 'Продакшн API ключ',
+                'api_active': 'Активный',
+                'api_revoke': 'Отозвать',
+                'api_created': 'Создан:',
+                'api_last_used': 'Последнее использование:',
+                'api_generate': 'Сгенерировать новый ключ',
+                'api_ai_providers': 'AI провайдеры',
+                'api_ai_providers_desc': 'Управление API ключами для Groq, OpenRouter, Together и HuggingFace с автоматической ротацией.',
+                'api_add_ai_key': 'Добавить ключ AI провайдера',
+                'api_no_keys': 'Нет ключей AI провайдеров',
+                'api_no_keys_desc': 'Добавьте ваш первый ключ Groq, OpenRouter, Together или HuggingFace для автоматической ротации.',
+
+                // Billing Settings
+                'billing_title': 'Биллинг и использование',
+                'billing_subtitle': 'Ваша подписка и потребление за этот месяц.',
+                'billing_plan': 'ПРОФЕССИОНАЛЬНЫЙ ПЛАН',
+                'billing_per_month': '/месяц',
+                'billing_feature1': '100,000 сообщений в месяц',
+                'billing_feature2': 'Неограниченное количество бизнесов',
+                'billing_feature3': 'Все каналы сообщений',
+                'billing_feature4': 'Приоритетная поддержка и SLA',
+                'billing_upgrade': 'Улучшить план',
+                'billing_usage': 'Использование за этот месяц',
+                'billing_messages': 'сообщений',
+                'billing_resets': 'Обнуляется 1 ноября 2026. Вы получите уведомление при 80% использования.',
+                'billing_invoices': 'Просмотр счетов',
+
+                // Messages
+                'msg_loading': 'Загрузка...',
+                'msg_loading_businesses': 'Загрузка бизнесов...',
+                'msg_loading_activity': 'Загрузка активности...',
+                'msg_created': 'создан успешно!',
+                'msg_updated': 'обновлен успешно!',
+                'msg_deleted': 'удален успешно!',
+                'msg_connected': 'Платформы подключены успешно! 🎉',
+                'msg_error': 'Ошибка',
+                'msg_copied': 'скопирован в буфер обмена!',
+                'msg_settings_saved': 'Настройки сохранены успешно',
+                'msg_password_updated': 'Пароль обновлен успешно',
+                'msg_fill_fields': 'Пожалуйста, заполните все обязательные поля',
+                'msg_password_length': 'Пароль должен содержать минимум 8 символов',
+                'msg_failed_load': 'Не удалось загрузить бизнесы',
+                'msg_failed_create': 'Не удалось создать бизнес',
+                'msg_failed_connect': 'Не удалось подключить платформы',
+                'msg_failed_delete': 'Не удалось удалить бизнес',
+                'msg_failed_save': 'Не удалось сохранить настройки',
+                'msg_failed_update_password': 'Не удалось обновить пароль',
+                'msg_copy_failed': 'Не удалось скопировать',
+                'msg_credentials_saved': 'Учетные данные сохранены! Теперь войдите в систему.',
+
+                // Confirm Dialogs
+                'confirm_logout': 'Подтвердить выход',
+                'confirm_logout_msg': 'Вы уверены, что хотите выйти?',
+                'confirm_delete_business': 'Удалить бизнес',
+                'confirm_delete_business_msg': 'Удалить "{name}"? Это действие нельзя отменить.',
+                'confirm_logging_out': 'Выход...',
+
+                // Relative Time
+                'time_just_now': 'Только что',
+                'time_minutes': 'мин назад',
+                'time_hours': 'ч назад',
+                'time_days': 'д назад',
+                'time_never': 'Никогда',
+
+                // Industries
+                'industry_barber': 'Барбершоп',
+                'industry_restaurant': 'Ресторан',
+                'industry_retail': 'Розничный магазин',
+                'industry_salon': 'Салон и спа',
+                'industry_healthcare': 'Здравоохранение',
+                'industry_other': 'Другое',
+            },
+            en: {
+                // Navigation
+                'nav_businesses': 'Business Management',
+                'nav_analytics': 'Platform Analytics',
+                'nav_settings': 'System Settings',
+                'nav_management': 'MANAGEMENT',
+                'nav_configuration': 'CONFIGURATION',
+                'status_operational': 'All systems operational',
+
+                // Header
+                'section_businesses': 'Business Management',
+                'section_analytics': 'Platform Analytics',
+                'section_settings': 'System Settings',
+                'btn_logout': 'Logout',
+
+                // Dashboard Stats
+                'stat_total': 'Total Businesses',
+                'stat_active': 'Active Today',
+                'stat_messages': 'Messages',
+                'stat_health': 'Health Score',
+
+                // Time periods
+                'period_month': 'this month',
+                'period_week': 'this week',
+
+                // Business Management
+                'business_title': 'Business Management',
+                'business_subtitle': 'Onboard, monitor, and manage every business on the platform.',
+                'add_business': 'Add New Business',
+
+                // Filters
+                'filter_status': 'Status',
+                'filter_plan': 'Plan',
+                'filter_search': 'Search',
+                'filter_all': 'All',
+                'filter_active': 'Active',
+                'filter_trial': 'Trial',
+                'filter_all_plans': 'All Plans',
+                'filter_reset': 'Reset',
+                'search_placeholder': 'Search businesses...',
+
+                // Table Headers
+                'th_business': 'Business',
+                'th_owner': 'Owner',
+                'th_status': 'Status',
+                'th_plan': 'Plan',
+                'th_channels': 'Channels',
+                'th_messages': 'Messages',
+                'th_health': 'Health',
+                'th_actions': 'Actions',
+
+                // Plans
+                'plan_free': 'Free',
+                'plan_pro': 'Pro',
+                'plan_enterprise': 'Enterprise',
+
+                // Status
+                'status_active': 'active',
+                'status_inactive': 'inactive',
+
+                // Actions Menu
+                'action_view': 'View',
+                'action_edit': 'Edit',
+                'action_settings': 'Settings',
+                'action_delete': 'Delete',
+
+                // Empty State
+                'empty_no_businesses': 'No businesses found',
+                'empty_add_first': 'Add your first business to get started',
+                'empty_add_button': 'Add Business',
+
+                // Analytics
+                'analytics_total': 'Total Businesses',
+                'analytics_active': 'Active Today',
+                'analytics_total_messages': 'Total Messages',
+                'analytics_platform_health': 'Platform Health',
+                'analytics_growth': 'Business Growth',
+                'analytics_messages_platform': 'Messages by Platform',
+                'analytics_activity': 'Recent Activity',
+
+                // Quick Add Business Modal
+                'modal_add_title': 'Add New Business',
+                'wizard_step1': '1. Basic Info',
+                'wizard_step2': '2. Contact',
+                'wizard_step3': '3. Setup',
+                'form_business_name': 'Business Name',
+                'form_business_placeholder': 'e.g., Aziz Barber Shop',
+                'form_industry': 'Industry',
+                'form_owner_name': 'Owner Name',
+                'form_owner_placeholder': 'e.g., Aziz Karimov',
+                'form_email': 'Email',
+                'form_email_placeholder': 'owner@business.com',
+                'form_phone': 'Phone',
+                'form_phone_placeholder': '+996 555 123 456',
+                'form_choose_plan': 'Choose Plan',
+                'form_send_welcome': 'Send welcome email with login instructions',
+
+                // Buttons
+                'btn_save': 'Save',
+                'btn_cancel': 'Cancel',
+                'btn_create': 'Create Business',
+                'btn_next': 'Next →',
+                'btn_back': '← Back',
+
+                // Plan Descriptions
+                'plan_free_features': '• 1,000 messages/mo<br>• 1 channel<br>• Basic support',
+                'plan_pro_features': '• 10,000 messages/mo<br>• 3 channels<br>• Priority support',
+                'plan_enterprise_features': '• Unlimited messages<br>• All channels<br>• Dedicated support',
+                'plan_popular': 'POPULAR',
+
+                // Quick Connect Modal
+                'connect_title': '⚡ Quick Platform Connection',
+                'connect_for': 'For:',
+                'connect_instagram': 'Instagram',
+                'connect_telegram': 'Telegram',
+                'connect_whatsapp': 'WhatsApp',
+                'connect_instagram_placeholder': 'IGAAXXXXXXXXXXXX (token from Meta Developer Console)',
+                'connect_instagram_help': 'How to get token',
+                'connect_telegram_placeholder': '1234567890:ABCdefGHIjklMNOpqrsTUVwxyz',
+                'connect_telegram_help': 'Create bot via @BotFather',
+                'connect_whatsapp_placeholder': '+996555123456',
+                'connect_whatsapp_help': 'Setup WhatsApp Business API',
+                'connect_tip': 'Tip: Paste tokens, save, and platforms will connect instantly! ⚡',
+                'connect_button': 'Connect Platforms',
+
+                // Credentials Modal
+                'cred_title': '✅ Business Created!',
+                'cred_email': 'Email',
+                'cred_password': 'Password',
+                'cred_warning_title': '⚠️ Important!',
+                'cred_warning_text': 'Save these credentials! Password is shown only once and cannot be recovered.',
+                'cred_button': 'Got it, I saved them',
+
+                // Settings
+                'settings_title': 'System Settings',
+                'settings_subtitle': 'Configure platform defaults, security, and billing.',
+                'settings_general': 'General',
+                'settings_security': 'Security',
+                'settings_notifications': 'Notifications',
+                'settings_api': 'API Keys',
+                'settings_billing': 'Billing',
+
+                // General Settings
+                'general_title': 'General Settings',
+                'general_subtitle': 'Basic configuration that applies across the whole platform.',
+                'general_platform_name': 'Platform Name',
+                'general_platform_help': 'Shown in emails, the business dashboard, and the browser tab.',
+                'general_default_language': 'Default Language',
+                'general_timezone': 'Time Zone',
+
+                // Security Settings
+                'security_title': 'Security Settings',
+                'security_subtitle': 'Protect the super admin account.',
+                'security_2fa': 'Two-Factor Authentication',
+                'security_2fa_desc': 'Require a one-time code from an authenticator app at sign in.',
+                'security_login_notif': 'Login Notifications',
+                'security_login_notif_desc': 'Get an email whenever a new device signs in to this account.',
+                'security_change_password': 'Change Password',
+                'security_current_password': 'Current password',
+                'security_new_password': 'New password',
+                'security_password_help': 'Minimum 8 characters.',
+                'security_update_password': 'Update Password',
+
+                // Notification Settings
+                'notif_title': 'Notification Preferences',
+                'notif_subtitle': 'Choose which updates land in your inbox.',
+                'notif_email': 'EMAIL NOTIFICATIONS',
+                'notif_new_business': 'New Business Registration',
+                'notif_new_business_desc': 'When a new business signs up on the platform.',
+                'notif_system_alerts': 'System Alerts',
+                'notif_system_alerts_desc': 'Outages, degraded performance, and quota warnings.',
+                'notif_weekly_reports': 'Weekly Reports',
+                'notif_weekly_reports_desc': 'A Monday summary of growth and message volume.',
+
+                // API Settings
+                'api_title': 'API Keys',
+                'api_subtitle': 'Manage all API keys for REPLAI platform access and AI provider integrations.',
+                'api_replai_title': 'REPLAI API Keys',
+                'api_replai_desc': 'Keys grant full access to the REPLAI API for external integrations. Keep them secret.',
+                'api_production_key': 'Production API Key',
+                'api_active': 'Active',
+                'api_revoke': 'Revoke',
+                'api_created': 'Created:',
+                'api_last_used': 'Last used:',
+                'api_generate': 'Generate New Key',
+                'api_ai_providers': 'AI Provider Keys',
+                'api_ai_providers_desc': 'Manage API keys for Groq, OpenRouter, Together, and HuggingFace with automatic rotation.',
+                'api_add_ai_key': 'Add AI Provider Key',
+                'api_no_keys': 'No AI provider keys yet',
+                'api_no_keys_desc': 'Add your first Groq, OpenRouter, Together, or HuggingFace key to enable automatic rotation.',
+
+                // Billing Settings
+                'billing_title': 'Billing & Usage',
+                'billing_subtitle': 'Your subscription and this month\'s consumption.',
+                'billing_plan': 'PROFESSIONAL PLAN',
+                'billing_per_month': '/month',
+                'billing_feature1': '100,000 messages per month',
+                'billing_feature2': 'Unlimited businesses',
+                'billing_feature3': 'All messaging channels',
+                'billing_feature4': 'Priority support & SLA',
+                'billing_upgrade': 'Upgrade Plan',
+                'billing_usage': 'Usage This Month',
+                'billing_messages': 'messages',
+                'billing_resets': 'Resets on Nov 1, 2026. You\'ll get an alert at 80% usage.',
+                'billing_invoices': 'View Invoices',
+
+                // Messages
+                'msg_loading': 'Loading...',
+                'msg_loading_businesses': 'Loading businesses...',
+                'msg_loading_activity': 'Loading activity...',
+                'msg_created': 'created successfully!',
+                'msg_updated': 'updated successfully!',
+                'msg_deleted': 'deleted successfully!',
+                'msg_connected': 'Platforms connected successfully! 🎉',
+                'msg_error': 'Error',
+                'msg_copied': 'copied to clipboard!',
+                'msg_settings_saved': 'Settings saved successfully',
+                'msg_password_updated': 'Password updated successfully',
+                'msg_fill_fields': 'Please fill in all fields',
+                'msg_password_length': 'Password must be at least 8 characters',
+                'msg_failed_load': 'Failed to load businesses',
+                'msg_failed_create': 'Failed to create business',
+                'msg_failed_connect': 'Failed to connect platforms',
+                'msg_failed_delete': 'Failed to delete business',
+                'msg_failed_save': 'Failed to save settings',
+                'msg_failed_update_password': 'Failed to update password',
+                'msg_copy_failed': 'Failed to copy',
+                'msg_credentials_saved': 'Credentials saved! Now log in.',
+
+                // Confirm Dialogs
+                'confirm_logout': 'Confirm Logout',
+                'confirm_logout_msg': 'Are you sure you want to logout?',
+                'confirm_delete_business': 'Delete Business',
+                'confirm_delete_business_msg': 'Delete "{name}"? This cannot be undone.',
+                'confirm_logging_out': 'Logging out...',
+
+                // Relative Time
+                'time_just_now': 'Just now',
+                'time_minutes': 'm ago',
+                'time_hours': 'h ago',
+                'time_days': 'd ago',
+                'time_never': 'Never',
+
+                // Industries
+                'industry_barber': 'Barber Shop',
+                'industry_restaurant': 'Restaurant',
+                'industry_retail': 'Retail Store',
+                'industry_salon': 'Salon & Spa',
+                'industry_healthcare': 'Healthcare',
+                'industry_other': 'Other',
+            }
+        };
+
+        // Get translation for key
+        function t(key) {
+            const lang = localStorage.getItem('language') || 'ru';
+            return translations[lang][key] || key;
+        }
+
+        // Toggle language
+        function toggleLanguage() {
+            const currentLang = localStorage.getItem('language') || 'ru';
+            const newLang = currentLang === 'ru' ? 'en' : 'ru';
+            localStorage.setItem('language', newLang);
+            applyTranslations();
+        }
+
+        // Apply translations to entire page
+        function applyTranslations() {
+            const lang = localStorage.getItem('language') || 'ru';
+
+            // Update language indicator
+            document.getElementById('lang-icon').textContent = lang === 'ru' ? '🇷🇺' : '🇬🇧';
+            document.getElementById('lang-text').textContent = lang.toUpperCase();
+
+            // Update all elements with data-i18n attribute
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                    el.placeholder = t(key);
+                } else {
+                    el.textContent = t(key);
+                }
+            });
+
+            // Update section title in header
+            const sectionTitleEl = document.getElementById('section-title');
+            if (sectionTitleEl) {
+                const activeSection = document.querySelector('.content-section.active');
+                if (activeSection) {
+                    const sectionId = activeSection.id.replace('-section', '');
+                    sectionTitleEl.textContent = t('section_' + sectionId);
+                }
+            }
+
+            // Re-render dynamic content (tables, modals)
+            if (typeof renderBusinessesTable === 'function' && allBusinesses.length > 0) {
+                renderBusinessesTable();
+            }
+
+            // Refresh icons
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
         // Global State
         let selectedPlan = 'pro';
         let allBusinesses = [];
@@ -2184,6 +2851,10 @@
             document.documentElement.setAttribute('data-theme', savedTheme);
             document.getElementById('theme-icon-light').style.display = savedTheme === 'light' ? 'none' : 'block';
             document.getElementById('theme-icon-dark').style.display = savedTheme === 'light' ? 'block' : 'none';
+
+            // Apply translations on load
+            applyTranslations();
+
             loadBusinessesDashboard();
             loadPlatformSettings();
             loadAPIKeys();
@@ -2206,7 +2877,7 @@
             document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
             document.getElementById(section + '-section').classList.add('active');
-            
+
             const menuItems = document.querySelectorAll('.menu-item');
             menuItems.forEach(m => {
                 if (m.getAttribute('onclick').includes(`'${section}'`)) {
@@ -2214,12 +2885,8 @@
                 }
             });
 
-            const titles = {
-                'businesses': 'Businesses Management',
-                'analytics': 'Platform Analytics',
-                'settings': 'System Settings'
-            };
-            document.getElementById('section-title').textContent = titles[section] || 'Dashboard';
+            // Update section title with translation
+            document.getElementById('section-title').textContent = t('section_' + section);
 
             if (section === 'businesses') loadBusinessesDashboard();
             if (section === 'analytics') loadAnalyticsDashboard();
@@ -2298,8 +2965,8 @@
 
         // Logout
         function handleLogout() {
-            showConfirm('Confirm Logout', 'Are you sure you want to logout?', () => {
-                showToast('Logging out...', 'success');
+            showConfirm(t('confirm_logout'), t('confirm_logout_msg'), () => {
+                showToast(t('confirm_logging_out'), 'success');
                 setTimeout(() => window.location.href = '/', 1000);
             });
         }
@@ -2447,21 +3114,23 @@
                             <div class="empty-icon">
                                 <i data-lucide="building-2" style="width: 48px; height: 48px; color: var(--text-tertiary);"></i>
                             </div>
-                            <h3>No businesses found</h3>
-                            <p>Add your first business to get started</p>
+                            <h3>${t('empty_no_businesses')}</h3>
+                            <p>${t('empty_add_first')}</p>
                             <button class="btn-primary-large" onclick="showQuickAddBusiness()">
                                 <i data-lucide="plus" style="width: 20px; height: 20px;"></i>
-                                Add Business
+                                ${t('empty_add_button')}
                             </button>
                         </div>
                     </td></tr>
                 `;
+                lucide.createIcons();
                 return;
             }
 
             tbody.innerHTML = filteredBusinesses.map(b => {
                 const healthScore = calculateHealthScore(b);
                 const healthClass = healthScore >= 80 ? 'excellent' : healthScore >= 50 ? 'good' : 'poor';
+                const planDisplay = t('plan_' + (b.plan || 'free'));
                 return `
                     <tr>
                         <td>
@@ -2477,8 +3146,8 @@
                             <div>${b.ownerName || 'N/A'}</div>
                             <div class="owner-email">${b.ownerEmail}</div>
                         </td>
-                        <td><span class="badge badge-active">active</span></td>
-                        <td><span class="badge badge-plan-${b.plan || 'free'}">${b.plan || 'free'}</span></td>
+                        <td><span class="badge badge-active">${t('status_active')}</span></td>
+                        <td><span class="badge badge-plan-${b.plan || 'free'}">${planDisplay}</span></td>
                         <td>
                             <div class="channels-icons">
                                 <span class="channel-icon ${b.channels?.instagram?.connected ? 'connected' : ''}" title="Instagram">
@@ -2501,10 +3170,10 @@
                                 </button>
                                 <div class="actions-menu">
                                     <a onclick="viewBusiness('${b.id}')">
-                                        <i data-lucide="eye" style="width: 16px; height: 16px;"></i> View
+                                        <i data-lucide="eye" style="width: 16px; height: 16px;"></i> ${t('action_view')}
                                     </a>
                                     <a onclick="deleteBusiness('${b.id}', '${b.name}')" class="danger">
-                                        <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i> Delete
+                                        <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i> ${t('action_delete')}
                                     </a>
                                 </div>
                             </div>
@@ -2512,7 +3181,7 @@
                     </tr>
                 `;
             }).join('');
-            
+
             // Reinitialize Lucide icons after rendering dynamic content
             lucide.createIcons();
         }
@@ -2630,21 +3299,22 @@
         }
 
         function deleteBusiness(id, name) {
-            showConfirm('Delete Business', `Delete "${name}"? This cannot be undone.`, async () => {
-                showLoadingOverlay('Deleting...');
+            const msg = t('confirm_delete_business_msg').replace('{name}', name);
+            showConfirm(t('confirm_delete_business'), msg, async () => {
+                showLoadingOverlay(t('msg_loading'));
                 try {
                     const res = await fetch(`/api/admin/businesses/${id}`, { method: 'DELETE' });
                     const data = await res.json();
                     hideLoadingOverlay();
                     if (data.success) {
-                        showToast('Business deleted successfully', 'success');
+                        showToast(name + ' ' + t('msg_deleted'), 'success');
                         loadBusinessesDashboard();
                     } else {
-                        showToast('Failed to delete business', 'error');
+                        showToast(t('msg_failed_delete'), 'error');
                     }
                 } catch (error) {
                     hideLoadingOverlay();
-                    showToast('Error deleting business', 'error');
+                    showToast(t('msg_failed_delete'), 'error');
                 }
             });
         }
@@ -2691,11 +3361,11 @@
             };
 
             if (!businessData.name || !businessData.ownerName || !businessData.ownerEmail) {
-                showToast('Please fill all required fields', 'error');
+                showToast(t('msg_fill_fields'), 'error');
                 return;
             }
 
-            showLoadingOverlay('Creating business...');
+            showLoadingOverlay(t('msg_loading'));
             try {
                 const res = await fetch('/api/admin/businesses', {
                     method: 'POST',
@@ -2707,7 +3377,7 @@
 
                 if (data.success) {
                     closeQuickAdd();
-                    
+
                     // Show credentials in beautiful modal
                     if (data.credentials) {
                         document.getElementById('cred-email').textContent = data.credentials.email;
@@ -2715,16 +3385,16 @@
                         document.getElementById('credentials-modal').classList.add('show');
                         lucide.createIcons();
                     } else {
-                        showToast(`${businessData.name} создан успешно!`, 'success');
+                        showToast(`${businessData.name} ${t('msg_created')}`, 'success');
                     }
-                    
+
                     loadBusinessesDashboard();
                 } else {
-                    showToast('Error: ' + (data.error || 'Failed to create'), 'error');
+                    showToast(t('msg_error') + ': ' + (data.error || t('msg_failed_create')), 'error');
                 }
             } catch (error) {
                 hideLoadingOverlay();
-                showToast('Failed to create business', 'error');
+                showToast(t('msg_failed_create'), 'error');
             }
         }
 
