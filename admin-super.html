@@ -1121,9 +1121,10 @@
                     <i data-lucide="sun" id="theme-icon-light" style="width: 16px; height: 16px; display: none;"></i>
                     <i data-lucide="moon" id="theme-icon-dark" style="width: 16px; height: 16px;"></i>
                 </button>
-                <button class="theme-toggle" onclick="toggleLanguage()" title="Switch Language" style="display: flex; align-items: center; gap: 6px; width: auto; padding: 0 12px;">
-                    <span id="lang-icon" style="font-size: 16px;">🇷🇺</span>
-                    <span id="lang-text" style="font-size: 13px; font-weight: 600;">RU</span>
+                <!-- Language Toggle Button -->
+                <button onclick="toggleLanguage()" class="btn-icon" title="Switch Language" style="display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border: 1px solid var(--border-color); border-radius: 8px; background: transparent; color: var(--text-secondary); cursor: pointer; transition: all 0.2s;">
+                    <span id="lang-icon" style="font-size: 18px;">🇷🇺</span>
+                    <span id="lang-text" style="font-size: 12px; font-weight: 600;">RU</span>
                 </button>
                 <button class="btn-logout" onclick="handleLogout()">
                     <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
@@ -1359,10 +1360,10 @@
 
                             <div>
                                 <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;" data-i18n="general_default_language">Default Language</label>
-                                <select style="width: 100%; max-width: 500px; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; cursor: pointer;">
-                                    <option>English</option>
-                                    <option>Русский</option>
-                                    <option>Кыргызча</option>
+                                <select id="default-language" onchange="changeLanguageFromDropdown(this.value)" style="width: 100%; max-width: 500px; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; cursor: pointer;">
+                                    <option value="ru">Русский (Russian)</option>
+                                    <option value="en">English</option>
+                                    <option value="ky">Кыргызча (Kyrgyz)</option>
                                 </select>
                             </div>
 
@@ -2517,6 +2518,257 @@
                 'industry_salon': 'Salon & Spa',
                 'industry_healthcare': 'Healthcare',
                 'industry_other': 'Other',
+            },
+            ky: {
+                // Navigation
+                'nav_businesses': 'Бизнестерди башкаруу',
+                'nav_analytics': 'Платформа аналитикасы',
+                'nav_settings': 'Тутум тууралоолору',
+                'nav_management': 'БАШКАРУУ',
+                'nav_configuration': 'КОНФИГУРАЦИЯ',
+                'status_operational': 'Бардык системалар иштеп жатат',
+
+                // Header
+                'section_businesses': 'Бизнестерди башкаруу',
+                'section_analytics': 'Платформа аналитикасы',
+                'section_settings': 'Тутум тууралоолору',
+                'btn_logout': 'Чыгуу',
+
+                // Dashboard Stats
+                'stat_total': 'Бардыгы бизнестер',
+                'stat_active': 'Бүгүн активдүү',
+                'stat_messages': 'Билдирүүлөр',
+                'stat_health': 'Ден соолук көрсөткүчү',
+
+                // Time periods
+                'period_month': 'бул айда',
+                'period_week': 'бул жумада',
+
+                // Business Management
+                'business_title': 'Бизнестерди башкаруу',
+                'business_subtitle': 'Платформадагы ар бир бизнести кошуу, көзөмөлдөө жана башкаруу',
+                'add_business': 'Жаңы бизнес кошуу',
+
+                // Filters
+                'filter_status': 'Абалы',
+                'filter_plan': 'План',
+                'filter_search': 'Издөө',
+                'filter_all': 'Баары',
+                'filter_active': 'Активдүү',
+                'filter_trial': 'Сыноо',
+                'filter_all_plans': 'Бардык пландар',
+                'filter_reset': 'Баштапкы абалга келтирүү',
+                'search_placeholder': 'Бизнестерди издөө...',
+
+                // Table Headers
+                'th_business': 'БИЗНЕС',
+                'th_owner': 'ЭЭСИ',
+                'th_status': 'АБАЛЫ',
+                'th_plan': 'ПЛАН',
+                'th_channels': 'КАНАЛДАР',
+                'th_messages': 'БИЛДИРҮҮЛӨР',
+                'th_health': 'ДЕН СООЛУК',
+                'th_actions': 'АРАКЕТТЕР',
+
+                // Plans
+                'plan_free': 'Акысыз',
+                'plan_pro': 'Про',
+                'plan_enterprise': 'Корпоративдик',
+
+                // Status
+                'status_active': 'активдүү',
+                'status_inactive': 'активдүү эмес',
+
+                // Actions Menu
+                'action_view': 'Көрүү',
+                'action_edit': 'Түзөтүү',
+                'action_settings': 'Тууралоолор',
+                'action_delete': 'Өчүрүү',
+
+                // Empty State
+                'empty_no_businesses': 'Бизнестер табылган жок',
+                'empty_add_first': 'Баштоо үчүн биринчи бизнесиңизди кошуңуз',
+                'empty_add_button': 'Бизнес кошуу',
+
+                // Analytics
+                'analytics_total': 'Бардыгы бизнестер',
+                'analytics_active': 'Бүгүн активдүү',
+                'analytics_total_messages': 'Бардык билдирүүлөр',
+                'analytics_platform_health': 'Платформанын ден соолугу',
+                'analytics_growth': 'Бизнестин өсүшү',
+                'analytics_messages_platform': 'Платформалар боюнча билдирүүлөр',
+                'analytics_activity': 'Акыркы иш-аракет',
+
+                // Quick Add Business Modal
+                'modal_add_title': 'Жаңы бизнес кошуу',
+                'wizard_step1': '1. Негизги маалымат',
+                'wizard_step2': '2. Байланыш',
+                'wizard_step3': '3. Орнотуу',
+                'form_business_name': 'Бизнестин аталышы',
+                'form_business_placeholder': 'мис., Азиздин чач алуучу дүкөнү',
+                'form_industry': 'Тармак',
+                'form_owner_name': 'Ээсинин аты',
+                'form_owner_placeholder': 'мис., Азиз Каримов',
+                'form_email': 'Email',
+                'form_email_placeholder': 'owner@business.com',
+                'form_phone': 'Телефон',
+                'form_phone_placeholder': '+996 555 123 456',
+                'form_choose_plan': 'Планды тандаңыз',
+                'form_send_welcome': 'Кирүү көрсөтмөлөрү менен кош келдиңиз катын жөнөтүү',
+
+                // Buttons
+                'btn_save': 'Сактоо',
+                'btn_cancel': 'Жокко чыгаруу',
+                'btn_create': 'Бизнес түзүү',
+                'btn_next': 'Кийинки →',
+                'btn_back': '← Артка',
+
+                // Plan Descriptions
+                'plan_free_features': '• 1,000 билдирүү/ай<br>• 1 канал<br>• Негизги колдоо',
+                'plan_pro_features': '• 10,000 билдирүү/ай<br>• 3 канал<br>• Артыкчылыктуу колдоо',
+                'plan_enterprise_features': '• Чексиз билдирүүлөр<br>• Бардык каналдар<br>• Атайын колдоо',
+                'plan_popular': 'ПОПУЛЯРДУУ',
+
+                // Quick Connect Modal
+                'connect_title': '⚡ Тез платформа туташуусу',
+                'connect_for': 'Үчүн:',
+                'connect_instagram': 'Instagram',
+                'connect_telegram': 'Telegram',
+                'connect_whatsapp': 'WhatsApp',
+                'connect_instagram_placeholder': 'IGAAXXXXXXXXXXXX (Meta Developer Console токени)',
+                'connect_instagram_help': 'Токенди кантип алуу керек',
+                'connect_telegram_placeholder': '1234567890:ABCdefGHIjklMNOpqrsTUVwxyz',
+                'connect_telegram_help': '@BotFather аркылуу бот түзүү',
+                'connect_whatsapp_placeholder': '+996555123456',
+                'connect_whatsapp_help': 'WhatsApp Business API орнотуу',
+                'connect_tip': 'Кеңеш: Токендерди чаптаңыз, сактаңыз жана платформалар дароо туташат! ⚡',
+                'connect_button': 'Платформаларды туташтыруу',
+
+                // Credentials Modal
+                'cred_title': '✅ Бизнес түзүлдү!',
+                'cred_email': 'Email',
+                'cred_password': 'Сыр сөз',
+                'cred_warning_title': '⚠️ Маанилүү!',
+                'cred_warning_text': 'Бул маалыматты сактаңыз! Сыр сөз бир жолу гана көрсөтүлөт жана калыбына келтирүүгө болбойт.',
+                'cred_button': 'Түшүндүм, мен сактадым',
+
+                // Settings
+                'settings_title': 'Тутум тууралоолору',
+                'settings_subtitle': 'Платформанын негизги тууралоолорун, коопсуздугун жана төлөмдөрдү конфигурациялаңыз.',
+                'settings_general': 'Жалпы',
+                'settings_security': 'Коопсуздук',
+                'settings_notifications': 'Билдирмелер',
+                'settings_api': 'API ачкычтар',
+                'settings_billing': 'Төлөм',
+
+                // General Settings
+                'general_title': 'Жалпы тууралоолор',
+                'general_subtitle': 'Бүткүл платформага колдонулган негизги конфигурация.',
+                'general_platform_name': 'Платформанын аталышы',
+                'general_platform_help': 'Электрондук почта, бизнес панели жана браузер өтмөгүндө көрсөтүлөт.',
+                'general_default_language': 'Демейки тил',
+                'general_timezone': 'Убакыт алкагы',
+
+                // Security Settings
+                'security_title': 'Коопсуздук тууралоолору',
+                'security_subtitle': 'Супер администратор эсебин коргоңуз.',
+                'security_2fa': 'Эки факторлуу аутентификация',
+                'security_2fa_desc': 'Кирүүдө аутентификатор тиркемесинен бир жолку код талап кылыңыз.',
+                'security_login_notif': 'Кирүү билдирмелери',
+                'security_login_notif_desc': 'Жаңы түзмөктөн бул эсепке кирген сайын электрондук почта алыңыз.',
+                'security_change_password': 'Сыр сөздү өзгөртүү',
+                'security_current_password': 'Учурдагы сыр сөз',
+                'security_new_password': 'Жаңы сыр сөз',
+                'security_password_help': 'Кеминде 8 символ.',
+                'security_update_password': 'Сыр сөздү жаңыртуу',
+
+                // Notification Settings
+                'notif_title': 'Билдирме тууралоолору',
+                'notif_subtitle': 'Кандай жаңылыктарды алууну тандаңыз.',
+                'notif_email': 'EMAIL БИЛДИРМЕЛЕРИ',
+                'notif_new_business': 'Жаңы бизнес катталуусу',
+                'notif_new_business_desc': 'Платформада жаңы бизнес катталганда.',
+                'notif_system_alerts': 'Тутум эскертүүлөрү',
+                'notif_system_alerts_desc': 'Үзгүлтүктөр, начар иштөө жана квота эскертүүлөрү.',
+                'notif_weekly_reports': 'Жумалык отчеттор',
+                'notif_weekly_reports_desc': 'Дүйшөмбү күнү өсүш жана билдирүү көлөмү боюнча корутунду.',
+
+                // API Settings
+                'api_title': 'API ачкычтар',
+                'api_subtitle': 'REPLAI платформасына кирүү жана AI провайдерлердин интеграциясы үчүн бардык API ачкычтарын башкаруу.',
+                'api_replai_title': 'REPLAI API ачкычтары',
+                'api_replai_desc': 'Ачкычтар тышкы интеграциялар үчүн REPLAI API\'га толук кирүүгө мүмкүндүк берет. Аларды жашырын сактаңыз.',
+                'api_production_key': 'Өндүрүш API ачкычы',
+                'api_active': 'Активдүү',
+                'api_revoke': 'Жокко чыгаруу',
+                'api_created': 'Түзүлдү:',
+                'api_last_used': 'Акыркы колдонулган:',
+                'api_generate': 'Жаңы ачкыч түзүү',
+                'api_ai_providers': 'AI провайдер ачкычтары',
+                'api_ai_providers_desc': 'Groq, OpenRouter, Together жана HuggingFace үчүн API ачкычтарын автоматтык айландыруу менен башкаруу.',
+                'api_add_ai_key': 'AI провайдер ачкычын кошуу',
+                'api_no_keys': 'AI провайдер ачкычтары жок',
+                'api_no_keys_desc': 'Автоматтык айландырууну иштетүү үчүн биринчи Groq, OpenRouter, Together же HuggingFace ачкычын кошуңуз.',
+
+                // Billing Settings
+                'billing_title': 'Төлөм жана колдонуу',
+                'billing_subtitle': 'Сиздин жазылууңуз жана бул айдын керектөө.',
+                'billing_plan': 'КЕСИПТИК ПЛАН',
+                'billing_per_month': '/ай',
+                'billing_feature1': 'Айына 100,000 билдирүү',
+                'billing_feature2': 'Чексиз бизнестер',
+                'billing_feature3': 'Бардык билдирүү каналдары',
+                'billing_feature4': 'Артыкчылыктуу колдоо жана SLA',
+                'billing_upgrade': 'Планды жаңыртуу',
+                'billing_usage': 'Бул айдын колдонуусу',
+                'billing_messages': 'билдирүүлөр',
+                'billing_resets': '2026-жылдын 1-ноябрында калыбына келет. 80% колдонулганда эскертүү аласыз.',
+                'billing_invoices': 'Төлөм эсептерин көрүү',
+
+                // Messages
+                'msg_loading': 'Жүктөлүүдө...',
+                'msg_loading_businesses': 'Бизнестер жүктөлүүдө...',
+                'msg_loading_activity': 'Иш-аракет жүктөлүүдө...',
+                'msg_created': 'ийгиликтүү түзүлдү!',
+                'msg_updated': 'ийгиликтүү жаңыртылды!',
+                'msg_deleted': 'ийгиликтүү өчүрүлдү!',
+                'msg_connected': 'Платформалар ийгиликтүү туташты! 🎉',
+                'msg_error': 'Ката',
+                'msg_copied': 'буферге көчүрүлдү!',
+                'msg_settings_saved': 'Тууралоолор ийгиликтүү сакталды',
+                'msg_password_updated': 'Сыр сөз ийгиликтүү жаңыртылды',
+                'msg_fill_fields': 'Бардык талапталган талааларды толтуруңуз',
+                'msg_password_length': 'Сыр сөз кеминде 8 символдан турушу керек',
+                'msg_failed_load': 'Бизнестерди жүктөө мүмкүн болгон жок',
+                'msg_failed_create': 'Бизнес түзүү мүмкүн болгон жок',
+                'msg_failed_connect': 'Платформаларды туташтыруу мүмкүн болгон жок',
+                'msg_failed_delete': 'Бизнести өчүрүү мүмкүн болгон жок',
+                'msg_failed_save': 'Тууралоолорду сактоо мүмкүн болгон жок',
+                'msg_failed_update_password': 'Сыр сөздү жаңыртуу мүмкүн болгон жок',
+                'msg_copy_failed': 'Көчүрүү мүмкүн болгон жок',
+                'msg_credentials_saved': 'Маалыматтар сакталды! Азыр кириңиз.',
+
+                // Confirm Dialogs
+                'confirm_logout': 'Чыгууну ырастоо',
+                'confirm_logout_msg': 'Сиз чынында чыгууну каалайсызбы?',
+                'confirm_delete_business': 'Бизнести өчүрүү',
+                'confirm_delete_business_msg': '"{name}" өчүрүлсүнбү? Буну кайтаруу мүмкүн эмес.',
+                'confirm_logging_out': 'Чыгып жатат...',
+
+                // Relative Time
+                'time_just_now': 'Азыр эле',
+                'time_minutes': 'мүн мурун',
+                'time_hours': 'с мурун',
+                'time_days': 'к мурун',
+                'time_never': 'Эч качан',
+
+                // Industries
+                'industry_barber': 'Чач алуучу дүкөн',
+                'industry_restaurant': 'Ресторан',
+                'industry_retail': 'Соода дүкөнү',
+                'industry_salon': 'Салон жана спа',
+                'industry_healthcare': 'Саламаттык сактоо',
+                'industry_other': 'Башка',
             }
         };
 
@@ -2526,29 +2778,83 @@
             return translations[lang][key] || key;
         }
 
-        // Toggle language
+        // Toggle between 3 languages: RU → EN → KY → RU
         function toggleLanguage() {
             const currentLang = localStorage.getItem('language') || 'ru';
-            const newLang = currentLang === 'ru' ? 'en' : 'ru';
+            let newLang;
+
+            // Cycle through languages
+            if (currentLang === 'ru') {
+                newLang = 'en';
+            } else if (currentLang === 'en') {
+                newLang = 'ky';
+            } else {
+                newLang = 'ru';
+            }
+
             localStorage.setItem('language', newLang);
             applyTranslations();
+
+            // Show toast
+            const langNames = { ru: 'Русский', en: 'English', ky: 'Кыргызча' };
+            showToast(`Language changed to ${langNames[newLang]}`, 'success');
+        }
+
+        // Change language from dropdown in settings
+        function changeLanguageFromDropdown(lang) {
+            localStorage.setItem('language', lang);
+            applyTranslations();
+
+            const langNames = {
+                ru: 'Русский',
+                en: 'English',
+                ky: 'Кыргызча'
+            };
+            showToast(`Тил өзгөртүлдү: ${langNames[lang]}`, 'success');
         }
 
         // Apply translations to entire page
         function applyTranslations() {
             const lang = localStorage.getItem('language') || 'ru';
+            console.log('[i18n] Applying translations for language:', lang);
 
-            // Update language indicator
-            document.getElementById('lang-icon').textContent = lang === 'ru' ? '🇷🇺' : '🇬🇧';
-            document.getElementById('lang-text').textContent = lang.toUpperCase();
+            // Update language indicator in header
+            const langIcons = { ru: '🇷🇺', en: '🇬🇧', ky: '🇰🇬' };
+            const langCodes = { ru: 'RU', en: 'EN', ky: 'KY' };
 
-            // Update all elements with data-i18n attribute
+            const iconEl = document.getElementById('lang-icon');
+            const textEl = document.getElementById('lang-text');
+
+            if (iconEl) iconEl.textContent = langIcons[lang];
+            if (textEl) textEl.textContent = langCodes[lang];
+
+            // Update language dropdown in settings
+            const langSelect = document.getElementById('default-language');
+            if (langSelect) {
+                langSelect.value = lang;
+            }
+
+            // Update ALL elements with data-i18n attribute
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
+                const translation = t(key);
+
                 if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-                    el.placeholder = t(key);
+                    if (el.placeholder !== undefined) {
+                        el.placeholder = translation;
+                    }
+                } else if (el.tagName === 'BUTTON') {
+                    // For buttons, preserve icons and only update text
+                    const icon = el.querySelector('i[data-lucide]');
+                    if (icon) {
+                        const iconClone = icon.cloneNode(true);
+                        el.textContent = ' ' + translation;
+                        el.insertBefore(iconClone, el.firstChild);
+                    } else {
+                        el.textContent = translation;
+                    }
                 } else {
-                    el.textContent = t(key);
+                    el.textContent = translation;
                 }
             });
 
@@ -2571,6 +2877,8 @@
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
             }
+
+            console.log('[i18n] Translations applied successfully');
         }
 
         // Global State
