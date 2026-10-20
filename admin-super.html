@@ -1121,11 +1121,27 @@
                     <i data-lucide="sun" id="theme-icon-light" style="width: 16px; height: 16px; display: none;"></i>
                     <i data-lucide="moon" id="theme-icon-dark" style="width: 16px; height: 16px;"></i>
                 </button>
-                <!-- Language Toggle Button -->
-                <button onclick="toggleLanguage()" class="btn-icon" title="Switch Language" style="display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border: 1px solid var(--border-color); border-radius: 8px; background: transparent; color: var(--text-secondary); cursor: pointer; transition: all 0.2s;">
-                    <span id="lang-icon" style="font-size: 18px;">🇷🇺</span>
-                    <span id="lang-text" style="font-size: 12px; font-weight: 600;">RU</span>
-                </button>
+                <!-- Enhanced Language Toggle Button -->
+                <div class="language-toggle-wrapper" style="position: relative;">
+                    <button onclick="toggleLanguage()" class="btn-icon language-toggle"
+                            title="Switch Language"
+                            style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 8px 12px;
+                                   border: 1px solid var(--border-color); border-radius: 8px;
+                                   background: transparent; color: var(--text-secondary); cursor: pointer;
+                                   transition: all 0.3s;">
+                        <span id="lang-icon" style="font-size: 20px;">🇷🇺</span>
+                        <span id="lang-text" style="font-size: 13px; font-weight: 600; letter-spacing: 0.5px;">RU</span>
+                    </button>
+                </div>
+                <style>
+                    .language-toggle:hover {
+                        background: var(--primary-light) !important;
+                        transform: scale(1.05);
+                    }
+                    .language-toggle:active {
+                        transform: scale(0.98);
+                    }
+                </style>
                 <button class="btn-logout" onclick="handleLogout()">
                     <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
                     <span data-i18n="btn_logout">Logout</span>
@@ -1237,7 +1253,7 @@
                             <i data-lucide="building-2" style="width: 20px; height: 20px; color: var(--primary);"></i>
                         </div>
                         <div style="flex: 1;">
-                            <div class="stat-label">Total Businesses</div>
+                            <div class="stat-label" data-i18n="analytics_total_businesses">Total Businesses</div>
                             <div class="stat-number" style="font-size: 28px;" id="analytics-total">0</div>
                         </div>
                     </div>
@@ -1248,7 +1264,7 @@
                             <i data-lucide="check-circle" style="width: 20px; height: 20px; color: var(--success);"></i>
                         </div>
                         <div style="flex: 1;">
-                            <div class="stat-label">Active Today</div>
+                            <div class="stat-label" data-i18n="analytics_active_today">Active Today</div>
                             <div class="stat-number" style="font-size: 28px;" id="analytics-active">0</div>
                         </div>
                     </div>
@@ -1259,7 +1275,7 @@
                             <i data-lucide="message-circle" style="width: 20px; height: 20px; color: var(--primary);"></i>
                         </div>
                         <div style="flex: 1;">
-                            <div class="stat-label">Total Messages</div>
+                            <div class="stat-label" data-i18n="analytics_total_messages">Total Messages</div>
                             <div class="stat-number" style="font-size: 28px;" id="analytics-messages">0</div>
                         </div>
                     </div>
@@ -1270,7 +1286,7 @@
                             <i data-lucide="activity" style="width: 20px; height: 20px; color: var(--success);"></i>
                         </div>
                         <div style="flex: 1;">
-                            <div class="stat-label">Platform Health</div>
+                            <div class="stat-label" data-i18n="analytics_platform_health">Platform Health</div>
                             <div class="stat-number" style="font-size: 28px;" id="analytics-health">0%</div>
                         </div>
                     </div>
@@ -1281,7 +1297,7 @@
             <div class="charts-row">
                 <div class="card chart-card">
                     <div class="card-header">
-                        <h3>Business Growth</h3>
+                        <h3 data-i18n="analytics_business_growth">Business Growth</h3>
                     </div>
                     <div class="card-body">
                         <canvas id="growth-chart"></canvas>
@@ -1289,7 +1305,7 @@
                 </div>
                 <div class="card chart-card">
                     <div class="card-header">
-                        <h3>Messages by Platform</h3>
+                        <h3 data-i18n="analytics_messages_by_platform">Messages by Platform</h3>
                     </div>
                     <div class="card-body">
                         <canvas id="platform-chart"></canvas>
@@ -1300,13 +1316,13 @@
             <!-- Activity Feed -->
             <div class="card">
                 <div class="card-header">
-                    <h3>Recent Activity</h3>
+                    <h3 data-i18n="analytics_recent_activity">Recent Activity</h3>
                     <button class="btn-icon" onclick="loadAnalyticsDashboard()">🔄</button>
                 </div>
                 <div class="activity-feed" id="activity-feed">
                     <div class="loading-spinner">
                         <div class="spinner"></div>
-                        <div class="loading-text">Loading activity...</div>
+                        <div class="loading-text" data-i18n="msg_loading_activity">Loading activity...</div>
                     </div>
                 </div>
             </div>
@@ -1360,11 +1376,30 @@
 
                             <div>
                                 <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;" data-i18n="general_default_language">Default Language</label>
-                                <select id="default-language" onchange="changeLanguageFromDropdown(this.value)" style="width: 100%; max-width: 500px; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; cursor: pointer;">
-                                    <option value="ru">Русский (Russian)</option>
-                                    <option value="en">English</option>
-                                    <option value="ky">Кыргызча (Kyrgyz)</option>
+                                <select id="default-language" onchange="changeLanguageFromDropdown(this.value)"
+                                        style="width: 100%; max-width: 500px; height: 56px; padding: 0 16px;
+                                               border: 2px solid var(--border-color); border-radius: 12px;
+                                               background: var(--bg-secondary); color: var(--text-primary);
+                                               font-size: 16px; font-weight: 500; cursor: pointer;
+                                               transition: all 0.3s; appearance: none;
+                                               background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg width=\'14\' height=\'8\' viewBox=\'0 0 14 8\' fill=\'none\' xmlns=\'http://www.w3.org/2000/svg\'%3e%3cpath d=\'M1 1L7 7L13 1\' stroke=\'%23666\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'/%3e%3c/svg%3e');
+                                               background-position: right 16px center;
+                                               background-repeat: no-repeat;">
+                                    <option value="ru">🇷🇺 Русский</option>
+                                    <option value="en">🇬🇧 English</option>
+                                    <option value="ky">🇰🇬 Кыргызча</option>
                                 </select>
+                                <style>
+                                    #default-language:hover {
+                                        border-color: var(--primary);
+                                        box-shadow: 0 0 0 3px var(--primary-light);
+                                    }
+                                    #default-language:focus {
+                                        border-color: var(--primary);
+                                        box-shadow: 0 0 0 4px var(--primary-light);
+                                        outline: none;
+                                    }
+                                </style>
                             </div>
 
                             <div>
@@ -2096,6 +2131,13 @@
                 'analytics_growth': 'Рост бизнеса',
                 'analytics_messages_platform': 'Сообщения по платформам',
                 'analytics_activity': 'Недавняя активность',
+                'analytics_total_businesses': 'Всего бизнесов',
+                'analytics_active_today': 'Активных сегодня',
+                'analytics_business_growth': 'Рост бизнесов',
+                'analytics_messages_by_platform': 'Сообщения по платформам',
+                'analytics_recent_activity': 'Последняя активность',
+                'analytics_no_activity': 'Нет активности',
+                'analytics_view_all': 'Показать все',
 
                 // Quick Add Business Modal
                 'modal_add_title': 'Добавить новый бизнес',
@@ -2347,6 +2389,13 @@
                 'analytics_growth': 'Business Growth',
                 'analytics_messages_platform': 'Messages by Platform',
                 'analytics_activity': 'Recent Activity',
+                'analytics_total_businesses': 'Total Businesses',
+                'analytics_active_today': 'Active Today',
+                'analytics_business_growth': 'Business Growth',
+                'analytics_messages_by_platform': 'Messages by Platform',
+                'analytics_recent_activity': 'Recent Activity',
+                'analytics_no_activity': 'No activity',
+                'analytics_view_all': 'View All',
 
                 // Quick Add Business Modal
                 'modal_add_title': 'Add New Business',
@@ -2598,6 +2647,13 @@
                 'analytics_growth': 'Бизнестин өсүшү',
                 'analytics_messages_platform': 'Платформалар боюнча билдирүүлөр',
                 'analytics_activity': 'Акыркы иш-аракет',
+                'analytics_total_businesses': 'Бардыгы бизнестер',
+                'analytics_active_today': 'Бүгүн активдүү',
+                'analytics_business_growth': 'Бизнестин өсүшү',
+                'analytics_messages_by_platform': 'Платформалар боюнча билдирүүлөр',
+                'analytics_recent_activity': 'Акыркы активдүүлүк',
+                'analytics_no_activity': 'Активдүүлүк жок',
+                'analytics_view_all': 'Баарын көрүү',
 
                 // Quick Add Business Modal
                 'modal_add_title': 'Жаңы бизнес кошуу',
@@ -2795,9 +2851,21 @@
             localStorage.setItem('language', newLang);
             applyTranslations();
 
-            // Show toast
-            const langNames = { ru: 'Русский', en: 'English', ky: 'Кыргызча' };
-            showToast(`Language changed to ${langNames[newLang]}`, 'success');
+            // Show language name in THAT language
+            const langNames = {
+                ru: 'Русский',
+                en: 'English',
+                ky: 'Кыргызча'
+            };
+
+            // Toast in new language
+            const toastMessages = {
+                ru: `Тил өзгөртүлдү: ${langNames[newLang]}`,
+                en: `Language changed to ${langNames[newLang]}`,
+                ky: `Тил өзгөртүлдү: ${langNames[newLang]}`
+            };
+
+            showToast(toastMessages[newLang], 'success');
         }
 
         // Change language from dropdown in settings
