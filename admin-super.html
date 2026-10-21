@@ -668,8 +668,9 @@
         }
         .plan-selector {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
         }
         .plan-option {
             padding: 20px;
@@ -1748,7 +1749,7 @@
 • Приоритетная поддержка</div>
                         </div>
                         <div class="plan-option" data-plan="enterprise" onclick="selectPlan('enterprise')">
-                            <div class="plan-name" data-i18n="plan_enterprise">Enterprise</div>
+                            <div class="plan-name" data-i18n="plan_max">MAX</div>
                             <div class="plan-price">3,500 сом/мес</div>
                             <div class="plan-features" data-i18n="plan_enterprise_features">• Без ограничений
 • Все каналы
@@ -2091,8 +2092,9 @@
                 'th_actions': 'Действия',
 
                 // Plans
-                'plan_pro': 'Про',
-                'plan_enterprise': 'Корпоративный',
+                'plan_pro': 'Pro',
+                'plan_enterprise': 'MAX',
+                'plan_max': 'MAX',
 
                 // Status
                 'status_active': 'активный',
@@ -2349,7 +2351,8 @@
 
                 // Plans
                 'plan_pro': 'Pro',
-                'plan_enterprise': 'Enterprise',
+                'plan_enterprise': 'MAX',
+                'plan_max': 'MAX',
 
                 // Status
                 'status_active': 'active',
@@ -2605,8 +2608,9 @@
                 'th_actions': 'АРАКЕТТЕР',
 
                 // Plans
-                'plan_pro': 'Про',
-                'plan_enterprise': 'Корпоративдик',
+                'plan_pro': 'Pro',
+                'plan_enterprise': 'MAX',
+                'plan_max': 'MAX',
 
                 // Status
                 'status_active': 'активдүү',
