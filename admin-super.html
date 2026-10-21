@@ -1739,19 +1739,10 @@
                 <div class="form-group-large">
                     <label data-i18n="form_choose_plan">Choose Plan</label>
                     <div class="plan-selector">
-                        <div class="plan-option" data-plan="free" onclick="selectPlan('free')">
-                            <div class="plan-name" data-i18n="plan_free">Free</div>
-                            <div class="plan-price">$0/mo</div>
-                            <div class="plan-features" data-i18n="plan_free_features">
-                                • 1,000 messages/mo<br>
-                                • 1 channel<br>
-                                • Basic support
-                            </div>
-                        </div>
                         <div class="plan-option selected" data-plan="pro" onclick="selectPlan('pro')">
                             <div class="plan-badge" data-i18n="plan_popular">POPULAR</div>
                             <div class="plan-name" data-i18n="plan_pro">Pro</div>
-                            <div class="plan-price">$29/mo</div>
+                            <div class="plan-price">2,000 сом/мес</div>
                             <div class="plan-features" data-i18n="plan_pro_features">
                                 • 10,000 messages/mo<br>
                                 • 3 channels<br>
@@ -1760,7 +1751,7 @@
                         </div>
                         <div class="plan-option" data-plan="enterprise" onclick="selectPlan('enterprise')">
                             <div class="plan-name" data-i18n="plan_enterprise">Enterprise</div>
-                            <div class="plan-price">Custom</div>
+                            <div class="plan-price">3,500 сом/мес</div>
                             <div class="plan-features" data-i18n="plan_enterprise_features">
                                 • Unlimited messages<br>
                                 • All channels<br>
@@ -2104,7 +2095,6 @@
                 'th_actions': 'Действия',
 
                 // Plans
-                'plan_free': 'Бесплатный',
                 'plan_pro': 'Про',
                 'plan_enterprise': 'Корпоративный',
 
@@ -2362,7 +2352,6 @@
                 'th_actions': 'Actions',
 
                 // Plans
-                'plan_free': 'Free',
                 'plan_pro': 'Pro',
                 'plan_enterprise': 'Enterprise',
 
@@ -2620,7 +2609,6 @@
                 'th_actions': 'АРАКЕТТЕР',
 
                 // Plans
-                'plan_free': 'Акысыз',
                 'plan_pro': 'Про',
                 'plan_enterprise': 'Корпоративдик',
 
@@ -3426,14 +3414,14 @@
                     
                     // Total businesses growth (this month vs last month)
                     const createdThisMonth = allBusinesses.filter(b => new Date(b.createdAt) > oneMonthAgo).length;
-                    const createdLastMonth = allBusinesses.filter(b => 
+                    const createdLastMonth = allBusinesses.filter(b =>
                         new Date(b.createdAt) > twoMonthsAgo && new Date(b.createdAt) <= oneMonthAgo
                     ).length;
-                    const totalGrowth = createdLastMonth > 0 
+                    const totalGrowth = createdLastMonth > 0
                         ? Math.round(((createdThisMonth - createdLastMonth) / createdLastMonth) * 100)
                         : (createdThisMonth > 0 ? 100 : 0);
-                    updateTrend('trend-total', totalGrowth, 'this month');
-                    
+                    updateTrend('trend-total', totalGrowth, t('period_month'));
+
                     // Active today growth (this week vs last week)
                     const activeLastWeek = allBusinesses.filter(b => {
                         if (!b.lastActivity) return false;
@@ -3443,13 +3431,13 @@
                     const activeGrowth = activeLastWeek > 0
                         ? Math.round(((activeCount - activeLastWeek) / activeLastWeek) * 100)
                         : (activeCount > 0 ? 100 : 0);
-                    updateTrend('trend-active', activeGrowth, 'this week');
-                    
+                    updateTrend('trend-active', activeGrowth, t('period_week'));
+
                     // Messages growth (trend based on activity)
-                    const messagesGrowth = totalMessages > 0 
+                    const messagesGrowth = totalMessages > 0
                         ? Math.round((totalMessages / Math.max(allBusinesses.length, 1)) * 10)
                         : 0;
-                    updateTrend('trend-messages', messagesGrowth, 'this week');
+                    updateTrend('trend-messages', messagesGrowth, t('period_week'));
                     
                     // Health score trend (based on connections)
                     const healthGrowth = healthScore > 50 ? Math.round((healthScore - 50) / 10) : 0;
