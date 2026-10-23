@@ -1934,10 +1934,53 @@
                 <h2 data-i18n="connect_title">⚡ Быстрое подключение платформ</h2>
                 <p style="margin: 8px 0 0; font-size: 14px; color: var(--text-secondary);"><span data-i18n="connect_for">Для:</span> <strong id="connect-business-name">—</strong></p>
             </div>
-            <div class="modal-body">
+            <div class="modal-body" style="padding: 40px;">
                 <input type="hidden" id="connect-business-id">
 
-                <!-- Instagram Section -->
+                <h3 style="margin: 0 0 8px 0; font-size: 20px; text-align: center;">Подключение платформ</h3>
+                <p style="margin: 0 0 32px 0; text-align: center; color: var(--text-secondary);">Выберите платформу для подключения</p>
+
+                <div style="display: grid; gap: 16px;">
+                    <!-- Instagram Card -->
+                    <button onclick="openPlatformInstructions('instagram')" style="all: unset; cursor: pointer; display: block; width: 100%;">
+                        <div style="display: flex; align-items: center; gap: 20px; padding: 24px; background: linear-gradient(135deg, rgba(228, 64, 95, 0.08), rgba(193, 53, 132, 0.08)); border-radius: 12px; border: 2px solid rgba(228, 64, 95, 0.3); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                            <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #E4405F, #C13584); border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(228, 64, 95, 0.3);">
+                                <i data-lucide="instagram" style="width: 32px; height: 32px; color: white;"></i>
+                            </div>
+                            <div style="flex: 1; text-align: left;">
+                                <h4 style="margin: 0 0 4px 0; font-size: 18px; font-weight: 600;">Instagram</h4>
+                                <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Нажмите для инструкции →</p>
+                            </div>
+                        </div>
+                    </button>
+
+                    <!-- Telegram Card -->
+                    <button onclick="openPlatformInstructions('telegram')" style="all: unset; cursor: pointer; display: block; width: 100%;">
+                        <div style="display: flex; align-items: center; gap: 20px; padding: 24px; background: linear-gradient(135deg, rgba(46, 166, 224, 0.08), rgba(26, 133, 196, 0.08)); border-radius: 12px; border: 2px solid rgba(46, 166, 224, 0.3); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                            <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #2EA6E0, #1A85C4); border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(46, 166, 224, 0.3);">
+                                <i data-lucide="send" style="width: 32px; height: 32px; color: white;"></i>
+                            </div>
+                            <div style="flex: 1; text-align: left;">
+                                <h4 style="margin: 0 0 4px 0; font-size: 18px; font-weight: 600;">Telegram</h4>
+                                <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Нажмите для инструкции →</p>
+                            </div>
+                        </div>
+                    </button>
+
+                    <!-- WhatsApp Card -->
+                    <button onclick="openPlatformInstructions('whatsapp')" style="all: unset; cursor: pointer; display: block; width: 100%;">
+                        <div style="display: flex; align-items: center; gap: 20px; padding: 24px; background: linear-gradient(135deg, rgba(37, 211, 102, 0.08), rgba(18, 140, 126, 0.08)); border-radius: 12px; border: 2px solid rgba(37, 211, 102, 0.3); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                            <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #25D366, #128C7E); border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);">
+                                <i data-lucide="message-circle" style="width: 32px; height: 32px; color: white;"></i>
+                            </div>
+                            <div style="flex: 1; text-align: left;">
+                                <h4 style="margin: 0 0 4px 0; font-size: 18px; font-weight: 600;">WhatsApp</h4>
+                                <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Нажмите для инструкции →</p>
+                            </div>
+                        </div>
+                    </button>
+                </div>
+            </div>
                 <div style="display: flex; align-items: flex-start; gap: 16px; padding: 24px; background: linear-gradient(135deg, rgba(228, 64, 95, 0.08), rgba(193, 53, 132, 0.08)); border-radius: 12px; border: 2px solid rgba(228, 64, 95, 0.3); margin-bottom: 24px;">
                     <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #E4405F, #C13584); border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(228, 64, 95, 0.3);">
                         <i data-lucide="instagram" style="width: 32px; height: 32px; color: white;"></i>
@@ -4400,6 +4443,87 @@
                 } else showToast('Ошибка: ' + data.error, 'error');
             } catch (err) {
                 showToast('Ошибка подключения', 'error');
+            }
+        }
+
+        // Platform instructions navigation (Fusion AI-style)
+        function openPlatformInstructions(platform) {
+            closeQuickConnect();
+
+            if (platform === 'instagram') {
+                const instructions = 'Instagram инструкция:\n\n' +
+                    '1. У вас должен быть Бизнес-аккаунт Instagram\n' +
+                    '2. Получите токен в Meta Business Suite\n' +
+                    '3. Вставьте токен в поле ниже\n\n' +
+                    'Готовы подключить?';
+
+                if (confirm(instructions)) {
+                    const token = prompt('Вставьте токен Instagram:');
+                    if (token && token.trim()) {
+                        showToast('Подключение Instagram...', 'info');
+                        fetch('/api/admin/businesses/' + currentBusinessId, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                instagram: JSON.stringify({
+                                    connected: true,
+                                    accessToken: token.trim(),
+                                    connectedAt: new Date().toISOString()
+                                })
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                showToast('✅ Instagram подключен!', 'success');
+                                loadBusinesses();
+                            } else {
+                                showToast('Ошибка: ' + (data.error || 'Неизвестная ошибка'), 'error');
+                            }
+                        })
+                        .catch(err => {
+                            showToast('Ошибка подключения', 'error');
+                        });
+                    }
+                }
+            } else if (platform === 'telegram') {
+                showTelegramHelper(); // Use existing modal!
+            } else if (platform === 'whatsapp') {
+                const instructions = 'WhatsApp инструкция:\n\n' +
+                    '1. Подготовьте номер WhatsApp Business\n' +
+                    '2. Номер должен быть активным\n' +
+                    '3. Введите в формате: +996555123456\n\n' +
+                    'Готовы подключить?';
+
+                if (confirm(instructions)) {
+                    const phone = prompt('Введите номер WhatsApp (+996555123456):');
+                    if (phone && phone.trim()) {
+                        showToast('Подключение WhatsApp...', 'info');
+                        fetch('/api/admin/businesses/' + currentBusinessId, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                whatsapp: JSON.stringify({
+                                    connected: true,
+                                    phone: phone.trim(),
+                                    connectedAt: new Date().toISOString()
+                                })
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                showToast('✅ WhatsApp подключен!', 'success');
+                                loadBusinesses();
+                            } else {
+                                showToast('Ошибка: ' + (data.error || 'Неизвестная ошибка'), 'error');
+                            }
+                        })
+                        .catch(err => {
+                            showToast('Ошибка подключения', 'error');
+                        });
+                    }
+                }
             }
         }
     </script>
