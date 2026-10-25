@@ -14,9 +14,12 @@ const prisma = new PrismaClient();
  * @returns {Promise<Array>} Array of businesses
  */
 export async function getAllBusinesses() {
-  return await prisma.business.findMany({
+  const businesses = await prisma.business.findMany({
     orderBy: { createdAt: 'desc' },
   });
+
+  // Parse JSON fields for each business
+  return businesses.map(parseBusiness);
 }
 
 /**
