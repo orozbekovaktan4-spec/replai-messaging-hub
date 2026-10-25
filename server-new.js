@@ -38,6 +38,53 @@ if (!process.env[providerKey]) {
 
 // Initialize Express app
 const app = express();
+
+// ========================================
+// SECURITY MIDDLEWARE (ADDED FOR PROTECTION)
+// ========================================
+
+// Remove X-Powered-By header (hides Express)
+app.disable('x-powered-by');
+
+// Security headers middleware
+app.use((req, res, next) => {
+  // Prevent clickjacking
+  res.setHeader('X-Frame-Options', 'DENY');
+
+  // Strict Transport Security (force HTTPS)
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+
+  // Content Security Policy (prevent XSS)
+  res.setHeader('Content-Security-Policy',
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com; " +
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
+    "img-src 'self' data: https:; " +
+    "font-src 'self' data:; " +
+    "connect-src 'self' https://api.telegram.org https://graph.instagram.com https://graph.facebook.com;"
+  );
+
+  // Referrer Policy
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+  // Permissions Policy (disable unnecessary features)
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+
+  next();
+});
+
+// Block access to .git directory (CRITICAL - prevents source code leak)
+app.use((req, res, next) => {
+  if (req.path.startsWith('/.git')) {
+    return res.status(403).send('Forbidden');
+  }
+  next();
+});
+
+// ========================================
+// END SECURITY MIDDLEWARE
+// ========================================
+
 const PORT = process.env.PORT || 3000;
 const META_GRAPH_API_VERSION = process.env.META_GRAPH_API_VERSION || 'v25.0';
 const FACEBOOK_GRAPH_BASE_URL = process.env.FACEBOOK_GRAPH_BASE_URL || 'https://graph.facebook.com';
@@ -4222,16 +4269,16 @@ app.get('/api/admin/businesses', optionalAuth, async (req, res) => {
       lastActivity: business.updatedAt,
       channels: {
         instagram: {
-          connected: !!business.instagram,
-          username: business.instagram ? '@akt4n.o' : null
+          connected: business.instagram?.connected === true || false,
+          username: business.instagram?.username || (business.instagram?.accessToken ? '@akt4n.o' : null)
         },
         telegram: {
-          connected: !!business.telegram,
-          botName: business.telegram ? 'REPLAI Bot' : null
+          connected: business.telegram?.connected === true || false,
+          botName: business.telegram?.botName || (business.telegram?.token ? 'REPLAI Bot' : null)
         },
         whatsapp: {
-          connected: !!business.whatsapp,
-          phone: business.whatsapp || null
+          connected: business.whatsapp?.connected === true || false,
+          phone: business.whatsapp?.phone || null
         }
       }
     }));
@@ -5126,6 +5173,59 @@ if (platformConnections.instagram.connected) {
 
 console.log('[Instagram] Using official Meta Graph API v23.0 for messaging');
 console.log('[Instagram] Webhooks: /webhook/instagram');
+
+// Sync .env tokens to database on startup
+async function syncEnvTokensToDatabase() {
+  try {
+    const businesses = await db.getAllBusinesses();
+    if (businesses.length > 0) {
+      const business = businesses[0];
+      const updates = {};
+
+      // Sync Instagram token
+      if (process.env.INSTAGRAM_ACCESS_TOKEN && !business.instagram?.connected) {
+        updates.instagram = {
+          connected: true,
+          accessToken: process.env.INSTAGRAM_ACCESS_TOKEN,
+          username: process.env.INSTAGRAM_USERNAME || 'akt4n.o',
+          connectedAt: new Date().toISOString()
+        };
+        console.log('✓ Syncing Instagram token from .env to database');
+      }
+
+      // Sync Telegram token
+      if (process.env.TELEGRAM_BOT_TOKEN && !business.telegram?.connected) {
+        updates.telegram = {
+          connected: true,
+          token: process.env.TELEGRAM_BOT_TOKEN,
+          connectedAt: new Date().toISOString()
+        };
+        console.log('✓ Syncing Telegram token from .env to database');
+      }
+
+      // Sync WhatsApp token
+      if (process.env.WHATSAPP_ACCESS_TOKEN && !business.whatsapp?.connected) {
+        updates.whatsapp = {
+          connected: true,
+          token: process.env.WHATSAPP_ACCESS_TOKEN,
+          phoneId: process.env.WHATSAPP_PHONE_ID,
+          connectedAt: new Date().toISOString()
+        };
+        console.log('✓ Syncing WhatsApp token from .env to database');
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await db.updateBusiness(business.id, updates);
+        console.log('✅ Synced .env tokens to database');
+      }
+    }
+  } catch (error) {
+    console.error('⚠️  Error syncing .env tokens to database:', error.message);
+  }
+}
+
+// Sync tokens on startup
+syncEnvTokensToDatabase().catch(console.error);
 
 // Start listening engine
 const server = app.listen(PORT, '0.0.0.0', () => {

@@ -1,5 +1,7 @@
 node_modules/
 .env
+.env.local
+.env.production
 .DS_Store
 *.log
 dist/
@@ -7,12 +9,24 @@ build/
 .next/
 pnpm-lock.yaml
 
+# Git directory (should never be deployed)
+.git/
+
 # Database files (contain secrets)
 prisma/dev.db
 prisma/dev.db-journal
+*.db
+*.db-journal
 
 # JSON data files (contain API keys and sensitive data)
 api-keys.json
 businesses.json
 sessions.json
 platform-settings.json
+ig-session.json
+
+# Logs
+logs/
+
+# OS files
+Thumbs.db
