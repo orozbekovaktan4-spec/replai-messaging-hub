@@ -577,6 +577,15 @@ async function processInstagramMessage(business, message, isComment = false) {
     return;
   }
 
+  // Extract message text (handle both formats)
+  const messageText = message.text || message.message || '';
+  const senderId = message.senderId || message.from?.id;
+
+  if (!messageText || !senderId) {
+    console.warn('[Instagram Process] Missing message text or sender ID');
+    return;
+  }
+
   // Check if this message type is enabled
   if (isComment && !settings.comments) {
     console.log('[Instagram Process] Comments disabled, skipping');
@@ -588,7 +597,7 @@ async function processInstagramMessage(business, message, isComment = false) {
   }
 
   // Find matching rule
-  const matchedRule = findMatchingRule(settings.rules, message.text);
+  const matchedRule = findMatchingRule(settings.rules, messageText);
 
   if (!matchedRule) {
     console.log('[Instagram Process] No rule matched, skipping');
@@ -602,7 +611,7 @@ async function processInstagramMessage(business, message, isComment = false) {
 
   switch (matchedRule.responseType) {
     case 'ai_generated':
-      response = await getAIResponse(message.senderId.toString(), message.text);
+      response = await getAIResponse(senderId.toString(), messageText);
       break;
 
     case 'template':
@@ -628,15 +637,15 @@ Business Info:
 
       // Call AI with extended context (pass as system message)
       response = await getAIResponse(
-        message.senderId.toString(),
-        message.text,
+        senderId.toString(),
+        messageText,
         null, // businessId
         extendedContext // additionalContext
       );
       break;
 
     default:
-      response = await getAIResponse(message.senderId.toString(), message.text);
+      response = await getAIResponse(senderId.toString(), messageText);
   }
 
   // Send response based on message type
@@ -644,9 +653,9 @@ Business Info:
     await handleCommentResponse(business, message, response, settings, accessToken);
   } else {
     // Direct message
-    await sendInstagramDM(message.senderId, response, accessToken);
+    await sendInstagramDM(senderId, response, accessToken);
 
-    console.log(`[Instagram Process] ✅ DM reply sent to ${message.senderId}`);
+    console.log(`[Instagram Process] ✅ DM reply sent to ${senderId}`);
   }
 
   // Track analytics
@@ -698,29 +707,30 @@ async function handleCommentResponse(business, comment, aiResponse, settings, ac
   }
 }
 
-async function pollInstagramDirectInbox() {
+// Poll Instagram for ONE specific business
+async function pollInstagramDirectInboxForBusiness(business) {
   try {
-    const accessToken = process.env.INSTAGRAM_ACCESS_TOKEN;
-    const userId = process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID || '27973124595617787';
-
-    if (!accessToken) {
-      return { processed: 0, error: 'No access token' };
+    // Check if this business has Instagram connected
+    if (!business.instagram?.accessToken) {
+      return { processed: 0, businessId: business.id, error: 'No Instagram token' };
     }
 
-    // Load business settings from database
-    const businesses = await db.getAllBusinesses();
-    const business = businesses[0];
+    const accessToken = business.instagram.accessToken;
+    const userId = business.instagram.userId || business.instagram.igUserId;
 
-    if (!business) {
-      return { processed: 0, error: 'No business configured' };
+    if (!userId) {
+      console.warn(`[Instagram] No userId for business: ${business.name}`);
+      return { processed: 0, businessId: business.id, error: 'No Instagram userId' };
     }
 
-    // Check if AI is enabled
+    // Check if AI is enabled for this business
     if (!business.instagram?.settings?.enabled) {
-      return { processed: 0, skipped: 'AI disabled' };
+      return { processed: 0, businessId: business.id, skipped: 'AI disabled' };
     }
 
-    // Step 1: Get all conversations
+    console.log(`[Instagram] Polling @${business.instagram.username || 'unknown'} (${business.name})...`);
+
+    // Step 1: Get conversations for THIS business's Instagram
     const convoRes = await fetch(
       `https://graph.instagram.com/v23.0/${userId}/conversations?fields=id,updated_time&access_token=${accessToken}`,
       {
@@ -732,94 +742,120 @@ async function pollInstagramDirectInbox() {
 
     if (!convoRes.ok) {
       const errorText = await convoRes.text();
-      console.error('[Instagram Poll] Fetch failed:', convoRes.status, errorText);
-      return { processed: 0, error: `HTTP ${convoRes.status}: ${errorText}` };
+      console.error(`[Instagram] Fetch failed for ${business.name}:`, convoRes.status, errorText);
+      return { processed: 0, businessId: business.id, error: `HTTP ${convoRes.status}` };
     }
 
     const convoData = await convoRes.json();
 
     if (!convoData.data) {
-      console.error('[Instagram Poll] No conversations found:', JSON.stringify(convoData));
-      return { processed: 0, error: 'No conversations' };
+      return { processed: 0, businessId: business.id, error: 'No conversations' };
     }
 
     let processed = 0;
-
-    // Step 2: Check recent conversations (last 5 only for speed)
     const recentConvos = convoData.data.slice(0, 5);
 
+    // Step 2: Check each conversation for new messages
     for (const convo of recentConvos) {
-      // Step 3: Get messages in this conversation
       const msgRes = await fetch(
-        `https://graph.instagram.com/v23.0/${convo.id}/messages?fields=id,message,from,created_time&access_token=${accessToken}`
+        `https://graph.instagram.com/v23.0/${convo.id}?fields=messages{from,message,created_time,id}&access_token=${accessToken}`,
+        {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+          }
+        }
       );
+
+      if (!msgRes.ok) continue;
+
       const msgData = await msgRes.json();
+      const messages = msgData.messages?.data || [];
 
-      if (!msgData.data || msgData.data.length === 0) continue;
+      // Step 3: Process each new message
+      for (const msg of messages) {
+        // Skip if message is from the business itself or already replied
+        if (!msg.from || msg.from.id === userId) continue;
+        if (repliedMessages.has(msg.id)) continue;
 
-      // Step 4: Get the latest message
-      const latestMsg = msgData.data[0];
+        // Skip if no message text
+        if (!msg.message) continue;
 
-      // Skip if already replied
-      if (repliedMessages.has(latestMsg.id)) continue;
+        console.log(`[Instagram] New message for ${business.name}: "${msg.message?.substring(0, 50)}..."`);
 
-      // Skip if message is from us (our own replies)
-      if (latestMsg.from?.id === userId) continue;
+        // Format message for processInstagramMessage
+        const formattedMessage = {
+          id: msg.id,
+          text: msg.message,
+          senderId: msg.from.id
+        };
 
-      // Skip if message is older than 24 hours (avoid replying to old messages on startup)
-      const msgAge = Date.now() - new Date(latestMsg.created_time).getTime();
-      if (msgAge > 24 * 60 * 60 * 1000) {
-        repliedMessages.add(latestMsg.id); // mark old messages as seen
-        continue;
+        // Process message for THIS specific business
+        await processInstagramMessage(business, formattedMessage, false);
+        repliedMessages.add(msg.id);
+        processed++;
       }
-
-      const userMessage = latestMsg.message;
-      const senderId = latestMsg.from?.id;
-
-      if (!userMessage || !senderId) continue;
-
-      console.log(`[Instagram Poll] New message from ${senderId}: "${userMessage}"`);
-
-      // Process message with rules system
-      await processInstagramMessage(business, {
-        id: latestMsg.id,
-        text: userMessage,
-        senderId: senderId
-      }, false); // isComment = false
-
-      repliedMessages.add(latestMsg.id);
-      processed++;
-
-      // Log to chatLogs
-      chatLogs.unshift({
-        platform: 'instagram',
-        userId: senderId,
-        userMessage,
-        aiResponse: '(processed by rules)',
-        timestamp: new Date().toISOString()
-      });
-      if (chatLogs.length > 100) chatLogs.pop();
-      updateMessageStats();
     }
 
-    return { processed };
+    if (processed > 0) {
+      console.log(`[Instagram] ${business.name} (@${business.instagram.username}): Processed ${processed} message(s)`);
+    }
+
+    return { processed, businessId: business.id, businessName: business.name };
 
   } catch (error) {
-    console.error('[Instagram Poll] Error:', error.message);
-    console.error('[Instagram Poll] Error details:', error);
-    return { processed: 0, error: error.message };
+    console.error(`[Instagram] Poll error for ${business?.name}:`, error.message);
+    return { processed: 0, businessId: business?.id, error: error.message };
   }
 }
 
-// Start polling every 30 seconds
-setInterval(async () => {
-  if (process.env.INSTAGRAM_ACCESS_TOKEN) {
-    const result = await pollInstagramDirectInbox();
-    if (result.processed > 0) {
-      console.log(`[Instagram Poll] Processed ${result.processed} new message(s)`);
+// Poll Instagram for ALL businesses
+async function pollAllBusinessesInstagram() {
+  try {
+    const businesses = await db.getAllBusinesses();
+
+    // Filter: Only businesses with Instagram connected
+    const instagramBusinesses = businesses.filter(b =>
+      b.instagram?.connected &&
+      b.instagram?.accessToken &&
+      b.instagram?.settings?.enabled
+    );
+
+    if (instagramBusinesses.length === 0) {
+      return { totalProcessed: 0, businesses: 0, message: 'No businesses with Instagram connected' };
     }
+
+    let totalProcessed = 0;
+    const results = [];
+
+    // Poll each business's Instagram account
+    for (const business of instagramBusinesses) {
+      const result = await pollInstagramDirectInboxForBusiness(business);
+      totalProcessed += result.processed || 0;
+      results.push(result);
+    }
+
+    return {
+      totalProcessed,
+      businesses: instagramBusinesses.length,
+      results
+    };
+
+  } catch (error) {
+    console.error('[Instagram] Poll all businesses error:', error.message);
+    return { totalProcessed: 0, businesses: 0, error: error.message };
+  }
+}
+
+// Poll all businesses' Instagram accounts every 30 seconds
+setInterval(async () => {
+  const result = await pollAllBusinessesInstagram();
+
+  if (result.totalProcessed > 0) {
+    console.log(`[Instagram Poll] ✅ Processed ${result.totalProcessed} message(s) across ${result.businesses} business(es)`);
   }
 }, 30000);
+
+console.log('[Instagram] ✓ Started multi-business polling (every 30 seconds)');
 
 // Clean up old message IDs every hour to prevent memory leak
 setInterval(() => {
@@ -2335,8 +2371,12 @@ app.post('/api/admin/instagram/oauth/exchange', async (req, res) => {
 });
 
 app.post('/api/instagram/poll', async (req, res) => {
-  const result = await pollInstagramDirectInbox();
-  res.json({ success: !result.error, ...result });
+  const result = await pollAllBusinessesInstagram();
+  res.json({
+    success: true,
+    ...result,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Token refresh endpoint for long-lived tokens (enhanced)
@@ -2459,8 +2499,12 @@ app.get('/api/admin/instagram/bot-status', (req, res) => {
 });
 
 app.post('/api/instagram/poll', async (req, res) => {
-  const result = await pollInstagramDirectInbox();
-  res.json({ success: !result.error, ...result });
+  const result = await pollAllBusinessesInstagram();
+  res.json({
+    success: true,
+    ...result,
+    timestamp: new Date().toISOString()
+  });
 });
 
 app.post('/api/admin/connect/whatsapp', async (req, res) => {

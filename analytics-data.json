@@ -2939,6 +2939,34 @@
       "timestamp": "2026-10-25T10:51:45.217Z",
       "date": "2026-10-25",
       "hour": 16
+    },
+    {
+      "id": "msg_1792925656442_uixfzs",
+      "platform": "instagram",
+      "direction": "incoming",
+      "userId": "4163267173964684",
+      "userName": null,
+      "messageText": "разве это не магазин золота",
+      "aiResponse": null,
+      "aiResponseSuccess": true,
+      "conversationId": null,
+      "timestamp": "2026-10-25T10:54:16.442Z",
+      "date": "2026-10-25",
+      "hour": 16
+    },
+    {
+      "id": "msg_1792925656443_9grhqv",
+      "platform": "instagram",
+      "direction": "outgoing",
+      "userId": "4163267173964684",
+      "userName": null,
+      "messageText": "Здравствуйте! Это не магазин золота, а профессиональный барбершоп «Aziz Barber Shop» в Бишкеке. Мы предлагаем стрижки, уход за бородой и другие мужские услуги. Как я могу помочь вам сегодня?",
+      "aiResponse": "Здравствуйте! Это не магазин золота, а профессиональный барбершоп «Aziz Barber Shop» в Бишкеке. Мы предлагаем стрижки, уход за бородой и другие мужские услуги. Как я могу помочь вам сегодня?",
+      "aiResponseSuccess": true,
+      "conversationId": null,
+      "timestamp": "2026-10-25T10:54:16.443Z",
+      "date": "2026-10-25",
+      "hour": 16
     }
   ],
   "metadata": {
