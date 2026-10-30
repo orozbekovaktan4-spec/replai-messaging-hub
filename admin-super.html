@@ -601,6 +601,11 @@
             justify-content: flex-end;
         }
         
+        /* Platform Panels */
+        .platform-panel {
+            animation: slideInRight 0.3s ease-out;
+        }
+        
         /* Wizard */
         .wizard-modal { max-width: 600px; padding: 0; }
         .wizard-header {
@@ -1929,64 +1934,86 @@
 
     <!-- Quick Connect Platforms Modal -->
     <div id="quick-connect-modal" class="modal">
-        <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-content" style="max-width: 900px;">
             <div class="modal-header">
-                <h2 data-i18n="connect_title">⚡ Быстрое подключение платформ</h2>
-                <p style="margin: 8px 0 0; font-size: 14px; color: var(--text-secondary);"><span data-i18n="connect_for">Для:</span> <strong id="connect-business-name">—</strong></p>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button onclick="closeQuickConnect()" style="all: unset; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--bg-secondary); border-radius: 8px; color: var(--text-secondary); font-size: 14px; font-weight: 500; transition: background 0.2s;" onmouseover="this.style.background='var(--border-color)'" onmouseout="this.style.background='var(--bg-secondary)'">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 12H5M12 19l-7-7 7-7"/>
+                        </svg>
+                        <span>Назад</span>
+                    </button>
+                    <div>
+                        <h2 data-i18n="connect_title" style="margin: 0;">⚡ Быстрое подключение платформ</h2>
+                        <p style="margin: 4px 0 0; font-size: 14px; color: var(--text-secondary);"><span data-i18n="connect_for">Для:</span> <strong id="connect-business-name">—</strong></p>
+                    </div>
+                </div>
             </div>
             <div class="modal-body" style="padding: 40px;">
                 <input type="hidden" id="connect-business-id">
 
-                <h3 style="margin: 0 0 8px 0; font-size: 20px; text-align: center;">Подключение платформ</h3>
-                <p style="margin: 0 0 32px 0; text-align: center; color: var(--text-secondary);">Выберите платформу для подключения</p>
+                <!-- Platform Cards Grid (Main View) -->
+                <div id="platforms-grid">
+                    <h3 style="margin: 0 0 8px 0; font-size: 20px; text-align: center;">Подключение платформ</h3>
+                    <p style="margin: 0 0 32px 0; text-align: center; color: var(--text-secondary);">Выберите платформу для подключения</p>
 
-                <div style="display: grid; gap: 16px;">
-                    <!-- Instagram Card -->
-                    <button onclick="openPlatformInstructions('instagram')" style="all: unset; cursor: pointer; display: block; width: 100%;">
-                        <div style="display: flex; align-items: center; gap: 20px; padding: 24px; background: linear-gradient(135deg, rgba(228, 64, 95, 0.08), rgba(193, 53, 132, 0.08)); border-radius: 12px; border: 2px solid rgba(228, 64, 95, 0.3); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-                            <div style="width: 64px; height: 64px; background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(228, 64, 95, 0.3);">
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                                </svg>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                        <!-- Instagram Card -->
+                        <button onclick="openPlatformPanel('instagram')" style="all: unset; cursor: pointer; display: block;">
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 32px 24px; background: linear-gradient(135deg, rgba(228, 64, 95, 0.08), rgba(193, 53, 132, 0.08)); border-radius: 16px; border: 2px solid rgba(228, 64, 95, 0.3); transition: all 0.2s; text-align: center;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 24px rgba(228, 64, 95, 0.2)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                <div style="width: 80px; height: 80px; background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); border-radius: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 16px rgba(228, 64, 95, 0.3);">
+                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 600; color: var(--text-primary);">Instagram</h4>
+                                    <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Подключить аккаунт</p>
+                                </div>
                             </div>
-                            <div style="flex: 1; text-align: left;">
-                                <h4 style="margin: 0 0 4px 0; font-size: 18px; font-weight: 600;">Instagram</h4>
-                                <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Нажмите для инструкции →</p>
-                            </div>
-                        </div>
-                    </button>
+                        </button>
 
-                    <!-- Telegram Card -->
-                    <button onclick="openPlatformInstructions('telegram')" style="all: unset; cursor: pointer; display: block; width: 100%;">
-                        <div style="display: flex; align-items: center; gap: 20px; padding: 24px; background: linear-gradient(135deg, rgba(46, 166, 224, 0.08), rgba(26, 133, 196, 0.08)); border-radius: 12px; border: 2px solid rgba(46, 166, 224, 0.3); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-                            <div style="width: 64px; height: 64px; background: #0088cc; border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(46, 166, 224, 0.3);">
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.03-1.99 1.27-5.62 3.72-.53.36-1.01.54-1.44.53-.47-.01-1.38-.27-2.05-.49-.82-.27-1.47-.42-1.42-.88.03-.24.37-.48 1.02-.73 4-1.74 6.68-2.88 8.03-3.43 3.82-1.58 4.61-1.85 5.13-1.86.11 0 .37.03.54.17.14.11.18.26.2.37.01.08.03.29.01.45z"/>
-                                </svg>
+                        <!-- Telegram Card -->
+                        <button onclick="openPlatformPanel('telegram')" style="all: unset; cursor: pointer; display: block;">
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 32px 24px; background: linear-gradient(135deg, rgba(46, 166, 224, 0.08), rgba(26, 133, 196, 0.08)); border-radius: 16px; border: 2px solid rgba(46, 166, 224, 0.3); transition: all 0.2s; text-align: center;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 24px rgba(46, 166, 224, 0.2)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                <div style="width: 80px; height: 80px; background: #0088cc; border-radius: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 16px rgba(46, 166, 224, 0.3);">
+                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.03-1.99 1.27-5.62 3.72-.53.36-1.01.54-1.44.53-.47-.01-1.38-.27-2.05-.49-.82-.27-1.47-.42-1.42-.88.03-.24.37-.48 1.02-.73 4-1.74 6.68-2.88 8.03-3.43 3.82-1.58 4.61-1.85 5.13-1.86.11 0 .37.03.54.17.14.11.18.26.2.37.01.08.03.29.01.45z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 600; color: var(--text-primary);">Telegram</h4>
+                                    <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Создать бота</p>
+                                </div>
                             </div>
-                            <div style="flex: 1; text-align: left;">
-                                <h4 style="margin: 0 0 4px 0; font-size: 18px; font-weight: 600;">Telegram</h4>
-                                <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Нажмите для инструкции →</p>
-                            </div>
-                        </div>
-                    </button>
+                        </button>
 
-                    <!-- WhatsApp Card -->
-                    <button onclick="openPlatformInstructions('whatsapp')" style="all: unset; cursor: pointer; display: block; width: 100%;">
-                        <div style="display: flex; align-items: center; gap: 20px; padding: 24px; background: linear-gradient(135deg, rgba(37, 211, 102, 0.08), rgba(18, 140, 126, 0.08)); border-radius: 12px; border: 2px solid rgba(37, 211, 102, 0.3); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-                            <div style="width: 64px; height: 64px; background: #25D366; border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);">
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zm-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                                </svg>
+                        <!-- WhatsApp Card -->
+                        <button onclick="openPlatformPanel('whatsapp')" style="all: unset; cursor: pointer; display: block;">
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 32px 24px; background: linear-gradient(135deg, rgba(37, 211, 102, 0.08), rgba(18, 140, 126, 0.08)); border-radius: 16px; border: 2px solid rgba(37, 211, 102, 0.3); transition: all 0.2s; text-align: center;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 24px rgba(37, 211, 102, 0.2)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                <div style="width: 80px; height: 80px; background: #25D366; border-radius: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 16px rgba(37, 211, 102, 0.3);">
+                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zm-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 600; color: var(--text-primary);">WhatsApp</h4>
+                                    <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Подключить номер</p>
+                                </div>
                             </div>
-                            <div style="flex: 1; text-align: left;">
-                                <h4 style="margin: 0 0 4px 0; font-size: 18px; font-weight: 600;">WhatsApp</h4>
-                                <p style="margin: 0; font-size: 14px; color: var(--text-secondary);">Нажмите для инструкции →</p>
-                            </div>
-                        </div>
-                    </button>
+                        </button>
+                    </div>
                 </div>
-            </div>
+
+                <!-- Instagram Panel -->
+                <div id="instagram-panel" class="platform-panel" style="display: none;">
+                    <button onclick="backToPlatforms()" style="all: unset; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 8px 12px; margin-bottom: 24px; background: var(--bg-secondary); border-radius: 8px; color: var(--text-secondary); font-size: 14px; font-weight: 500; transition: background 0.2s;" onmouseover="this.style.background='var(--border-color)'" onmouseout="this.style.background='var(--bg-secondary)'">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 12H5M12 19l-7-7 7-7"/>
+                        </svg>
+                        <span>← Назад к платформам</span>
+                    </button>
+
                 <div style="display: flex; align-items: flex-start; gap: 16px; padding: 24px; background: linear-gradient(135deg, rgba(228, 64, 95, 0.08), rgba(193, 53, 132, 0.08)); border-radius: 12px; border: 2px solid rgba(228, 64, 95, 0.3); margin-bottom: 24px;">
                     <div style="width: 60px; height: 60px; background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(228, 64, 95, 0.3);">
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
@@ -2064,75 +2091,106 @@
                         </a>
                     </div>
                 </div>
-                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                        <div style="width: 48px; height: 48px; background: #0088cc; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                </div>
+
+                <!-- Telegram Panel -->
+                <div id="telegram-panel" class="platform-panel" style="display: none;">
+                    <button onclick="backToPlatforms()" style="all: unset; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 8px 12px; margin-bottom: 24px; background: var(--bg-secondary); border-radius: 8px; color: var(--text-secondary); font-size: 14px; font-weight: 500; transition: background 0.2s;" onmouseover="this.style.background='var(--border-color)'" onmouseout="this.style.background='var(--bg-secondary)'">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 12H5M12 19l-7-7 7-7"/>
+                        </svg>
+                        <span>← Назад к платформам</span>
+                    </button>
+
+                    <div style="display: flex; align-items: flex-start; gap: 16px; padding: 24px; background: linear-gradient(135deg, rgba(46, 166, 224, 0.08), rgba(26, 133, 196, 0.08)); border-radius: 12px; border: 2px solid rgba(46, 166, 224, 0.3); margin-bottom: 24px;">
+                        <div style="width: 60px; height: 60px; background: #0088cc; border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(46, 166, 224, 0.3);">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.03-1.99 1.27-5.62 3.72-.53.36-1.01.54-1.44.53-.47-.01-1.38-.27-2.05-.49-.82-.27-1.47-.42-1.42-.88.03-.24.37-.48 1.02-.73 4-1.74 6.68-2.88 8.03-3.43 3.82-1.58 4.61-1.85 5.13-1.86.11 0 .37.03.54.17.14.11.18.26.2.37.01.08.03.29.01.45z"/>
                             </svg>
                         </div>
+
                         <div style="flex: 1;">
-                            <h3 style="margin: 0; font-size: 16px;" data-i18n="connect_telegram">Telegram</h3>
-                            <p style="margin: 4px 0 0; font-size: 13px; color: var(--text-tertiary);">Вставьте токен бота Telegram</p>
+                            <h4 style="margin: 0 0 4px 0; font-size: 18px; font-weight: 600; color: #2EA6E0;">Telegram</h4>
+                            <p style="margin: 0 0 12px 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5;">Создать бота через @BotFather за 1 минуту</p>
+
+                            <p style="margin: 0 0 12px 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                                <strong>Быстро:</strong> Отправьте /newbot в @BotFather, следуйте инструкциям, скопируйте токен.
+                            </p>
+
+                            <input type="text"
+                                   id="connect-telegram"
+                                   data-i18n="connect_telegram_placeholder"
+                                   placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
+                                   style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; margin-bottom: 12px; background: var(--bg-secondary); color: var(--text-primary); font-family: monospace; font-size: 14px;">
+
+                            <button
+                                onclick="showTelegramHelper()"
+                                class="btn-primary-large"
+                                style="width: 100%; margin-bottom: 12px; background: linear-gradient(135deg, #2EA6E0, #1A85C4); border: none; padding: 12px; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                <i data-lucide="bot" style="width: 20px; height: 20px;"></i>
+                                <span>🤖 Создать бота (Помощник)</span>
+                            </button>
+
+                            <a href="https://t.me/BotFather"
+                               target="_blank"
+                               style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; text-decoration: none; font-size: 13px; color: var(--text-primary);">
+                                <i data-lucide="external-link" style="width: 14px; height: 14px;"></i>
+                                <span>Открыть @BotFather</span>
+                            </a>
                         </div>
                     </div>
-                    <input type="text"
-                           id="connect-telegram"
-                           data-i18n="connect_telegram_placeholder"
-                           placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
-                           style="width: 100%; height: 48px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-family: monospace; font-size: 14px;">
-                    <div style="margin-top: 8px; font-size: 12px; color: var(--text-tertiary);">
-                        📖 <a href="https://core.telegram.org/bots#6-botfather" target="_blank" style="color: var(--primary);" data-i18n="connect_telegram_help">Создать бота через @BotFather</a>
-                    </div>
                 </div>
 
-                <!-- WhatsApp Section -->
-                <div style="display: flex; align-items: flex-start; gap: 16px; padding: 24px; background: linear-gradient(135deg, rgba(37, 211, 102, 0.08), rgba(18, 140, 126, 0.08)); border-radius: 12px; border: 2px solid rgba(37, 211, 102, 0.3);">
-                    <div style="width: 60px; height: 60px; background: #25D366; border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zm-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                <!-- WhatsApp Panel -->
+                <div id="whatsapp-panel" class="platform-panel" style="display: none;">
+                    <button onclick="backToPlatforms()" style="all: unset; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 8px 12px; margin-bottom: 24px; background: var(--bg-secondary); border-radius: 8px; color: var(--text-secondary); font-size: 14px; font-weight: 500; transition: background 0.2s;" onmouseover="this.style.background='var(--border-color)'" onmouseout="this.style.background='var(--bg-secondary)'">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 12H5M12 19l-7-7 7-7"/>
                         </svg>
-                    </div>
+                        <span>← Назад к платформам</span>
+                    </button>
 
-                    <div style="flex: 1;">
-                        <h4 style="margin: 0 0 4px 0; font-size: 18px; font-weight: 600; color: #25D366;">WhatsApp</h4>
-                        <p style="margin: 0 0 12px 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5;">Номер телефона WhatsApp Business</p>
+                    <div style="display: flex; align-items: flex-start; gap: 16px; padding: 24px; background: linear-gradient(135deg, rgba(37, 211, 102, 0.08), rgba(18, 140, 126, 0.08)); border-radius: 12px; border: 2px solid rgba(37, 211, 102, 0.3);">
+                        <div style="width: 60px; height: 60px; background: #25D366; border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zm-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                            </svg>
+                        </div>
 
-                        <p style="margin: 0 0 12px 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
-                            <strong>Нужен:</strong> Номер WhatsApp Business.
-                            <a href="https://www.whatsapp.com/business" target="_blank" style="color: #25D366;">Получить →</a>
-                        </p>
+                        <div style="flex: 1;">
+                            <h4 style="margin: 0 0 4px 0; font-size: 18px; font-weight: 600; color: #25D366;">WhatsApp</h4>
+                            <p style="margin: 0 0 12px 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5;">Номер телефона WhatsApp Business</p>
 
-                        <input
-                            type="tel"
-                            id="connect-whatsapp"
-                            placeholder="+996555123456"
-                            data-i18n-placeholder="whatsapp_phone_placeholder"
-                            style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; margin-bottom: 12px; font-size: 14px; background: var(--bg-secondary); color: var(--text-primary);">
+                            <p style="margin: 0 0 12px 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                                <strong>Нужен:</strong> Номер WhatsApp Business.
+                                <a href="https://www.whatsapp.com/business" target="_blank" style="color: #25D366;">Получить →</a>
+                            </p>
 
-                        <button onclick="connectWhatsAppQuick()" class="btn-primary-large" style="width: 100%; margin-bottom: 12px; background: linear-gradient(135deg, #25D366, #128C7E); border: none; padding: 12px; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                            <i data-lucide="phone" style="width: 20px; height: 20px;"></i>
-                            <span>Подключить WhatsApp</span>
-                        </button>
+                            <input
+                                type="tel"
+                                id="connect-whatsapp"
+                                placeholder="+996555123456"
+                                data-i18n-placeholder="whatsapp_phone_placeholder"
+                                style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; margin-bottom: 12px; font-size: 14px; background: var(--bg-secondary); color: var(--text-primary);">
 
-                        <a href="https://developers.facebook.com/docs/whatsapp/cloud-api/get-started"
-                           target="_blank"
-                           style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; text-decoration: none; font-size: 13px; color: var(--text-primary);">
-                            <i data-lucide="book-open" style="width: 14px; height: 14px;"></i>
-                            <span>Инструкция по настройке</span>
-                        </a>
-                    </div>
-                </div>
+                            <button onclick="connectWhatsAppQuick()" class="btn-primary-large" style="width: 100%; margin-bottom: 12px; background: linear-gradient(135deg, #25D366, #128C7E); border: none; padding: 12px; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                <i data-lucide="phone" style="width: 20px; height: 20px;"></i>
+                                <span>Подключить WhatsApp</span>
+                            </button>
 
-                <div style="background: var(--primary-light); border-radius: 8px; padding: 16px; display: flex; gap: 12px;">
-                    <i data-lucide="zap" style="width: 20px; height: 20px; color: var(--primary); flex-shrink: 0; margin-top: 2px;"></i>
-                    <div style="font-size: 13px; color: var(--text-primary);">
-                        <strong data-i18n="connect_tip">Совет: Вставьте токены/данные, сохраните, и платформы подключатся мгновенно! ⚡</strong>
+                            <a href="https://developers.facebook.com/docs/whatsapp/cloud-api/get-started"
+                               target="_blank"
+                               style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; text-decoration: none; font-size: 13px; color: var(--text-primary);">
+                                <i data-lucide="book-open" style="width: 14px; height: 14px;"></i>
+                                <span>Инструкция по настройке</span>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeQuickConnect()"><span data-i18n="btn_cancel">Отмена</span></button>
-                <button class="btn-primary-large" onclick="saveQuickConnect()">
+                <button class="btn-primary-large" onclick="saveQuickConnect()" style="display: none;">
                     <i data-lucide="zap" style="width: 20px; height: 20px;"></i>
                     <span data-i18n="connect_button">Подключить платформы</span>
                 </button>
@@ -3728,8 +3786,16 @@
             if (!business) return;
             
             // Show quick connect modal
+            currentBusinessId = id; // Store for later use
             document.getElementById('connect-business-id').value = id;
             document.getElementById('connect-business-name').textContent = business.name;
+            
+            // Reset view: show grid, hide all panels
+            document.getElementById('platforms-grid').style.display = 'block';
+            document.querySelectorAll('.platform-panel').forEach(panel => {
+                panel.style.display = 'none';
+            });
+            
             document.getElementById('quick-connect-modal').classList.add('show');
             
             // Pre-fill current connections
@@ -3742,6 +3808,12 @@
         
         function closeQuickConnect() {
             document.getElementById('quick-connect-modal').classList.remove('show');
+            
+            // Reset view: show grid, hide all panels
+            document.getElementById('platforms-grid').style.display = 'block';
+            document.querySelectorAll('.platform-panel').forEach(panel => {
+                panel.style.display = 'none';
+            });
         }
         
         async function saveQuickConnect() {
@@ -4373,85 +4445,30 @@
             }
         }
 
-        // Platform instructions navigation (Fusion AI-style)
+        // Platform panel navigation (slide-in from right)
+        function openPlatformPanel(platform) {
+            // Hide the grid
+            document.getElementById('platforms-grid').style.display = 'none';
+            
+            // Show the specific platform panel with animation
+            const panel = document.getElementById(platform + '-panel');
+            panel.style.display = 'block';
+            panel.style.animation = 'slideInRight 0.3s ease-out';
+        }
+
+        function backToPlatforms() {
+            // Hide all panels
+            document.querySelectorAll('.platform-panel').forEach(panel => {
+                panel.style.display = 'none';
+            });
+            
+            // Show the grid
+            document.getElementById('platforms-grid').style.display = 'block';
+        }
+
+        // Old function kept for backward compatibility
         function openPlatformInstructions(platform) {
-            closeQuickConnect();
-
-            if (platform === 'instagram') {
-                const instructions = 'Instagram инструкция:\n\n' +
-                    '1. У вас должен быть Бизнес-аккаунт Instagram\n' +
-                    '2. Получите токен в Meta Business Suite\n' +
-                    '3. Вставьте токен в поле ниже\n\n' +
-                    'Готовы подключить?';
-
-                if (confirm(instructions)) {
-                    const token = prompt('Вставьте токен Instagram:');
-                    if (token && token.trim()) {
-                        showToast('Подключение Instagram...', 'info');
-                        fetch('/api/admin/businesses/' + currentBusinessId, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                instagram: JSON.stringify({
-                                    connected: true,
-                                    accessToken: token.trim(),
-                                    connectedAt: new Date().toISOString()
-                                })
-                            })
-                        })
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.success) {
-                                showToast('✅ Instagram подключен!', 'success');
-                                loadBusinesses();
-                            } else {
-                                showToast('Ошибка: ' + (data.error || 'Неизвестная ошибка'), 'error');
-                            }
-                        })
-                        .catch(err => {
-                            showToast('Ошибка подключения', 'error');
-                        });
-                    }
-                }
-            } else if (platform === 'telegram') {
-                showTelegramHelper(); // Use existing modal!
-            } else if (platform === 'whatsapp') {
-                const instructions = 'WhatsApp инструкция:\n\n' +
-                    '1. Подготовьте номер WhatsApp Business\n' +
-                    '2. Номер должен быть активным\n' +
-                    '3. Введите в формате: +996555123456\n\n' +
-                    'Готовы подключить?';
-
-                if (confirm(instructions)) {
-                    const phone = prompt('Введите номер WhatsApp (+996555123456):');
-                    if (phone && phone.trim()) {
-                        showToast('Подключение WhatsApp...', 'info');
-                        fetch('/api/admin/businesses/' + currentBusinessId, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                whatsapp: JSON.stringify({
-                                    connected: true,
-                                    phone: phone.trim(),
-                                    connectedAt: new Date().toISOString()
-                                })
-                            })
-                        })
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.success) {
-                                showToast('✅ WhatsApp подключен!', 'success');
-                                loadBusinesses();
-                            } else {
-                                showToast('Ошибка: ' + (data.error || 'Неизвестная ошибка'), 'error');
-                            }
-                        })
-                        .catch(err => {
-                            showToast('Ошибка подключения', 'error');
-                        });
-                    }
-                }
-            }
+            openPlatformPanel(platform);
         }
     </script>
 
