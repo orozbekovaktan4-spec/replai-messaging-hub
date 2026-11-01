@@ -3216,6 +3216,54 @@ app.get('/api/admin/platform-status', (req, res) => {
   });
 });
 
+// ============================================
+// TOKEN VALIDATION ENDPOINTS
+// ============================================
+
+// Validate Telegram bot token
+app.post('/api/telegram/validate-token', async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token || !token.includes(':')) {
+      return res.json({
+        valid: false,
+        error: 'Неверный формат токена. Формат: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz'
+      });
+    }
+
+    // Test bot token with Telegram API
+    const response = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+    const data = await response.json();
+
+    if (!data.ok) {
+      console.error('[Telegram] Token validation failed:', data.description);
+      return res.json({
+        valid: false,
+        error: data.description || 'Неверный токен бота'
+      });
+    }
+
+    console.log('[Telegram] Bot validated successfully:', data.result.username);
+
+    res.json({
+      valid: true,
+      botInfo: {
+        id: data.result.id,
+        username: data.result.username,
+        first_name: data.result.first_name,
+        can_read_all_group_messages: data.result.can_read_all_group_messages
+      }
+    });
+  } catch (error) {
+    console.error('[Telegram] Validation error:', error);
+    res.status(500).json({
+      valid: false,
+      error: 'Ошибка проверки токена'
+    });
+  }
+});
+
 app.get('/api/telegram/webhook-info', async (req, res) => {
   try {
     const token = platformConnections.telegram.token || process.env.TELEGRAM_BOT_TOKEN;
@@ -3229,6 +3277,54 @@ app.get('/api/telegram/webhook-info', async (req, res) => {
   }
 });
 
+// Validate Instagram access token
+app.post('/api/instagram/validate-token', async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.json({ valid: false, error: 'Token is required' });
+    }
+
+    // Test token with Instagram Graph API
+    const response = await fetch(`https://graph.instagram.com/me?fields=id,username,account_type&access_token=${token}`);
+    const data = await response.json();
+
+    if (data.error) {
+      console.error('[Instagram] Token validation failed:', data.error);
+      return res.json({
+        valid: false,
+        error: data.error.message || 'Invalid token'
+      });
+    }
+
+    // Check if it's a business account
+    if (data.account_type !== 'BUSINESS') {
+      return res.json({
+        valid: false,
+        error: 'Аккаунт должен быть Instagram Business. Переключите в настройках Instagram.'
+      });
+    }
+
+    console.log('[Instagram] Token validated successfully:', data.username);
+
+    res.json({
+      valid: true,
+      accountInfo: {
+        id: data.id,
+        username: data.username,
+        accountType: data.account_type
+      }
+    });
+  } catch (error) {
+    console.error('[Instagram] Validation error:', error);
+    res.status(500).json({
+      valid: false,
+      error: 'Ошибка проверки токена'
+    });
+  }
+});
+
 app.get('/api/instagram/account-info', async (req, res) => {
   res.json({
     success: platformConnections.instagram.connected,
@@ -3237,6 +3333,53 @@ app.get('/api/instagram/account-info', async (req, res) => {
       method: 'oauth'
     }
   });
+});
+
+// Validate WhatsApp access token and phone number ID
+app.post('/api/whatsapp/validate-token', async (req, res) => {
+  try {
+    const { accessToken, phoneNumberId } = req.body;
+
+    if (!accessToken) {
+      return res.json({ valid: false, error: 'Access token обязателен' });
+    }
+
+    if (!phoneNumberId) {
+      return res.json({ valid: false, error: 'Phone Number ID обязателен' });
+    }
+
+    // Test token with WhatsApp Cloud API
+    const response = await fetch(
+      `https://graph.facebook.com/v21.0/${phoneNumberId}?access_token=${accessToken}`
+    );
+    const data = await response.json();
+
+    if (data.error) {
+      console.error('[WhatsApp] Token validation failed:', data.error);
+      return res.json({
+        valid: false,
+        error: data.error.message || 'Неверный токен или Phone Number ID'
+      });
+    }
+
+    console.log('[WhatsApp] Token validated successfully:', data.display_phone_number);
+
+    res.json({
+      valid: true,
+      phoneInfo: {
+        id: data.id,
+        display_phone_number: data.display_phone_number,
+        verified_name: data.verified_name,
+        quality_rating: data.quality_rating
+      }
+    });
+  } catch (error) {
+    console.error('[WhatsApp] Validation error:', error);
+    res.status(500).json({
+      valid: false,
+      error: 'Ошибка проверки токена'
+    });
+  }
 });
 
 app.post('/api/telegram/set-webhook', async (req, res) => {
@@ -4951,6 +5094,120 @@ app.post('/api/admin/update-password', async (req, res) => {
     res.json({ success: true, message: 'Password updated successfully' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ============================================
+// TEST CONNECTION & WEBHOOK HELPERS
+// ============================================
+
+// Get webhook configuration info for all platforms
+app.get('/api/webhooks/info', async (req, res) => {
+  try {
+    const baseUrl = process.env.BASE_URL || `https://${req.get('host')}`;
+
+    res.json({
+      success: true,
+      webhooks: {
+        instagram: {
+          url: `${baseUrl}/api/instagram/webhook`,
+          verifyToken: process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN || 'NOT_SET',
+          setup: 'https://developers.facebook.com/apps',
+          fields: ['messages', 'messaging_postbacks', 'comments']
+        },
+        telegram: {
+          url: `${baseUrl}/webhook/telegram`,
+          setupEndpoint: `${baseUrl}/api/telegram/set-webhook`,
+          currentWebhook: `${baseUrl}/api/telegram/webhook-info`
+        },
+        whatsapp: {
+          url: `${baseUrl}/webhook/whatsapp`,
+          verifyToken: process.env.WEBHOOK_VERIFY_TOKEN || 'NOT_SET',
+          setup: 'https://developers.facebook.com/apps',
+          fields: ['messages']
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Test platform connection
+app.get('/api/test-connection/:platform/:businessId', async (req, res) => {
+  try {
+    const { platform, businessId } = req.params;
+    const business = await db.findBusinessById(businessId);
+
+    if (!business) {
+      return res.json({ success: false, error: 'Business not found' });
+    }
+
+    let platformData;
+    try {
+      platformData = typeof business[platform] === 'string'
+        ? JSON.parse(business[platform])
+        : business[platform];
+    } catch (e) {
+      platformData = business[platform];
+    }
+
+    if (!platformData || !platformData.connected) {
+      return res.json({ success: false, error: `${platform} не подключен` });
+    }
+
+    // Test based on platform
+    if (platform === 'instagram') {
+      const token = platformData.accessToken;
+      const response = await fetch(`https://graph.instagram.com/me?fields=username&access_token=${token}`);
+      const data = await response.json();
+
+      if (data.error) {
+        return res.json({ success: false, error: 'Токен недействителен: ' + data.error.message });
+      }
+
+      return res.json({
+        success: true,
+        message: `Подключено как @${data.username}`
+      });
+    }
+
+    if (platform === 'telegram') {
+      const token = platformData.token;
+      const response = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+      const data = await response.json();
+
+      if (!data.ok) {
+        return res.json({ success: false, error: 'Токен недействителен' });
+      }
+
+      return res.json({
+        success: true,
+        message: `Бот активен: @${data.result.username}`
+      });
+    }
+
+    if (platform === 'whatsapp') {
+      const { phoneNumberId, accessToken } = platformData;
+      const response = await fetch(
+        `https://graph.facebook.com/v21.0/${phoneNumberId}?access_token=${accessToken}`
+      );
+      const data = await response.json();
+
+      if (data.error) {
+        return res.json({ success: false, error: 'Токен недействителен: ' + data.error.message });
+      }
+
+      return res.json({
+        success: true,
+        message: `Подключено: ${data.display_phone_number}`
+      });
+    }
+
+    res.json({ success: false, error: 'Unknown platform' });
+  } catch (error) {
+    console.error('[Test Connection] Error:', error);
+    res.json({ success: false, error: error.message });
   }
 });
 

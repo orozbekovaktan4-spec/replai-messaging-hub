@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <defs>
+    <linearGradient id="ig-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FD5949"/>
+      <stop offset="50%" style="stop-color:#D6249F"/>
+      <stop offset="100%" style="stop-color:#285AEB"/>
+    </linearGradient>
+  </defs>
+  <rect width="48" height="48" rx="12" fill="url(#ig-gradient)"/>
+  <path d="M24 15C19.03 15 15 19.03 15 24C15 28.97 19.03 33 24 33C28.97 33 33 28.97 33 24C33 19.03 28.97 15 24 15ZM24 30C20.69 30 18 27.31 18 24C18 20.69 20.69 18 24 18C27.31 18 30 20.69 30 24C30 27.31 27.31 30 24 30Z" fill="white"/>
+  <circle cx="33.6" cy="14.4" r="2.1" fill="white"/>
+</svg>

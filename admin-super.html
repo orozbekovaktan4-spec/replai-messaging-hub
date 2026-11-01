@@ -2153,31 +2153,72 @@
                         </div>
 
                         <div style="flex: 1;">
-                            <h4 style="margin: 0 0 4px 0; font-size: 18px; font-weight: 600; color: #25D366;">WhatsApp</h4>
-                            <p style="margin: 0 0 12px 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5;">Номер телефона WhatsApp Business</p>
+                            <h4 style="margin: 0 0 4px 0; font-size: 18px; font-weight: 600; color: #25D366;">WhatsApp Business Cloud API</h4>
+                            <p style="margin: 0 0 12px 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5;">Для подключения нужны данные из Meta Developer Console</p>
 
                             <p style="margin: 0 0 12px 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
-                                <strong>Нужен:</strong> Номер WhatsApp Business.
-                                <a href="https://www.whatsapp.com/business" target="_blank" style="color: #25D366;">Получить →</a>
+                                <strong>Инструкция:</strong>
+                                <a href="https://developers.facebook.com/docs/whatsapp/cloud-api/get-started" target="_blank" style="color: #25D366;">Получить Access Token и Phone Number ID →</a>
                             </p>
 
-                            <input
-                                type="tel"
-                                id="connect-whatsapp"
-                                placeholder="+996555123456"
-                                data-i18n-placeholder="whatsapp_phone_placeholder"
-                                style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; margin-bottom: 12px; font-size: 14px; background: var(--bg-secondary); color: var(--text-primary);">
+                            <!-- Phone Number ID -->
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">
+                                    Phone Number ID <span style="color: var(--danger);">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    id="connect-whatsapp-phone-id"
+                                    placeholder="103841762394028"
+                                    style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 14px; font-family: monospace; background: var(--bg-secondary); color: var(--text-primary);">
+                                <small style="display: block; margin-top: 4px; font-size: 12px; color: var(--text-secondary);">
+                                    Из Meta Developer Console → WhatsApp → API Setup
+                                </small>
+                            </div>
+
+                            <!-- Access Token -->
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">
+                                    Access Token <span style="color: var(--danger);">*</span>
+                                </label>
+                                <textarea
+                                    id="connect-whatsapp-token"
+                                    placeholder="EAAxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                                    rows="3"
+                                    style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 12px; font-family: monospace; resize: vertical; background: var(--bg-secondary); color: var(--text-primary);"></textarea>
+                                <small style="display: block; margin-top: 4px; font-size: 12px; color: var(--text-secondary);">
+                                    Permanent token из Meta Business Manager
+                                </small>
+                            </div>
+
+                            <!-- Display Phone (Optional) -->
+                            <div style="margin-bottom: 16px;">
+                                <label style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text-primary);">
+                                    Номер телефона (для отображения)
+                                </label>
+                                <input
+                                    type="tel"
+                                    id="connect-whatsapp-display-phone"
+                                    placeholder="+996555123456"
+                                    style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 14px; background: var(--bg-secondary); color: var(--text-primary);">
+                            </div>
 
                             <button onclick="connectWhatsAppQuick()" class="btn-primary-large" style="width: 100%; margin-bottom: 12px; background: linear-gradient(135deg, #25D366, #128C7E); border: none; padding: 12px; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                                <i data-lucide="phone" style="width: 20px; height: 20px;"></i>
+                                <i data-lucide="link" style="width: 20px; height: 20px;"></i>
                                 <span>Подключить WhatsApp</span>
                             </button>
 
-                            <a href="https://developers.facebook.com/docs/whatsapp/cloud-api/get-started"
+                            <div style="background: var(--warning-light); border-left: 3px solid var(--warning); border-radius: 6px; padding: 12px; margin-top: 12px;">
+                                <p style="margin: 0; font-size: 12px; color: var(--text-primary); line-height: 1.5;">
+                                    ⚠️ <strong>Важно:</strong> Нужен WhatsApp Business API доступ (не обычное приложение WhatsApp Business).
+                                </p>
+                            </div>
+
+                            <a href="https://business.facebook.com/latest/whatsapp_manager"
                                target="_blank"
-                               style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; text-decoration: none; font-size: 13px; color: var(--text-primary);">
-                                <i data-lucide="book-open" style="width: 14px; height: 14px;"></i>
-                                <span>Инструкция по настройке</span>
+                               style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; margin-top: 8px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; text-decoration: none; font-size: 13px; color: var(--text-primary);">
+                                <i data-lucide="external-link" style="width: 14px; height: 14px;"></i>
+                                <span>Открыть Meta Business Manager</span>
                             </a>
                         </div>
                     </div>
@@ -4375,23 +4416,61 @@
 
         async function connectTelegramBot() {
             const token = document.getElementById('telegram-token-input').value.trim();
-            if (!token || !token.includes(':')) return showToast('Введите правильный токен', 'error');
+            if (!token || !token.includes(':')) {
+                return showToast('Введите правильный токен (формат: 123456:ABC...)', 'error');
+            }
 
-            showToast('Подключение...', 'info');
+            // STEP 1: Validate token first
+            showToast('Проверка бота...', 'info');
+
             try {
+                const validateRes = await fetch('/api/telegram/validate-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+
+                const validation = await validateRes.json();
+
+                if (!validation.valid) {
+                    return showToast('❌ ' + validation.error, 'error');
+                }
+
+                // Show bot info
+                if (validation.botInfo) {
+                    console.log('[Telegram] Validated bot:', validation.botInfo.username);
+                }
+
+                // STEP 2: Save to database
+                showToast('Сохранение...', 'info');
+
                 const res = await fetch('/api/admin/businesses/' + currentBusinessId, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ telegram: JSON.stringify({ connected: true, token, connectedAt: new Date().toISOString() }) })
+                    body: JSON.stringify({
+                        telegram: JSON.stringify({
+                            connected: true,
+                            token: token,
+                            bot_username: validation.botInfo?.username,
+                            bot_id: validation.botInfo?.id,
+                            bot_name: validation.botInfo?.first_name,
+                            connectedAt: new Date().toISOString()
+                        })
+                    })
                 });
+
                 const data = await res.json();
+
                 if (data.success) {
-                    showToast('✅ Telegram подключен!', 'success');
+                    showToast('✅ Telegram подключен! (@' + (validation.botInfo?.username || '') + ')', 'success');
                     closeTelegramHelper();
-                    closeQuickConnect();
+                    backToPlatforms();
                     loadBusinesses();
-                } else showToast('Ошибка: ' + data.error, 'error');
+                } else {
+                    showToast('Ошибка сохранения: ' + data.error, 'error');
+                }
             } catch (err) {
+                console.error('[Telegram] Connection error:', err);
                 showToast('Ошибка подключения', 'error');
             }
         }
@@ -4400,42 +4479,127 @@
             const token = document.getElementById('connect-instagram').value.trim();
             if (!token || token.length < 20) return showToast('Введите токен Instagram', 'error');
 
-            showToast('Подключение...', 'info');
+            // STEP 1: Validate token first
+            showToast('Проверка токена...', 'info');
+
             try {
+                const validateRes = await fetch('/api/instagram/validate-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+
+                const validation = await validateRes.json();
+
+                if (!validation.valid) {
+                    return showToast('❌ ' + validation.error, 'error');
+                }
+
+                // Show account info
+                if (validation.accountInfo) {
+                    console.log('[Instagram] Validated account:', validation.accountInfo.username);
+                }
+
+                // STEP 2: Save to database
+                showToast('Сохранение...', 'info');
+
                 const res = await fetch('/api/admin/businesses/' + currentBusinessId, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ instagram: JSON.stringify({ connected: true, accessToken: token, connectedAt: new Date().toISOString() }) })
+                    body: JSON.stringify({
+                        instagram: JSON.stringify({
+                            connected: true,
+                            accessToken: token,
+                            username: validation.accountInfo?.username,
+                            accountId: validation.accountInfo?.id,
+                            connectedAt: new Date().toISOString()
+                        })
+                    })
                 });
+
                 const data = await res.json();
+
                 if (data.success) {
-                    showToast('✅ Instagram подключен!', 'success');
-                    closeQuickConnect();
-                    loadBusinesses();
-                } else showToast('Ошибка: ' + data.error, 'error');
+                    showToast('✅ Instagram подключен! (@' + (validation.accountInfo?.username || '') + ')', 'success');
+                    backToPlatforms(); // Go back to platform cards
+                    loadBusinesses(); // Reload business list
+                } else {
+                    showToast('Ошибка сохранения: ' + data.error, 'error');
+                }
             } catch (err) {
+                console.error('[Instagram] Connection error:', err);
                 showToast('Ошибка подключения', 'error');
             }
         }
 
         async function connectWhatsAppQuick() {
-            const phone = document.getElementById('connect-whatsapp').value.trim();
-            if (!phone || phone.length < 10) return showToast('Введите номер телефона', 'error');
+            const phoneNumberId = document.getElementById('connect-whatsapp-phone-id').value.trim();
+            const accessToken = document.getElementById('connect-whatsapp-token').value.trim();
+            const displayPhone = document.getElementById('connect-whatsapp-display-phone').value.trim();
 
-            showToast('Подключение...', 'info');
+            if (!phoneNumberId) {
+                return showToast('Введите Phone Number ID', 'error');
+            }
+
+            if (!accessToken || accessToken.length < 50) {
+                return showToast('Введите правильный Access Token', 'error');
+            }
+
+            // STEP 1: Validate credentials first
+            showToast('Проверка учетных данных...', 'info');
+
             try {
+                const validateRes = await fetch('/api/whatsapp/validate-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        accessToken: accessToken,
+                        phoneNumberId: phoneNumberId
+                    })
+                });
+
+                const validation = await validateRes.json();
+
+                if (!validation.valid) {
+                    return showToast('❌ ' + validation.error, 'error');
+                }
+
+                // Show phone info
+                if (validation.phoneInfo) {
+                    console.log('[WhatsApp] Validated phone:', validation.phoneInfo.display_phone_number);
+                }
+
+                // STEP 2: Save to database
+                showToast('Сохранение...', 'info');
+
                 const res = await fetch('/api/admin/businesses/' + currentBusinessId, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ whatsapp: JSON.stringify({ connected: true, phone, connectedAt: new Date().toISOString() }) })
+                    body: JSON.stringify({
+                        whatsapp: JSON.stringify({
+                            connected: true,
+                            phoneNumberId: phoneNumberId,
+                            accessToken: accessToken,
+                            displayPhone: displayPhone || validation.phoneInfo?.display_phone_number,
+                            verifiedName: validation.phoneInfo?.verified_name,
+                            qualityRating: validation.phoneInfo?.quality_rating,
+                            connectedAt: new Date().toISOString()
+                        })
+                    })
                 });
+
                 const data = await res.json();
+
                 if (data.success) {
-                    showToast('✅ WhatsApp подключен!', 'success');
-                    closeQuickConnect();
+                    const phoneDisplay = validation.phoneInfo?.display_phone_number || phoneNumberId;
+                    showToast('✅ WhatsApp подключен! (' + phoneDisplay + ')', 'success');
+                    backToPlatforms();
                     loadBusinesses();
-                } else showToast('Ошибка: ' + data.error, 'error');
+                } else {
+                    showToast('Ошибка сохранения: ' + data.error, 'error');
+                }
             } catch (err) {
+                console.error('[WhatsApp] Connection error:', err);
                 showToast('Ошибка подключения', 'error');
             }
         }
@@ -4444,7 +4608,54 @@
         function openPlatformPanel(platform) {
             // Hide the grid
             document.getElementById('platforms-grid').style.display = 'none';
-            
+
+            // Show the specific platform panel with animation
+            const panel = document.getElementById(platform + '-panel');
+
+        // Test platform connection
+        async function testConnection(platform) {
+            const businessId = currentBusinessId;
+            showToast(`Проверка ${platform}...`, 'info');
+
+            try {
+                const res = await fetch(`/api/test-connection/${platform}/${businessId}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    showToast(`✅ ${platform}: ${data.message}`, 'success');
+                } else {
+                    showToast(`❌ ${platform}: ${data.error}`, 'error');
+                }
+            } catch (err) {
+                showToast(`Ошибка проверки ${platform}`, 'error');
+            }
+        }
+
+        // Show webhook setup instructions
+        async function showWebhookInfo() {
+            try {
+                const res = await fetch('/api/webhooks/info');
+                const data = await res.json();
+
+                if (data.success) {
+                    const info = data.webhooks;
+                    let message = '📡 WEBHOOK URLS:\n\n';
+                    message += `Instagram:\n${info.instagram.url}\nVerify Token: ${info.instagram.verifyToken}\n\n`;
+                    message += `Telegram:\n${info.telegram.url}\n\n`;
+                    message += `WhatsApp:\n${info.whatsapp.url}\nVerify Token: ${info.whatsapp.verifyToken}`;
+
+                    alert(message);
+                }
+            } catch (err) {
+                showToast('Ошибка загрузки webhook info', 'error');
+            }
+        }
+
+        // Platform panel navigation (slide-in from right)
+        function openPlatformPanel(platform) {
+            // Hide the grid
+            document.getElementById('platforms-grid').style.display = 'none';
+
             // Show the specific platform panel with animation
             const panel = document.getElementById(platform + '-panel');
             panel.style.display = 'block';
