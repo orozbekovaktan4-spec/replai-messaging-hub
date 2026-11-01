@@ -4465,7 +4465,7 @@
                     showToast('✅ Telegram подключен! (@' + (validation.botInfo?.username || '') + ')', 'success');
                     closeTelegramHelper();
                     backToPlatforms();
-                    loadBusinesses();
+                    loadBusinessesDashboard();
                 } else {
                     showToast('Ошибка сохранения: ' + data.error, 'error');
                 }
@@ -4522,7 +4522,7 @@
                 if (data.success) {
                     showToast('✅ Instagram подключен! (@' + (validation.accountInfo?.username || '') + ')', 'success');
                     backToPlatforms(); // Go back to platform cards
-                    loadBusinesses(); // Reload business list
+                    loadBusinessesDashboard(); // Reload business list
                 } else {
                     showToast('Ошибка сохранения: ' + data.error, 'error');
                 }
@@ -4594,7 +4594,7 @@
                     const phoneDisplay = validation.phoneInfo?.display_phone_number || phoneNumberId;
                     showToast('✅ WhatsApp подключен! (' + phoneDisplay + ')', 'success');
                     backToPlatforms();
-                    loadBusinesses();
+                    loadBusinessesDashboard();
                 } else {
                     showToast('Ошибка сохранения: ' + data.error, 'error');
                 }
