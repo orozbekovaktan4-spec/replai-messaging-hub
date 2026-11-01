@@ -1,0 +1,270 @@
+Hi Claude Code!
+
+STOP. READ THIS COMPLETELY BEFORE DOING ANYTHING.
+
+## YOUR MISSION: IMPLEMENT REAL INSTAGRAM API (META OFFICIAL)
+
+**What we're building:** Real Instagram Platform API connection like Fusion AI uses - NOT fake tokens.
+
+**Read this file:** REAL-INSTAGRAM-API-IMPLEMENTATION.md (490 lines, complete implementation guide)
+
+---
+
+## WHAT TO BUILD (5 MAJOR COMPONENTS):
+
+### 1. OAUTH FLOW ENDPOINTS (server-new.js)
+
+Add these routes:
+
+```javascript
+// Step 1: Start OAuth
+app.get('/api/instagram/connect', (req, res) => {
+  // Build Instagram OAuth URL with App ID
+  // Include businessId in state parameter
+  // Return authUrl to frontend
+});
+
+// Step 2: Handle callback
+app.get('/api/instagram/oauth-callback', async (req, res) => {
+  // Exchange code for short-lived token
+  // Exchange short-lived for long-lived token (60 days)
+  // Get Instagram profile info
+  // Save to business.json
+  // Subscribe to webhooks
+  // Redirect to admin with success message
+});
+
+// Helper function
+async function subscribeToWebhooks(userId, accessToken) {
+  // Subscribe to messages and comments
+  // POST to https://graph.instagram.com/v21.0/${userId}/subscribed_apps
+}
+```
+
+### 2. WEBHOOK ENDPOINTS (server-new.js)
+
+```javascript
+// Webhook verification (required by Meta)
+app.get('/api/instagram/webhook', (req, res) => {
+  // Verify hub.verify_token matches INSTAGRAM_WEBHOOK_VERIFY_TOKEN
+  // Return hub.challenge
+});
+
+// Webhook events
+app.post('/api/instagram/webhook', async (req, res) => {
+  // Respond 200 immediately
+  // Process messages and comments asynchronously
+  // Call handleInstagramMessage() or handleInstagramComment()
+});
+
+async function handleInstagramMessage(event) {
+  // Extract sender, recipient, message text
+  // Find business by Instagram userId
+  // Generate AI response
+  // Send DM via sendInstagramDM()
+  // Save conversation
+}
+
+async function handleInstagramComment(commentData) {
+  // Extract comment text, mediaId, commenterId
+  // Find business
+  // Generate AI response
+  // Reply via replyToInstagramComment()
+}
+
+async function sendInstagramDM(recipientId, senderId, message, accessToken) {
+  // POST to https://graph.instagram.com/v21.0/${recipientId}/messages
+}
+
+async function replyToInstagramComment(commentId, replyText, accessToken) {
+  // POST to https://graph.instagram.com/v21.0/${commentId}/replies
+}
+```
+
+### 3. HELPER FUNCTIONS (server-new.js)
+
+```javascript
+function findBusinessByInstagramUserId(instagramUserId) {
+  const businesses = readAllBusinesses();
+  return businesses.find(b => b.channels?.instagram?.userId === instagramUserId);
+}
+
+function readAllBusinesses() {
+  // Read all business-*.json files
+  // Return array of business objects
+}
+```
+
+### 4. FRONTEND UPDATES (admin-super.html)
+
+Replace the fake Instagram connection with real OAuth:
+
+```javascript
+async function connectInstagramOfficial() {
+    const businessId = currentBusinessId;
+    
+    showToast('Перенаправление на Instagram...', 'info');
+    
+    const res = await fetch(`/api/instagram/connect?businessId=${businessId}`);
+    const data = await res.json();
+    
+    if (data.authUrl) {
+        window.location.href = data.authUrl; // Redirect to Instagram
+    }
+}
+
+// Handle OAuth callback
+window.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    if (urlParams.get('instagram_connected') === 'true') {
+        showToast('✅ Instagram успешно подключен!', 'success');
+        loadBusinessesDashboard();
+    }
+    
+    if (urlParams.get('error')) {
+        showToast('❌ Ошибка: ' + urlParams.get('error'), 'error');
+    }
+});
+```
+
+Update the Instagram connect button:
+```html
+<button onclick="connectInstagramOfficial()">Подключить Instagram</button>
+```
+
+### 5. ENVIRONMENT VARIABLES
+
+Add to `.env`:
+```bash
+INSTAGRAM_APP_ID=placeholder_will_be_filled_later
+INSTAGRAM_APP_SECRET=placeholder_will_be_filled_later
+INSTAGRAM_GRAPH_API_VERSION=v21.0
+INSTAGRAM_REDIRECT_URI=https://replai-xc95.onrender.com/api/instagram/oauth-callback
+INSTAGRAM_WEBHOOK_VERIFY_TOKEN=replai_instagram_webhook_2024
+```
+
+Update `.env.example` with these variables.
+
+---
+
+## IMPLEMENTATION REQUIREMENTS:
+
+### ✅ Must Have:
+1. OAuth 2.0 flow (start + callback)
+2. Token exchange (short → long-lived)
+3. Webhook verification endpoint (GET)
+4. Webhook events endpoint (POST)
+5. Handle DM messages
+6. Handle comments
+7. Send DM replies via Graph API
+8. Send comment replies via Graph API
+9. Save Instagram data to business.json:
+   ```json
+   {
+     "channels": {
+       "instagram": {
+         "connected": true,
+         "userId": "12345",
+         "username": "businessname",
+         "accessToken": "...",
+         "tokenExpiresAt": "2025-03-01T00:00:00.000Z",
+         "connectedAt": "2025-01-01T00:00:00.000Z"
+       }
+     }
+   }
+   ```
+
+### ✅ Error Handling:
+- Catch all axios errors
+- Log to console with `[Instagram]` prefix
+- Return user-friendly error messages
+- Redirect to admin with error parameter on OAuth failure
+
+### ✅ Security:
+- Use state parameter in OAuth for CSRF protection
+- Verify webhook signature (hub.verify_token)
+- Never log access tokens
+
+### ✅ NPM Packages:
+Add `axios` to package.json if not already present:
+```bash
+npm install axios
+```
+
+---
+
+## STEP-BY-STEP EXECUTION:
+
+1. Read REAL-INSTAGRAM-API-IMPLEMENTATION.md completely
+2. Add axios to package.json dependencies
+3. Update .env and .env.example with Instagram variables
+4. Add OAuth endpoints to server-new.js:
+   - GET /api/instagram/connect
+   - GET /api/instagram/oauth-callback
+5. Add webhook endpoints to server-new.js:
+   - GET /api/instagram/webhook (verification)
+   - POST /api/instagram/webhook (events)
+6. Add helper functions:
+   - subscribeToWebhooks()
+   - handleInstagramMessage()
+   - handleInstagramComment()
+   - sendInstagramDM()
+   - replyToInstagramComment()
+   - findBusinessByInstagramUserId()
+   - readAllBusinesses()
+7. Update admin-super.html:
+   - Add connectInstagramOfficial()
+   - Add OAuth callback handler
+   - Replace old Instagram connect button
+8. Test the implementation:
+   - Check if OAuth URL generates correctly
+   - Verify webhook endpoint responds with challenge
+   - Ensure business.json structure is correct
+
+---
+
+## AFTER IMPLEMENTATION:
+
+The user will need to:
+1. Create Meta Developer App at https://developers.facebook.com/apps
+2. Copy App ID and App Secret to Render environment variables
+3. Configure OAuth redirect URI in Meta console
+4. Configure webhook URL in Meta console
+5. Test OAuth connection flow
+
+But your job is to build ALL the code that makes this work!
+
+---
+
+## COMMIT MESSAGE WHEN DONE:
+
+```
+feat: Implement real Instagram Platform API (Meta Official OAuth)
+
+- Add OAuth 2.0 flow with Meta Developer App integration
+- Add webhook endpoints for real-time DM and comment notifications
+- Add Graph API methods for sending DM and comment replies
+- Exchange short-lived tokens for long-lived (60 days)
+- Auto-subscribe to Instagram webhooks on connection
+- Save Instagram credentials to business.json
+- Replace fake token connection with official Meta API
+- This is how Fusion AI and all professional tools connect Instagram
+
+Technical changes:
+- Added /api/instagram/connect (OAuth initiation)
+- Added /api/instagram/oauth-callback (token exchange)
+- Added /api/instagram/webhook GET (verification)
+- Added /api/instagram/webhook POST (events)
+- Added sendInstagramDM() for DM replies
+- Added replyToInstagramComment() for comment replies
+- Added helper functions for business lookup
+- Updated frontend with connectInstagramOfficial()
+- Added axios dependency
+```
+
+---
+
+## START NOW! BUILD THE REAL INSTAGRAM API LIKE FUSION!
+
+This is a professional, production-ready implementation using Meta's official Instagram Platform API. No more fake tokens. This is the REAL thing.
