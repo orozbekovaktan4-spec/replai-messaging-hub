@@ -4736,14 +4736,6 @@
             }
         }
 
-        // Platform panel navigation (slide-in from right)
-        function openPlatformPanel(platform) {
-            // Hide the grid
-            document.getElementById('platforms-grid').style.display = 'none';
-
-            // Show the specific platform panel with animation
-            const panel = document.getElementById(platform + '-panel');
-
         // Test platform connection
         async function testConnection(platform) {
             const businessId = currentBusinessId;
