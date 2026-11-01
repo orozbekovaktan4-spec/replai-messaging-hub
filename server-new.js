@@ -1370,8 +1370,9 @@ app.get('/admin', (req, res) => {
   const filePath = path.join(__dirname, 'admin-super.html');
   let html = fs.readFileSync(filePath, 'utf8');
 
-  // Add version meta tag to force browser refresh
-  html = html.replace('<head>', `<head>\n    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">\n    <meta http-equiv="Pragma" content="no-cache">\n    <meta http-equiv="Expires" content="0">`);
+  // Add version meta tag AND timestamp to force browser refresh
+  const timestamp = Date.now();
+  html = html.replace('<head>', `<head>\n    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">\n    <meta http-equiv="Pragma" content="no-cache">\n    <meta http-equiv="Expires" content="0">\n    <meta name="version" content="${timestamp}">`);
 
   res.send(html);
 });

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>REPLAI - Enterprise Admin</title>
+    <meta name="build-version" content="v2024.09.22.001">
     
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -2249,6 +2250,9 @@
         </div>
     </div>
     <script>
+        console.log('[Admin] 🚀 Admin panel script loading... Version: v2024.09.22.001');
+        console.log('[Admin] Build time:', new Date().toISOString());
+        
         // ============= LANGUAGE SYSTEM =============
         const translations = {
             ru: {
@@ -3583,9 +3587,26 @@
 
         // Business Management
         async function loadBusinessesDashboard() {
+            // Show loading state
+            const tbody = document.getElementById('businesses-table-body');
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr><td colspan="8" style="text-align: center; padding: 40px;">
+                        <div style="display: inline-block;">
+                            <div class="loading-spinner" style="margin: 0 auto 16px;"></div>
+                            <p style="color: var(--text-secondary);">Loading businesses...</p>
+                        </div>
+                    </td></tr>
+                `;
+            }
+
             try {
+                console.log('[Admin] Loading businesses dashboard...');
                 const res = await fetch('/api/admin/businesses?limit=1000');
                 const data = await res.json();
+                
+                console.log('[Admin] API response:', data);
+                
                 if (data.success) {
                     allBusinesses = data.data || [];
                     filteredBusinesses = [...allBusinesses];
@@ -3655,10 +3676,40 @@
                     updateTrend('trend-health', healthGrowth, '');
                     
                     renderBusinessesTable();
+                } else {
+                    console.error('[Admin] API returned error:', data);
+                    if (tbody) {
+                        tbody.innerHTML = `
+                            <tr><td colspan="8" style="text-align: center; padding: 40px;">
+                                <div style="color: var(--danger);">
+                                    <p>❌ Failed to load businesses</p>
+                                    <p style="font-size: 14px; margin-top: 8px;">${data.error || 'Unknown error'}</p>
+                                    <button class="btn-primary" onclick="loadBusinessesDashboard()" style="margin-top: 16px;">
+                                        Retry
+                                    </button>
+                                </div>
+                            </td></tr>
+                        `;
+                    }
                 }
             } catch (error) {
-                console.error('Error:', error);
-                showToast('Failed to load businesses', 'error');
+                console.error('[Admin] Error loading businesses:', error);
+                showToast('Failed to load businesses: ' + error.message, 'error');
+                
+                const tbody = document.getElementById('businesses-table-body');
+                if (tbody) {
+                    tbody.innerHTML = `
+                        <tr><td colspan="8" style="text-align: center; padding: 40px;">
+                            <div style="color: var(--danger);">
+                                <p>❌ Error loading businesses</p>
+                                <p style="font-size: 14px; margin-top: 8px;">${error.message}</p>
+                                <button class="btn-primary" onclick="loadBusinessesDashboard()" style="margin-top: 16px;">
+                                    Retry
+                                </button>
+                            </div>
+                        </td></tr>
+                    `;
+                }
             }
         }
         
