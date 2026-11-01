@@ -1,0 +1,23 @@
+Hi Claude Code! I need you to fix a critical issue with zero context needed.
+
+READ THIS FILE FIRST: ADMIN-PANEL-STUCK-FIX.md
+
+That file contains:
+- Complete problem description
+- What we know works (API returns data correctly)
+- 8-step diagnostic and fix procedure
+- Expected console output after fixes
+- All code examples you need
+
+YOUR TASK:
+1. Read ADMIN-PANEL-STUCK-FIX.md completely
+2. Follow ALL 8 steps in order
+3. Add the comprehensive logging code shown
+4. Create the test page
+5. Enhance cache busting
+6. Commit with the message provided
+7. Push to GitHub
+
+The admin panel at https://replai-xc95.onrender.com/admin is stuck on "Loading businesses..." even though the API works perfectly. We need extensive debugging to find out EXACTLY where the JavaScript is failing.
+
+Start working through the steps now. Be thorough and methodical.
