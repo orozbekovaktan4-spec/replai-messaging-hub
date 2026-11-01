@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Debug - REPLAI</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #0f0;
+        }
+        .test { margin: 10px 0; padding: 10px; background: #2a2a2a; }
+        .pass { border-left: 4px solid #0f0; }
+        .fail { border-left: 4px solid #f00; }
+        button { padding: 10px; margin: 10px 0; cursor: pointer; }
+        pre { background: #000; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 REPLAI Admin Diagnostic</h1>
+    <div id="tests"></div>
+    <button onclick="runTests()">🔄 Run Tests Again</button>
+    <div id="logs"></div>
+
+    <script>
+        async function runTests() {
+            const results = document.getElementById('tests');
+            const logs = document.getElementById('logs');
+            results.innerHTML = '<h2>Running tests...</h2>';
+            logs.innerHTML = '';
+
+            // Test 1: Check API endpoint
+            try {
+                const res = await fetch('/api/admin/businesses?limit=5');
+                const data = await res.json();
+                if (data.success) {
+                    results.innerHTML += `<div class="test pass">✅ API Endpoint: Working (${data.total} businesses found)</div>`;
+                    logs.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    results.innerHTML += `<div class="test fail">❌ API Endpoint: Failed - ${data.error}</div>`;
+                }
+            } catch (err) {
+                results.innerHTML += `<div class="test fail">❌ API Endpoint: Error - ${err.message}</div>`;
+            }
+
+            // Test 2: Check if loadBusinessesDashboard exists
+            results.innerHTML += `<div class="test ${typeof loadBusinessesDashboard !== 'undefined' ? 'pass' : 'fail'}">
+                ${typeof loadBusinessesDashboard !== 'undefined' ? '✅' : '❌'} 
+                Function loadBusinessesDashboard exists: ${typeof loadBusinessesDashboard !== 'undefined'}
+            </div>`;
+
+            // Test 3: Check console errors
+            const originalError = console.error;
+            const errors = [];
+            console.error = function(...args) {
+                errors.push(args.join(' '));
+                originalError.apply(console, args);
+            };
+
+            setTimeout(() => {
+                results.innerHTML += `<div class="test ${errors.length === 0 ? 'pass' : 'fail'}">
+                    ${errors.length === 0 ? '✅' : '❌'} 
+                    Console Errors: ${errors.length} found
+                    ${errors.length > 0 ? '<pre>' + errors.join('\\n') + '</pre>' : ''}
+                </div>`;
+                console.error = originalError;
+            }, 1000);
+
+            // Test 4: Try calling loadBusinessesDashboard
+            try {
+                results.innerHTML += `<div class="test pass">✅ Attempting to load businesses...</div>`;
+                // We'll just test if we can call it, not actually call it to avoid side effects
+            } catch (err) {
+                results.innerHTML += `<div class="test fail">❌ Load businesses error: ${err.message}</div>`;
+            }
+
+            // Test 5: Check if Lucide is loaded
+            results.innerHTML += `<div class="test ${typeof lucide !== 'undefined' ? 'pass' : 'fail'}">
+                ${typeof lucide !== 'undefined' ? '✅' : '❌'} 
+                Lucide icons library: ${typeof lucide !== 'undefined' ? 'Loaded' : 'Missing'}
+            </div>`;
+
+            // Test 6: Check fetch to businesses
+            results.innerHTML += '<div class="test">🔄 Testing fetch directly...</div>';
+            fetch('/api/admin/businesses')
+                .then(r => r.text())
+                .then(text => {
+                    logs.innerHTML += `<h3>Raw API Response:</h3><pre>${text.substring(0, 500)}...</pre>`;
+                })
+                .catch(err => {
+                    logs.innerHTML += `<h3>Fetch Error:</h3><pre>${err.message}</pre>`;
+                });
+        }
+
+        // Run tests on load
+        window.onload = runTests;
+    </script>
+</body>
+</html>

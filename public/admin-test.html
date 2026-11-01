@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin API Test - REPLAI</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #0a0e17;
+            color: #e4e7eb;
+        }
+        h1 {
+            color: #60efff;
+            margin-bottom: 10px;
+        }
+        .status {
+            padding: 10px;
+            margin: 20px 0;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+        .status.loading {
+            background: #1e2330;
+            color: #9ca3af;
+        }
+        .status.success {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+        .status.error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+        button {
+            background: linear-gradient(135deg, #60efff, #4fd1c5);
+            color: #0a0e17;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px 10px 10px 0;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        pre {
+            background: #141923;
+            padding: 20px;
+            border-radius: 8px;
+            overflow: auto;
+            max-height: 600px;
+            border: 1px solid #2d3748;
+        }
+        .test-info {
+            background: #1e2330;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #60efff;
+        }
+        .console-log {
+            background: #141923;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            max-height: 400px;
+            overflow: auto;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .console-log div {
+            margin: 5px 0;
+            padding: 5px;
+        }
+        .log-info { color: #60efff; }
+        .log-success { color: #10b981; }
+        .log-error { color: #ef4444; }
+        .log-warn { color: #f59e0b; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Admin API Test</h1>
+    <p style="color: #9ca3af; margin-bottom: 30px;">Test the admin businesses API endpoint to diagnose loading issues</p>
+
+    <div class="test-info">
+        <strong>📌 What this tests:</strong>
+        <ul style="margin: 10px 0; padding-left: 20px;">
+            <li>API endpoint: <code>/api/admin/businesses?limit=1000</code></li>
+            <li>Response status and headers</li>
+            <li>JSON parsing</li>
+            <li>Data structure validation</li>
+        </ul>
+    </div>
+
+    <div style="margin: 30px 0;">
+        <button onclick="testAPI()">▶️ Test API</button>
+        <button onclick="testAPIDetailed()">🔍 Test with Details</button>
+        <button onclick="clearResults()">🗑️ Clear Results</button>
+        <button onclick="window.location.href='/admin'">🏠 Go to Admin Panel</button>
+    </div>
+
+    <div id="status" class="status loading">Ready to test...</div>
+
+    <h3>Console Logs:</h3>
+    <div id="console" class="console-log"></div>
+
+    <h3>API Response:</h3>
+    <pre id="result">Click "Test API" to begin...</pre>
+
+    <script>
+        const consoleDiv = document.getElementById('console');
+        const statusDiv = document.getElementById('status');
+        const resultDiv = document.getElementById('result');
+
+        function log(message, type = 'info') {
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-${type}`;
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            consoleDiv.appendChild(logEntry);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function setStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+
+        function clearResults() {
+            consoleDiv.innerHTML = '';
+            resultDiv.textContent = 'Results cleared. Click "Test API" to begin...';
+            setStatus('Ready to test...', 'loading');
+        }
+
+        async function testAPI() {
+            consoleDiv.innerHTML = '';
+            log('🚀 Starting API test...', 'info');
+            setStatus('Testing API...', 'loading');
+            resultDiv.textContent = 'Loading...';
+
+            try {
+                log('📡 Fetching from /api/admin/businesses?limit=1000', 'info');
+                const startTime = Date.now();
+
+                const res = await fetch('/api/admin/businesses?limit=1000');
+                const endTime = Date.now();
+                const duration = endTime - startTime;
+
+                log(`✅ Response received in ${duration}ms`, 'success');
+                log(`📊 Status: ${res.status} ${res.statusText}`, res.ok ? 'success' : 'error');
+
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                }
+
+                log('🔄 Parsing JSON...', 'info');
+                const data = await res.json();
+
+                log('✅ JSON parsed successfully', 'success');
+                log(`📦 Data received: ${JSON.stringify(data).length} characters`, 'info');
+
+                if (data.success) {
+                    log(`✅ API returned success=true`, 'success');
+                    log(`📋 Business count: ${data.data?.length || 0}`, 'success');
+                    log(`📊 Total: ${data.total}`, 'info');
+
+                    if (data.data && data.data.length > 0) {
+                        log(`✅ First business: ${data.data[0].name}`, 'success');
+                        setStatus(`✅ SUCCESS: ${data.data.length} businesses loaded`, 'success');
+                    } else {
+                        log('⚠️ No businesses in response', 'warn');
+                        setStatus('⚠️ API works but returned no businesses', 'error');
+                    }
+                } else {
+                    log(`❌ API returned success=false`, 'error');
+                    log(`Error: ${data.error || 'Unknown error'}`, 'error');
+                    setStatus('❌ API returned error', 'error');
+                }
+
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                log(`❌ ERROR: ${error.message}`, 'error');
+                log(`Stack: ${error.stack}`, 'error');
+                setStatus(`❌ ERROR: ${error.message}`, 'error');
+                resultDiv.textContent = `ERROR: ${error.message}\n\nStack:\n${error.stack}`;
+            }
+        }
+
+        async function testAPIDetailed() {
+            consoleDiv.innerHTML = '';
+            log('🚀 Starting DETAILED API test...', 'info');
+            setStatus('Testing API with full details...', 'loading');
+            resultDiv.textContent = 'Loading detailed test...';
+
+            try {
+                log('📡 Fetching from /api/admin/businesses?limit=1000', 'info');
+                log(`🌐 Current URL: ${window.location.href}`, 'info');
+                log(`🔐 Cookies: ${document.cookie ? 'Present' : 'None'}`, 'info');
+
+                const startTime = Date.now();
+                const res = await fetch('/api/admin/businesses?limit=1000', {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                });
+                const endTime = Date.now();
+
+                log(`⏱️ Response time: ${endTime - startTime}ms`, 'info');
+                log(`📊 Status: ${res.status} ${res.statusText}`, res.ok ? 'success' : 'error');
+                log(`📋 Response OK: ${res.ok}`, res.ok ? 'success' : 'error');
+                log(`🔒 Response redirected: ${res.redirected}`, res.redirected ? 'warn' : 'info');
+                log(`📍 Response URL: ${res.url}`, 'info');
+                log(`📦 Response type: ${res.type}`, 'info');
+
+                log('📋 Response Headers:', 'info');
+                for (const [key, value] of res.headers.entries()) {
+                    log(`  ${key}: ${value}`, 'info');
+                }
+
+                const contentType = res.headers.get('content-type');
+                log(`📄 Content-Type: ${contentType}`, 'info');
+
+                if (!contentType || !contentType.includes('application/json')) {
+                    log('⚠️ WARNING: Response is not JSON!', 'warn');
+                }
+
+                const text = await res.text();
+                log(`📏 Response size: ${text.length} characters`, 'info');
+
+                let data;
+                try {
+                    data = JSON.parse(text);
+                    log('✅ JSON parsing successful', 'success');
+                } catch (parseError) {
+                    log(`❌ JSON parsing failed: ${parseError.message}`, 'error');
+                    log(`First 500 chars of response: ${text.substring(0, 500)}`, 'error');
+                    throw parseError;
+                }
+
+                log('📦 Data structure:', 'info');
+                log(`  - success: ${data.success}`, data.success ? 'success' : 'error');
+                log(`  - data: ${Array.isArray(data.data) ? `Array[${data.data.length}]` : typeof data.data}`, 'info');
+                log(`  - total: ${data.total}`, 'info');
+
+                if (data.data && data.data.length > 0) {
+                    log('📋 First business details:', 'success');
+                    const first = data.data[0];
+                    log(`  - id: ${first.id}`, 'info');
+                    log(`  - name: ${first.name}`, 'info');
+                    log(`  - email: ${first.email}`, 'info');
+                    log(`  - status: ${first.status}`, 'info');
+                    log(`  - plan: ${first.plan}`, 'info');
+                    log(`  - createdAt: ${first.createdAt}`, 'info');
+                }
+
+                setStatus(`✅ DETAILED TEST COMPLETE: ${data.data?.length || 0} businesses`, 'success');
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+
+            } catch (error) {
+                log(`❌ FATAL ERROR: ${error.message}`, 'error');
+                log(`Error type: ${error.constructor.name}`, 'error');
+                log(`Stack: ${error.stack}`, 'error');
+                setStatus(`❌ FATAL ERROR: ${error.message}`, 'error');
+                resultDiv.textContent = `FATAL ERROR: ${error.message}\n\nType: ${error.constructor.name}\n\nStack:\n${error.stack}`;
+            }
+        }
+
+        // Auto-test on load
+        window.addEventListener('DOMContentLoaded', () => {
+            log('✅ Test page loaded successfully', 'success');
+            log('📍 Page URL: ' + window.location.href, 'info');
+            log('🕐 Current time: ' + new Date().toISOString(), 'info');
+            log('Click "Test API" button to begin testing', 'info');
+        });
+    </script>
+</body>
+</html>

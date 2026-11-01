@@ -1361,10 +1361,13 @@ app.get('/privacy-policy', (req, res) => {
 
 // Super Admin Panel - manages all businesses
 app.get('/admin', (req, res) => {
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  // Nuclear cache busting headers
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
   res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
+  res.setHeader('Expires', '-1');
   res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Last-Modified', new Date().toUTCString());
+  res.setHeader('ETag', Date.now().toString());
 
   // Read file and inject version tag to bust cache
   const filePath = path.join(__dirname, 'admin-super.html');
@@ -1373,6 +1376,12 @@ app.get('/admin', (req, res) => {
   // Add version meta tag AND timestamp to force browser refresh
   const timestamp = Date.now();
   html = html.replace('<head>', `<head>\n    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">\n    <meta http-equiv="Pragma" content="no-cache">\n    <meta http-equiv="Expires" content="0">\n    <meta name="version" content="${timestamp}">`);
+
+  // Inject timestamp into script tag to force re-evaluation
+  html = html.replace(
+    '<script>',
+    `<script>window.__ADMIN_VERSION__ = "${timestamp}"; console.log('[Admin] Version loaded:', "${timestamp}");`
+  );
 
   res.send(html);
 });

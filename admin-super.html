@@ -3424,19 +3424,45 @@
             lucide.createIcons();
         }
 
+        // Debug logging for initialization
+        console.log('[Admin] ============================================');
+        console.log('[Admin] Script loaded at:', new Date().toISOString());
+        console.log('[Admin] DOM state:', document.readyState);
+        console.log('[Admin] ============================================');
+
+        if (document.readyState === 'loading') {
+            console.log('[Admin] Waiting for DOMContentLoaded...');
+        } else {
+            console.log('[Admin] DOM already loaded!');
+        }
+
         // Init
         window.addEventListener('DOMContentLoaded', () => {
+            console.log('[Admin] ============================================');
+            console.log('[Admin] ✓ DOMContentLoaded FIRED');
+            console.log('[Admin] Admin Panel Initializing...');
+            console.log('[Admin] Timestamp:', new Date().toISOString());
+            console.log('[Admin] ============================================');
+
             const savedTheme = localStorage.getItem('replai-theme') || 'dark';
             document.documentElement.setAttribute('data-theme', savedTheme);
             document.getElementById('theme-icon-light').style.display = savedTheme === 'light' ? 'none' : 'block';
             document.getElementById('theme-icon-dark').style.display = savedTheme === 'light' ? 'block' : 'none';
 
             // Apply translations on load
+            console.log('[Admin] Applying translations...');
             applyTranslations();
 
+            console.log('[Admin] About to call loadBusinessesDashboard()');
             loadBusinessesDashboard();
+
+            console.log('[Admin] About to call loadPlatformSettings()');
             loadPlatformSettings();
+
+            console.log('[Admin] About to call loadAPIKeys()');
             loadAPIKeys();
+
+            console.log('[Admin] About to create icons');
             lucide.createIcons();
 
             // Add toggle event listeners for auto-save
@@ -3449,6 +3475,26 @@
             document.querySelectorAll('#settings-notifications input[type="checkbox"]').forEach(toggle => {
                 toggle.addEventListener('change', saveNotificationSettings);
             });
+
+            // Add timeout check for loading state
+            setTimeout(() => {
+                const tbody = document.getElementById('businesses-table-body');
+                if (tbody && tbody.innerHTML.includes('Loading businesses...')) {
+                    console.error('[Admin] ✖ TIMEOUT: Still showing loading after 10 seconds!');
+                    tbody.innerHTML = `
+                        <tr><td colspan="8" style="text-align:center;padding:40px;">
+                            <div style="color: var(--danger);">
+                                <p style="font-size:18px;margin-bottom:10px;">⚠️ Loading timed out</p>
+                                <p style="color:var(--text-secondary);margin:10px 0;">Check browser console (F12) for errors</p>
+                                <div style="display:flex;gap:10px;justify-content:center;margin-top:20px;">
+                                    <button onclick="location.reload()" class="btn-primary">Reload Page</button>
+                                    <button onclick="loadBusinessesDashboard()" class="btn-primary">Retry Load</button>
+                                </div>
+                            </div>
+                        </td></tr>
+                    `;
+                }
+            }, 10000);
         });
 
         // Section Management
@@ -3587,9 +3633,15 @@
 
         // Business Management
         async function loadBusinessesDashboard() {
+            console.log('[Admin] → loadBusinessesDashboard() STARTED');
+            console.log('[Admin] → Timestamp:', new Date().toISOString());
+
             // Show loading state
             const tbody = document.getElementById('businesses-table-body');
+            console.log('[Admin] → tbody element:', tbody ? 'FOUND' : 'NOT FOUND');
+
             if (tbody) {
+                console.log('[Admin] → Setting loading state...');
                 tbody.innerHTML = `
                     <tr><td colspan="8" style="text-align: center; padding: 40px;">
                         <div style="display: inline-block;">
@@ -3601,16 +3653,31 @@
             }
 
             try {
-                console.log('[Admin] Loading businesses dashboard...');
+                console.log('[Admin] → Fetching from API...');
+                console.log('[Admin] → API URL: /api/admin/businesses?limit=1000');
+
                 const res = await fetch('/api/admin/businesses?limit=1000');
+
+                console.log('[Admin] → API Response received');
+                console.log('[Admin] → Response status:', res.status);
+                console.log('[Admin] → Response ok:', res.ok);
+                console.log('[Admin] → Response headers:', [...res.headers.entries()]);
+
                 const data = await res.json();
-                
-                console.log('[Admin] API response:', data);
-                
+
+                console.log('[Admin] → API Data parsed successfully');
+                console.log('[Admin] → Data received:', data);
+                console.log('[Admin] → Success:', data.success);
+                console.log('[Admin] → Business count:', data.data?.length);
+                console.log('[Admin] → Total:', data.total);
+
                 if (data.success) {
+                    console.log('[Admin] → Processing businesses...');
                     allBusinesses = data.data || [];
                     filteredBusinesses = [...allBusinesses];
-                    
+                    console.log('[Admin] → allBusinesses set to:', allBusinesses.length, 'items');
+                    console.log('[Admin] → First business:', allBusinesses[0]);
+
                     // Calculate time periods
                     const now = new Date();
                     const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000);
@@ -3618,10 +3685,11 @@
                     const oneMonthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
                     const twoMonthsAgo = new Date(now - 60 * 24 * 60 * 60 * 1000);
                     const twoWeeksAgo = new Date(now - 14 * 24 * 60 * 60 * 1000);
-                    
+
+                    console.log('[Admin] → Updating stats...');
                     // Update stats
                     animateCounter('businesses-total', allBusinesses.length);
-                    
+
                     // Active businesses (updated in last 24h)
                     const activeCount = allBusinesses.filter(b => {
                         if (!b.lastActivity) return false;
@@ -3629,11 +3697,11 @@
                         return lastActivity > oneDayAgo;
                     }).length;
                     animateCounter('businesses-active', activeCount);
-                    
+
                     // Total messages
                     const totalMessages = allBusinesses.reduce((sum, b) => sum + (b.messageCount || 0), 0);
                     animateCounter('businesses-messages', totalMessages);
-                    
+
                     // Health score
                     const connectedBusinesses = allBusinesses.filter(b => {
                         const channels = b.channels || {};
@@ -3641,9 +3709,11 @@
                     }).length;
                     const healthScore = allBusinesses.length > 0 ? Math.round((connectedBusinesses / allBusinesses.length) * 100) : 0;
                     animateCounter('businesses-health', healthScore, '%');
-                    
+
+                    console.log('[Admin] → Stats updated - Total:', allBusinesses.length, 'Active:', activeCount, 'Messages:', totalMessages, 'Health:', healthScore);
+
                     // Calculate growth trends
-                    
+
                     // Total businesses growth (this month vs last month)
                     const createdThisMonth = allBusinesses.filter(b => new Date(b.createdAt) > oneMonthAgo).length;
                     const createdLastMonth = allBusinesses.filter(b =>
@@ -3670,14 +3740,19 @@
                         ? Math.round((totalMessages / Math.max(allBusinesses.length, 1)) * 10)
                         : 0;
                     updateTrend('trend-messages', messagesGrowth, t('period_week'));
-                    
+
                     // Health score trend (based on connections)
                     const healthGrowth = healthScore > 50 ? Math.round((healthScore - 50) / 10) : 0;
                     updateTrend('trend-health', healthGrowth, '');
-                    
+
+                    console.log('[Admin] → Calling renderBusinessesTable()...');
                     renderBusinessesTable();
+                    console.log('[Admin] → renderBusinessesTable() completed');
                 } else {
-                    console.error('[Admin] API returned error:', data);
+                    console.error('[Admin] ✖ API returned success=false');
+                    console.error('[Admin] ✖ Error:', data.error);
+                    console.error('[Admin] ✖ Full response:', data);
+
                     if (tbody) {
                         tbody.innerHTML = `
                             <tr><td colspan="8" style="text-align: center; padding: 40px;">
@@ -3693,9 +3768,13 @@
                     }
                 }
             } catch (error) {
-                console.error('[Admin] Error loading businesses:', error);
+                console.error('[Admin] ✖✖✖ FATAL ERROR in loadBusinessesDashboard');
+                console.error('[Admin] ✖ Error:', error);
+                console.error('[Admin] ✖ Error message:', error.message);
+                console.error('[Admin] ✖ Error stack:', error.stack);
+
                 showToast('Failed to load businesses: ' + error.message, 'error');
-                
+
                 const tbody = document.getElementById('businesses-table-body');
                 if (tbody) {
                     tbody.innerHTML = `
@@ -3711,6 +3790,8 @@
                     `;
                 }
             }
+
+            console.log('[Admin] → loadBusinessesDashboard() COMPLETED');
         }
         
         function updateTrend(elementId, growth, period) {
