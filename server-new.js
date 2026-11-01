@@ -5108,6 +5108,82 @@ app.post('/api/admin/update-password', async (req, res) => {
 });
 
 // ============================================
+// INSTAGRAM AUTOMATION CONFIGURATION API
+// ============================================
+
+// Save Instagram configuration
+app.post('/api/business/:id/instagram/config', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { dmEnabled, commentsEnabled, rules } = req.body;
+
+    const business = await db.findBusinessById(id);
+    if (!business) {
+      return res.json({ success: false, error: 'Business not found' });
+    }
+
+    // Parse existing Instagram data
+    let instagramData = {};
+    try {
+      instagramData = typeof business.instagram === 'string'
+        ? JSON.parse(business.instagram)
+        : (business.instagram || {});
+    } catch (e) {
+      instagramData = business.instagram || {};
+    }
+
+    // Update configuration
+    instagramData.dmEnabled = dmEnabled || false;
+    instagramData.commentsEnabled = commentsEnabled || false;
+    instagramData.rules = rules || [];
+
+    // Save back to database
+    await db.updateBusiness(id, {
+      instagram: JSON.stringify(instagramData)
+    });
+
+    console.log('[Instagram Config] Saved for business', id, '- Rules:', rules.length);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Instagram Config] Save error:', error);
+    res.json({ success: false, error: error.message });
+  }
+});
+
+// Get Instagram configuration
+app.get('/api/business/:id/instagram/config', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const business = await db.findBusinessById(id);
+
+    if (!business) {
+      return res.json({ success: false, error: 'Business not found' });
+    }
+
+    let instagramData = {};
+    try {
+      instagramData = typeof business.instagram === 'string'
+        ? JSON.parse(business.instagram)
+        : (business.instagram || {});
+    } catch (e) {
+      instagramData = business.instagram || {};
+    }
+
+    res.json({
+      success: true,
+      data: {
+        dmEnabled: instagramData.dmEnabled || false,
+        commentsEnabled: instagramData.commentsEnabled || false,
+        rules: instagramData.rules || []
+      }
+    });
+  } catch (error) {
+    console.error('[Instagram Config] Load error:', error);
+    res.json({ success: false, error: error.message });
+  }
+});
+
+// ============================================
 // TEST CONNECTION & WEBHOOK HELPERS
 // ============================================
 
