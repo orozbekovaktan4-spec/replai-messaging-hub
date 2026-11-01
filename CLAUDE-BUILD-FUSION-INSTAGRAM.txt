@@ -1,0 +1,425 @@
+Hi Claude Code!
+
+I need you to build a complete Instagram automation system modeled after Fusion AI's professional implementation.
+
+## READ THESE FILES FIRST:
+1. BUILD-FUSION-INSTAGRAM-FLOW.md - Complete specification
+2. admin-super.html - Current admin panel
+3. server-new.js - Backend server
+
+## YOUR MISSION:
+
+Build FUSION-STYLE Instagram connection with:
+
+✅ Pre-connection instructions modal (in Russian)
+✅ Post-connection configuration dashboard
+✅ Automation rules engine with:
+   - Keyword triggers ("+", "PRICE", "WORK", etc.)
+   - Template responses (instant static replies)
+   - Append to Prompt (dynamic context injection)
+   - AI autonomous mode
+✅ Scope filtering (DM vs Comments)
+✅ Multiple rules with priority matching
+✅ Catch-all fallback rule support
+
+## IMPLEMENTATION STEPS:
+
+### STEP 1: Add Instructions Modal to admin-super.html
+
+Create function `showInstagramInstructions()` that displays:
+
+```javascript
+function showInstagramInstructions() {
+    const modal = `
+        <div class="modal-overlay" id="instagram-instructions-modal">
+            <div class="modal-content" style="max-width: 700px;">
+                <h2>📸 Подключение Instagram</h2>
+                
+                <div class="instruction-section">
+                    <h3>1. Подготовка профиля (в приложении Instagram)</h3>
+                    <div class="checklist">
+                        <div class="check-item">
+                            <strong>Тип аккаунта:</strong>
+                            <p>У вас должен быть «Бизнес-аккаунт» или «Аккаунт автора». Личный аккаунт не подойдет.</p>
+                            <p><em>Как переключить: Настройки → Тип аккаунта и инструменты → Переключиться на профессиональный аккаунт</em></p>
+                        </div>
+                        <div class="check-item">
+                            <strong>Доступ к сообщениям:</strong>
+                            <p>Нужно разрешить сервисам читать ваши сообщения.</p>
+                            <p><em>Где включить: Настройки → Сообщения и ответы на сторис → Папка «Запросы на переписку» → Разрешить доступ к сообщениям</em></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="instruction-section">
+                    <h3>2. Подключение к REPLAI</h3>
+                    <ol>
+                        <li>Нажмите кнопку «Подключить»</li>
+                        <li>Введите логин и пароль от Instagram</li>
+                        <li>Нажмите «Разрешить» на запрос прав доступа</li>
+                        <li>Подтвердите авторизацию</li>
+                    </ol>
+                </div>
+                
+                <div class="instruction-section warning">
+                    <h3>⚠️ Важные условия</h3>
+                    <ul>
+                        <li>Используйте официальный браузер</li>
+                        <li>Выключите VPN или анонимайзер</li>
+                        <li>Аккаунт должен быть профессиональным</li>
+                    </ul>
+                </div>
+                
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeInstructionsModal()">Отмена</button>
+                    <button class="btn-primary" onclick="closeInstructionsModal(); connectInstagramQuick();">Понятно, подключить Instagram</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modal);
+}
+```
+
+Modify the existing Instagram connect button to call `showInstagramInstructions()` first.
+
+### STEP 2: Build Instagram Configuration Panel
+
+After successful connection, show configuration UI:
+
+```html
+<div class="instagram-config-panel" id="instagram-config" style="display:none;">
+    <div class="config-header">
+        <h3>Instagram Configuration</h3>
+        <p class="connected-status">@<span id="instagram-username"></span> - ✓ Подключен</p>
+    </div>
+    
+    <div class="config-section">
+        <h4>Включить агента</h4>
+        <label class="toggle-label">
+            <input type="checkbox" id="instagram-dm-enabled" onchange="saveInstagramConfig()">
+            <span>Включить агента в Директ (Direct Messages)</span>
+        </label>
+        <label class="toggle-label">
+            <input type="checkbox" id="instagram-comments-enabled" onchange="saveInstagramConfig()">
+            <span>Включить агента в Комментариях (Comments)</span>
+        </label>
+    </div>
+    
+    <div class="config-section">
+        <div class="section-header">
+            <h4>Правила обработки сообщений</h4>
+            <button class="btn-primary" onclick="addInstagramRule()">+ Добавить правило</button>
+        </div>
+        <div id="instagram-rules-container">
+            <!-- Rules rendered here -->
+        </div>
+    </div>
+</div>
+```
+
+### STEP 3: Build Rule Editor Component
+
+Create `renderInstagramRule(rule, index)` function:
+
+```javascript
+function renderInstagramRule(rule, index) {
+    return `
+        <div class="rule-card" data-rule-index="${index}">
+            <div class="rule-header">
+                <h5>Правило #${index + 1}</h5>
+                <button class="btn-icon" onclick="deleteInstagramRule(${index})">
+                    <i data-lucide="trash-2"></i>
+                </button>
+            </div>
+            
+            <div class="rule-field">
+                <label>Применить к:</label>
+                <label class="checkbox-label">
+                    <input type="checkbox" ${rule.scope.includes('dm') ? 'checked' : ''} 
+                           onchange="updateRuleScope(${index}, 'dm', this.checked)">
+                    Direct Messages (Директ)
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" ${rule.scope.includes('comments') ? 'checked' : ''} 
+                           onchange="updateRuleScope(${index}, 'comments', this.checked)">
+                    Comments (Комментарии)
+                </label>
+            </div>
+            
+            <div class="rule-field">
+                <label>Ключевые слова (оставьте пустым для обработки всех сообщений):</label>
+                <div class="keyword-input-group">
+                    <input type="text" 
+                           class="keyword-input" 
+                           id="keyword-input-${index}"
+                           placeholder="Введите слово и нажмите Enter"
+                           onkeypress="if(event.key==='Enter'){addKeyword(${index});event.preventDefault();}">
+                </div>
+                <div class="keyword-tags" id="keywords-${index}">
+                    ${rule.keywords.map(kw => `
+                        <span class="tag">${kw} <button onclick="removeKeyword(${index}, '${kw}')">×</button></span>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <div class="rule-field">
+                <label>Режим ответа:</label>
+                <select class="response-mode-select" onchange="updateResponseMode(${index}, this.value)">
+                    <option value="ai" ${rule.mode === 'ai' ? 'selected' : ''}>
+                        Allow AI to Answer Autonomously (ИИ генерирует ответ)
+                    </option>
+                    <option value="template" ${rule.mode === 'template' ? 'selected' : ''}>
+                        Template Response (Шаблонный ответ)
+                    </option>
+                    <option value="append" ${rule.mode === 'append' ? 'selected' : ''}>
+                        Append to Prompt (Добавить контекст к промпту)
+                    </option>
+                </select>
+            </div>
+            
+            <div class="mode-template" style="display:${rule.mode === 'template' ? 'block' : 'none'};" id="template-${index}">
+                <label>Текст шаблона:</label>
+                <textarea onchange="updateRuleContent(${index}, this.value)" 
+                          placeholder="Ваш автоматический ответ...">${rule.content || ''}</textarea>
+            </div>
+            
+            <div class="mode-append" style="display:${rule.mode === 'append' ? 'block' : 'none'};" id="append-${index}">
+                <label>Контекст для добавления к промпту:</label>
+                <textarea onchange="updateRuleContent(${index}, this.value)" 
+                          placeholder="Инструкции для добавления к базовому промпту ИИ...">${rule.content || ''}</textarea>
+            </div>
+        </div>
+    `;
+}
+```
+
+### STEP 4: Add Rule Management Functions
+
+```javascript
+let instagramRules = [];
+
+function addInstagramRule() {
+    const newRule = {
+        id: 'rule_' + Date.now(),
+        scope: ['dm'],
+        keywords: [],
+        mode: 'ai',
+        content: ''
+    };
+    instagramRules.push(newRule);
+    renderInstagramRules();
+    saveInstagramConfig();
+}
+
+function deleteInstagramRule(index) {
+    instagramRules.splice(index, 1);
+    renderInstagramRules();
+    saveInstagramConfig();
+}
+
+function updateRuleScope(index, scopeType, checked) {
+    if (checked) {
+        if (!instagramRules[index].scope.includes(scopeType)) {
+            instagramRules[index].scope.push(scopeType);
+        }
+    } else {
+        instagramRules[index].scope = instagramRules[index].scope.filter(s => s !== scopeType);
+    }
+    saveInstagramConfig();
+}
+
+function addKeyword(index) {
+    const input = document.getElementById(`keyword-input-${index}`);
+    const keyword = input.value.trim();
+    if (keyword && !instagramRules[index].keywords.includes(keyword)) {
+        instagramRules[index].keywords.push(keyword);
+        renderInstagramRules();
+        saveInstagramConfig();
+    }
+    input.value = '';
+}
+
+function removeKeyword(index, keyword) {
+    instagramRules[index].keywords = instagramRules[index].keywords.filter(k => k !== keyword);
+    renderInstagramRules();
+    saveInstagramConfig();
+}
+
+function updateResponseMode(index, mode) {
+    instagramRules[index].mode = mode;
+    document.getElementById(`template-${index}`).style.display = mode === 'template' ? 'block' : 'none';
+    document.getElementById(`append-${index}`).style.display = mode === 'append' ? 'block' : 'none';
+    saveInstagramConfig();
+}
+
+function updateRuleContent(index, content) {
+    instagramRules[index].content = content;
+    saveInstagramConfig();
+}
+
+function renderInstagramRules() {
+    const container = document.getElementById('instagram-rules-container');
+    container.innerHTML = instagramRules.map((rule, i) => renderInstagramRule(rule, i)).join('');
+    lucide.createIcons();
+}
+```
+
+### STEP 5: Add Backend API Endpoints (server-new.js)
+
+```javascript
+// Save Instagram configuration
+app.post('/api/business/:id/instagram/config', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { dmEnabled, commentsEnabled, rules } = req.body;
+        
+        const business = readBusiness(id);
+        if (!business) return res.json({ success: false, error: 'Business not found' });
+        
+        business.channels.instagram = {
+            ...business.channels.instagram,
+            dmEnabled: dmEnabled || false,
+            commentsEnabled: commentsEnabled || false,
+            rules: rules || []
+        };
+        
+        saveBusiness(business);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[Instagram Config] Error:', error);
+        res.json({ success: false, error: error.message });
+    }
+});
+
+// Get Instagram configuration
+app.get('/api/business/:id/instagram/config', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const business = readBusiness(id);
+        if (!business) return res.json({ success: false, error: 'Business not found' });
+        
+        const instagram = business.channels?.instagram || {};
+        res.json({
+            success: true,
+            data: {
+                dmEnabled: instagram.dmEnabled || false,
+                commentsEnabled: instagram.commentsEnabled || false,
+                rules: instagram.rules || []
+            }
+        });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+```
+
+### STEP 6: Add Message Processing Logic
+
+```javascript
+function findMatchingInstagramRule(messageText, rules, isComment) {
+    const scope = isComment ? 'comments' : 'dm';
+    
+    // First pass: keyword-triggered rules
+    for (const rule of rules) {
+        if (!rule.scope.includes(scope)) continue;
+        
+        if (rule.keywords && rule.keywords.length > 0) {
+            const hasMatch = rule.keywords.some(kw => 
+                messageText.toLowerCase().includes(kw.toLowerCase())
+            );
+            if (hasMatch) return rule;
+        }
+    }
+    
+    // Second pass: catch-all rules (no keywords)
+    for (const rule of rules) {
+        if (!rule.scope.includes(scope)) continue;
+        if (!rule.keywords || rule.keywords.length === 0) {
+            return rule;
+        }
+    }
+    
+    return null;
+}
+
+async function processInstagramMessageWithRules(businessId, message, isComment) {
+    const business = readBusiness(businessId);
+    const config = business.channels?.instagram || {};
+    
+    // Check if enabled
+    if (isComment && !config.commentsEnabled) return;
+    if (!isComment && !config.dmEnabled) return;
+    
+    // Find matching rule
+    const rule = findMatchingInstagramRule(message.text, config.rules || [], isComment);
+    if (!rule) return; // No rule matched
+    
+    let response;
+    
+    if (rule.mode === 'template') {
+        // Instant template response
+        response = rule.content;
+    }
+    else if (rule.mode === 'append') {
+        // Append context and generate AI response
+        const fullPrompt = business.aiPrompt + "\n\n" + rule.content;
+        response = await generateGroqResponse(fullPrompt, message.text);
+    }
+    else if (rule.mode === 'ai') {
+        // Standard AI response
+        response = await generateGroqResponse(business.aiPrompt, message.text);
+    }
+    
+    // Send response
+    await sendInstagramReply(message.id, response, isComment);
+    
+    return response;
+}
+```
+
+## DELIVERABLES:
+
+1. ✅ Instructions modal in Russian
+2. ✅ Configuration panel with toggles
+3. ✅ Rule editor with all 3 modes
+4. ✅ Keyword management (add/remove tags)
+5. ✅ Backend API for saving/loading config
+6. ✅ Message processing with rule matching
+7. ✅ Styling that matches admin panel design
+
+## STYLING GUIDE:
+
+Use existing CSS variables from admin-super.html:
+- `--primary` for primary buttons
+- `--bg-tertiary` for rule cards
+- `--border-color` for borders
+- `.rule-card` should have padding, border-radius, and shadow
+- `.keyword-tags .tag` should look like pills with × button
+
+## TESTING:
+
+After implementation, test:
+1. Show instructions modal before connection
+2. Save and load Instagram config
+3. Create multiple rules
+4. Add/remove keywords
+5. Switch between AI/Template/Append modes
+6. Verify rules match by keyword priority
+
+## COMMIT WHEN DONE:
+
+```
+feat: Add Fusion-style Instagram automation with rules engine
+
+- Pre-connection instructions modal (Russian)
+- Configuration panel with DM/Comments toggles
+- Automation rules: keywords, template, append-to-prompt, AI modes
+- Rule matching engine with catch-all fallback
+- Backend API for config persistence
+- Message processing with scope filtering
+
+Modeled after Fusion AI's professional automation UX
+```
+
+START BUILDING NOW!
