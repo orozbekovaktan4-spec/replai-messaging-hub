@@ -3824,7 +3824,7 @@
                 console.log('[Admin] → API Data parsed successfully');
                 console.log('[Admin] → Data received:', data);
                 console.log('[Admin] → Success:', data.success);
-                console.log('[Admin] → Business count:', data.data?.length);
+                console.log('[Admin] → Business count:', data.data ? data.data.length : 0);
                 console.log('[Admin] → Total:', data.total);
 
                 if (data.success) {
@@ -5186,8 +5186,8 @@
 
             try {
                 const config = {
-                    dmEnabled: document.getElementById('instagram-dm-enabled')?.checked || false,
-                    commentsEnabled: document.getElementById('instagram-comments-enabled')?.checked || false,
+                    dmEnabled: document.getElementById('instagram-dm-enabled') ? document.getElementById('instagram-dm-enabled').checked : false,
+                    commentsEnabled: document.getElementById('instagram-comments-enabled') ? document.getElementById('instagram-comments-enabled').checked : false,
                     rules: instagramRules
                 };
 
@@ -5238,8 +5238,12 @@
         // Show Instagram config panel after successful connection
         function showInstagramConfig(username) {
             instagramConfig.username = username;
-            document.getElementById('instagram-username-display')?.textContent = '@' + username;
-            document.getElementById('instagram-config-panel')?.style.display = 'block';
+            const usernameDisplay = document.getElementById('instagram-username-display');
+            const configPanel = document.getElementById('instagram-config-panel');
+
+            if (usernameDisplay) usernameDisplay.textContent = '@' + username;
+            if (configPanel) configPanel.style.display = 'block';
+
             loadInstagramConfig();
         }
     </script>
