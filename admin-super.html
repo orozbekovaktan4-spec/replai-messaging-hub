@@ -1067,6 +1067,128 @@
         .toggle-switch input:checked + .toggle-slider:before {
             transform: translateX(20px);
         }
+
+        /* ==================== INSTAGRAM AUTOMATION STYLES ==================== */
+        .instagram-config-panel {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 24px;
+        }
+        .config-header {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .connected-status {
+            color: var(--success);
+            font-size: 14px;
+            margin: 8px 0 0 0;
+        }
+        .config-section {
+            margin-bottom: 32px;
+        }
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .toggle-label:hover {
+            background: var(--bg-hover);
+        }
+        .rule-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+        .rule-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .keyword-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .keyword-tags .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .keyword-tags .tag button {
+            background: none;
+            border: none;
+            color: var(--bg-primary);
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+        .instruction-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        .instruction-modal-content {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        .instruction-section {
+            margin-bottom: 24px;
+            padding: 20px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+        }
+        .instruction-section.warning {
+            background: rgba(245, 158, 11, 0.1);
+            border: 2px solid var(--warning);
+        }
+        .check-item {
+            margin-bottom: 16px;
+        }
+        .check-item strong {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+        .check-item p {
+            margin: 4px 0;
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
     </style>
 </head>
 <body>
@@ -2033,6 +2155,36 @@
                             <span>Подключить Instagram</span>
                         </button>
 
+                        <!-- Instagram Configuration Panel (shown after connection) -->
+                        <div class="instagram-config-panel" id="instagram-config-panel" style="display:none;">
+                            <div class="config-header">
+                                <h3 style="margin:0 0 8px 0;">Instagram Configuration</h3>
+                                <p class="connected-status"><span id="instagram-username-display">@username</span> - ✓ Подключен</p>
+                            </div>
+
+                            <div class="config-section">
+                                <h4 style="margin:0 0 16px 0;font-size:16px;font-weight:600;">Включить агента</h4>
+                                <label class="toggle-label">
+                                    <input type="checkbox" id="instagram-dm-enabled" onchange="saveInstagramConfig()">
+                                    <span>Включить агента в Директ (Direct Messages)</span>
+                                </label>
+                                <label class="toggle-label">
+                                    <input type="checkbox" id="instagram-comments-enabled" onchange="saveInstagramConfig()">
+                                    <span>Включить агента в Комментариях (Comments)</span>
+                                </label>
+                            </div>
+
+                            <div class="config-section">
+                                <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                                    <h4 style="margin:0;font-size:16px;font-weight:600;">Правила обработки сообщений</h4>
+                                    <button class="btn-primary" onclick="addInstagramRule()" style="padding:8px 16px;font-size:14px;">+ Добавить правило</button>
+                                </div>
+                                <div id="instagram-rules-container">
+                                    <!-- Rules rendered here -->
+                                </div>
+                            </div>
+                        </div>
+
                         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                             <a href="https://business.facebook.com/latest/inbox/settings"
                                target="_blank"
@@ -2046,6 +2198,10 @@
                                 <i data-lucide="book-open" style="width: 14px; height: 14px;"></i>
                                 <span>Инструкция</span>
                             </a>
+                            <button onclick="showInstagramInstructions()" style="flex: 1; min-width: 150px; padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; text-align: center; font-size: 13px; color: var(--text-primary); display: flex; align-items: center; justify-content: center; gap: 6px;cursor:pointer;">
+                                <i data-lucide="info" style="width: 14px; height: 14px;"></i>
+                                <span>Инструкции</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -4799,6 +4955,292 @@
         // Old function kept for backward compatibility
         function openPlatformInstructions(platform) {
             openPlatformPanel(platform);
+        }
+
+        // ==================== INSTAGRAM AUTOMATION SYSTEM ====================
+
+        // Instagram configuration state
+        let instagramRules = [];
+        let instagramConfig = {
+            dmEnabled: false,
+            commentsEnabled: false,
+            username: ''
+        };
+
+        // Show Instagram instructions modal before connection
+        function showInstagramInstructions() {
+            const modal = document.createElement('div');
+            modal.className = 'instruction-modal';
+            modal.id = 'instagram-instructions-modal';
+            modal.innerHTML = `
+                <div class="instruction-modal-content">
+                    <h2>📸 Подключение Instagram</h2>
+
+                    <div class="instruction-section">
+                        <h3>1. Подготовка профиля (в приложении Instagram)</h3>
+                        <div class="check-item">
+                            <strong>Тип аккаунта:</strong>
+                            <p>У вас должен быть «Бизнес-аккаунт» или «Аккаунт автора». Личный аккаунт не подойдет.</p>
+                            <p><em>Как переключить: Настройки → Тип аккаунта и инструменты → Переключиться на профессиональный аккаунт</em></p>
+                        </div>
+                        <div class="check-item">
+                            <strong>Доступ к сообщениям:</strong>
+                            <p>Нужно разрешить сервисам читать ваши сообщения.</p>
+                            <p><em>Где включить: Настройки → Сообщения и ответы на сторис → Папка «Запросы на переписку» → Разрешить доступ к сообщениям</em></p>
+                        </div>
+                    </div>
+
+                    <div class="instruction-section">
+                        <h3>2. Подключение к REPLAI</h3>
+                        <ol>
+                            <li>Нажмите кнопку «Подключить»</li>
+                            <li>Введите токен доступа из Meta Developer Console</li>
+                            <li>Система проверит токен автоматически</li>
+                            <li>После подключения откроется панель настройки автоматизации</li>
+                        </ol>
+                    </div>
+
+                    <div class="instruction-section warning">
+                        <h3>⚠️ Важные условия</h3>
+                        <ul>
+                            <li>Используйте официальный браузер</li>
+                            <li>Выключите VPN или анонимайзер</li>
+                            <li>Аккаунт должен быть профессиональным (Бизнес или Автор)</li>
+                            <li>Токен должен быть из Meta Developer Console</li>
+                        </ul>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button class="btn-secondary" onclick="closeInstagramInstructions()">Отмена</button>
+                        <button class="btn-primary" onclick="closeInstagramInstructions(); openPlatformPanel('instagram');">Понятно, подключить Instagram</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function closeInstagramInstructions() {
+            const modal = document.getElementById('instagram-instructions-modal');
+            if (modal) modal.remove();
+        }
+
+        // Add Instagram rule
+        function addInstagramRule() {
+            const newRule = {
+                id: 'rule_' + Date.now(),
+                scope: ['dm'],
+                keywords: [],
+                mode: 'ai',
+                content: ''
+            };
+            instagramRules.push(newRule);
+            renderInstagramRules();
+            saveInstagramConfig();
+        }
+
+        // Delete Instagram rule
+        function deleteInstagramRule(index) {
+            if (confirm('Удалить это правило?')) {
+                instagramRules.splice(index, 1);
+                renderInstagramRules();
+                saveInstagramConfig();
+            }
+        }
+
+        // Update rule scope
+        function updateRuleScope(index, scopeType, checked) {
+            if (checked) {
+                if (!instagramRules[index].scope.includes(scopeType)) {
+                    instagramRules[index].scope.push(scopeType);
+                }
+            } else {
+                instagramRules[index].scope = instagramRules[index].scope.filter(s => s !== scopeType);
+            }
+            saveInstagramConfig();
+        }
+
+        // Add keyword to rule
+        function addKeyword(index) {
+            const input = document.getElementById(`keyword-input-${index}`);
+            const keyword = input.value.trim();
+            if (keyword && !instagramRules[index].keywords.includes(keyword)) {
+                instagramRules[index].keywords.push(keyword);
+                renderInstagramRules();
+                saveInstagramConfig();
+            }
+            input.value = '';
+        }
+
+        // Remove keyword from rule
+        function removeKeyword(index, keyword) {
+            instagramRules[index].keywords = instagramRules[index].keywords.filter(k => k !== keyword);
+            renderInstagramRules();
+            saveInstagramConfig();
+        }
+
+        // Update response mode
+        function updateResponseMode(index, mode) {
+            instagramRules[index].mode = mode;
+            const templateDiv = document.getElementById(`template-${index}`);
+            const appendDiv = document.getElementById(`append-${index}`);
+            if (templateDiv) templateDiv.style.display = mode === 'template' ? 'block' : 'none';
+            if (appendDiv) appendDiv.style.display = mode === 'append' ? 'block' : 'none';
+            saveInstagramConfig();
+        }
+
+        // Update rule content
+        function updateRuleContent(index, content) {
+            instagramRules[index].content = content;
+            saveInstagramConfig();
+        }
+
+        // Render single Instagram rule
+        function renderInstagramRule(rule, index) {
+            return `
+                <div class="rule-card" data-rule-index="${index}">
+                    <div class="rule-header">
+                        <h5>Правило #${index + 1}</h5>
+                        <button class="btn-icon" onclick="deleteInstagramRule(${index})" title="Удалить правило">
+                            <i data-lucide="trash-2" style="width:18px;height:18px;"></i>
+                        </button>
+                    </div>
+
+                    <div class="rule-field">
+                        <label>Применить к:</label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" ${rule.scope.includes('dm') ? 'checked' : ''}
+                                   onchange="updateRuleScope(${index}, 'dm', this.checked)">
+                            Direct Messages (Директ)
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" ${rule.scope.includes('comments') ? 'checked' : ''}
+                                   onchange="updateRuleScope(${index}, 'comments', this.checked)">
+                            Comments (Комментарии)
+                        </label>
+                    </div>
+
+                    <div class="rule-field">
+                        <label>Ключевые слова (оставьте пустым для обработки всех сообщений):</label>
+                        <input type="text"
+                               class="keyword-input"
+                               id="keyword-input-${index}"
+                               placeholder="Введите слово и нажмите Enter"
+                               style="width:100%;padding:10px;border:2px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:8px;"
+                               onkeypress="if(event.key==='Enter'){addKeyword(${index});event.preventDefault();}">
+                        <div class="keyword-tags" id="keywords-${index}">
+                            ${rule.keywords.map(kw => `
+                                <span class="tag">${kw} <button onclick="removeKeyword(${index}, '${kw}')">×</button></span>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div class="rule-field">
+                        <label>Режим ответа:</label>
+                        <select onchange="updateResponseMode(${index}, this.value)"
+                                style="width:100%;padding:10px;border:2px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);">
+                            <option value="ai" ${rule.mode === 'ai' ? 'selected' : ''}>
+                                Allow AI to Answer Autonomously (ИИ генерирует ответ)
+                            </option>
+                            <option value="template" ${rule.mode === 'template' ? 'selected' : ''}>
+                                Template Response (Шаблонный ответ)
+                            </option>
+                            <option value="append" ${rule.mode === 'append' ? 'selected' : ''}>
+                                Append to Prompt (Добавить контекст к промпту)
+                            </option>
+                        </select>
+                    </div>
+
+                    <div id="template-${index}" style="display:${rule.mode === 'template' ? 'block' : 'none'};">
+                        <label>Текст шаблона:</label>
+                        <textarea onchange="updateRuleContent(${index}, this.value)"
+                                  placeholder="Ваш автоматический ответ..."
+                                  style="width:100%;padding:12px;border:2px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);min-height:100px;resize:vertical;">${rule.content || ''}</textarea>
+                    </div>
+
+                    <div id="append-${index}" style="display:${rule.mode === 'append' ? 'block' : 'none'};">
+                        <label>Контекст для добавления к промпту:</label>
+                        <textarea onchange="updateRuleContent(${index}, this.value)"
+                                  placeholder="Инструкции для добавления к базовому промпту ИИ..."
+                                  style="width:100%;padding:12px;border:2px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);min-height:100px;resize:vertical;">${rule.content || ''}</textarea>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render all Instagram rules
+        function renderInstagramRules() {
+            const container = document.getElementById('instagram-rules-container');
+            if (!container) return;
+
+            if (instagramRules.length === 0) {
+                container.innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:40px;">Нет правил. Нажмите "+ Добавить правило" чтобы создать первое правило.</p>';
+            } else {
+                container.innerHTML = instagramRules.map((rule, i) => renderInstagramRule(rule, i)).join('');
+            }
+            lucide.createIcons();
+        }
+
+        // Save Instagram configuration
+        async function saveInstagramConfig() {
+            if (!currentBusinessId) return;
+
+            try {
+                const config = {
+                    dmEnabled: document.getElementById('instagram-dm-enabled')?.checked || false,
+                    commentsEnabled: document.getElementById('instagram-comments-enabled')?.checked || false,
+                    rules: instagramRules
+                };
+
+                const res = await fetch(`/api/business/${currentBusinessId}/instagram/config`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    console.log('[Instagram] Configuration saved');
+                } else {
+                    console.error('[Instagram] Save failed:', data.error);
+                }
+            } catch (error) {
+                console.error('[Instagram] Save error:', error);
+            }
+        }
+
+        // Load Instagram configuration
+        async function loadInstagramConfig() {
+            if (!currentBusinessId) return;
+
+            try {
+                const res = await fetch(`/api/business/${currentBusinessId}/instagram/config`);
+                const data = await res.json();
+
+                if (data.success) {
+                    instagramRules = data.data.rules || [];
+
+                    const dmCheckbox = document.getElementById('instagram-dm-enabled');
+                    const commentsCheckbox = document.getElementById('instagram-comments-enabled');
+
+                    if (dmCheckbox) dmCheckbox.checked = data.data.dmEnabled || false;
+                    if (commentsCheckbox) commentsCheckbox.checked = data.data.commentsEnabled || false;
+
+                    renderInstagramRules();
+                    console.log('[Instagram] Configuration loaded:', instagramRules.length, 'rules');
+                } else {
+                    console.error('[Instagram] Load failed:', data.error);
+                }
+            } catch (error) {
+                console.error('[Instagram] Load error:', error);
+            }
+        }
+
+        // Show Instagram config panel after successful connection
+        function showInstagramConfig(username) {
+            instagramConfig.username = username;
+            document.getElementById('instagram-username-display')?.textContent = '@' + username;
+            document.getElementById('instagram-config-panel')?.style.display = 'block';
+            loadInstagramConfig();
         }
     </script>
 
