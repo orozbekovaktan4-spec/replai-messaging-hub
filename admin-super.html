@@ -4763,6 +4763,32 @@
             }
         }
 
+        // Connect Instagram via OAuth (Real Meta API)
+        async function connectInstagramOAuth() {
+            if (!currentBusinessId) {
+                return showToast('Выберите бизнес', 'error');
+            }
+
+            showToast('Перенаправление на Instagram...', 'info');
+
+            try {
+                // Get OAuth URL from backend
+                const res = await fetch(`/api/instagram/oauth/start?businessId=${currentBusinessId}`);
+                const data = await res.json();
+
+                if (data.success && data.authUrl) {
+                    // Open Instagram OAuth in popup or redirect
+                    window.location.href = data.authUrl;
+                } else {
+                    showToast('Ошибка: ' + (data.error || 'Unknown'), 'error');
+                }
+            } catch (err) {
+                console.error('[Instagram OAuth] Error:', err);
+                showToast('Ошибка подключения', 'error');
+            }
+        }
+
+        // Connect Instagram via manual token (legacy fallback)
         async function connectInstagramQuick() {
             const token = document.getElementById('connect-instagram').value.trim();
             if (!token || token.length < 20) return showToast('Введите токен Instagram', 'error');

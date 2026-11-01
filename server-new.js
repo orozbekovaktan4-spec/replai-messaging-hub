@@ -3287,7 +3287,365 @@ app.get('/api/telegram/webhook-info', async (req, res) => {
   }
 });
 
-// Validate Instagram access token
+// ============================================
+// INSTAGRAM PLATFORM API (META OFFICIAL - REAL OAUTH)
+// ============================================
+
+// Start Instagram OAuth flow
+app.get('/api/instagram/oauth/start', (req, res) => {
+  try {
+    const { businessId } = req.query;
+
+    if (!businessId) {
+      return res.status(400).json({ error: 'businessId required' });
+    }
+
+    const appId = process.env.INSTAGRAM_APP_ID;
+    const redirectUri = process.env.INSTAGRAM_REDIRECT_URI || 'https://replai-xc95.onrender.com/api/instagram/oauth-callback';
+
+    // Build Instagram OAuth URL
+    const authUrl = `https://api.instagram.com/oauth/authorize?` +
+      `client_id=${appId}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `scope=instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments&` +
+      `response_type=code&` +
+      `state=${businessId}`;
+
+    console.log('[Instagram OAuth] Starting flow for business:', businessId);
+    res.json({ success: true, authUrl });
+  } catch (error) {
+    console.error('[Instagram OAuth] Start error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Handle Instagram OAuth callback
+app.get('/api/instagram/oauth-callback', async (req, res) => {
+  try {
+    const { code, state: businessId } = req.query;
+
+    if (!code || !businessId) {
+      return res.redirect('/admin?error=instagram_auth_failed');
+    }
+
+    console.log('[Instagram OAuth] Callback received for business:', businessId);
+
+    const appId = process.env.INSTAGRAM_APP_ID;
+    const appSecret = process.env.INSTAGRAM_APP_SECRET;
+    const redirectUri = process.env.INSTAGRAM_REDIRECT_URI || 'https://replai-xc95.onrender.com/api/instagram/oauth-callback';
+
+    // Step 1: Exchange code for short-lived token
+    const tokenUrl = 'https://api.instagram.com/oauth/access_token';
+    const tokenResponse = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: appId,
+        client_secret: appSecret,
+        grant_type: 'authorization_code',
+        redirect_uri: redirectUri,
+        code: code
+      })
+    });
+
+    const tokenData = await tokenResponse.json();
+
+    if (tokenData.error_type) {
+      console.error('[Instagram OAuth] Token exchange failed:', tokenData);
+      return res.redirect('/admin?error=instagram_token_failed');
+    }
+
+    const shortLivedToken = tokenData.access_token;
+    const userId = tokenData.user_id;
+
+    console.log('[Instagram OAuth] Short-lived token obtained for user:', userId);
+
+    // Step 2: Exchange for long-lived token (60 days)
+    const longLivedUrl = `https://graph.instagram.com/access_token?` +
+      `grant_type=ig_exchange_token&` +
+      `client_secret=${appSecret}&` +
+      `access_token=${shortLivedToken}`;
+
+    const longLivedResponse = await fetch(longLivedUrl);
+    const longLivedData = await longLivedResponse.json();
+
+    if (longLivedData.error) {
+      console.error('[Instagram OAuth] Long-lived token exchange failed:', longLivedData.error);
+      return res.redirect('/admin?error=instagram_token_exchange_failed');
+    }
+
+    const accessToken = longLivedData.access_token;
+    const expiresIn = longLivedData.expires_in; // 5184000 seconds = 60 days
+
+    console.log('[Instagram OAuth] Long-lived token obtained, expires in:', expiresIn, 'seconds');
+
+    // Step 3: Get Instagram profile info
+    const profileUrl = `https://graph.instagram.com/v21.0/${userId}?fields=id,username,account_type&access_token=${accessToken}`;
+    const profileResponse = await fetch(profileUrl);
+    const profileData = await profileResponse.json();
+
+    if (profileData.error) {
+      console.error('[Instagram OAuth] Profile fetch failed:', profileData.error);
+      return res.redirect('/admin?error=instagram_profile_failed');
+    }
+
+    console.log('[Instagram OAuth] Profile fetched:', profileData.username);
+
+    // Step 4: Subscribe to webhooks
+    try {
+      await subscribeToInstagramWebhooks(userId, accessToken);
+      console.log('[Instagram OAuth] Webhooks subscribed');
+    } catch (webhookError) {
+      console.error('[Instagram OAuth] Webhook subscription failed:', webhookError);
+      // Continue anyway - can be set up later
+    }
+
+    // Step 5: Save to database
+    const business = await db.findBusinessById(businessId);
+    if (!business) {
+      return res.redirect('/admin?error=business_not_found');
+    }
+
+    const instagramData = {
+      connected: true,
+      userId: userId,
+      username: profileData.username,
+      accountType: profileData.account_type,
+      accessToken: accessToken,
+      expiresAt: new Date(Date.now() + (expiresIn * 1000)).toISOString(),
+      connectedAt: new Date().toISOString()
+    };
+
+    await db.updateBusiness(businessId, {
+      instagram: JSON.stringify(instagramData)
+    });
+
+    console.log('[Instagram OAuth] Successfully connected Instagram for business:', businessId);
+
+    // Redirect back to admin panel with success
+    res.redirect(`/admin?success=instagram_connected&username=${profileData.username}`);
+
+  } catch (error) {
+    console.error('[Instagram OAuth] Callback error:', error);
+    res.redirect('/admin?error=instagram_connection_failed');
+  }
+});
+
+// Subscribe to Instagram webhooks
+async function subscribeToInstagramWebhooks(userId, accessToken) {
+  const subscribeUrl = `https://graph.instagram.com/v21.0/${userId}/subscribed_apps`;
+
+  const response = await fetch(subscribeUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      subscribed_fields: ['messages', 'messaging_postbacks', 'comments'],
+      access_token: accessToken
+    })
+  });
+
+  const data = await response.json();
+
+  if (data.error) {
+    throw new Error(`Webhook subscription failed: ${data.error.message}`);
+  }
+
+  return data;
+}
+
+// Instagram webhook verification (required by Meta)
+app.get('/api/instagram/webhook', (req, res) => {
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+
+  const verifyToken = process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN || 'replai_instagram_webhook_2024';
+
+  if (mode === 'subscribe' && token === verifyToken) {
+    console.log('[Instagram Webhook] Verification successful');
+    res.status(200).send(challenge);
+  } else {
+    console.error('[Instagram Webhook] Verification failed');
+    res.sendStatus(403);
+  }
+});
+
+// Instagram webhook events
+app.post('/api/instagram/webhook', async (req, res) => {
+  // Respond immediately (required by Meta)
+  res.sendStatus(200);
+
+  try {
+    const data = req.body;
+
+    // Process webhook asynchronously
+    if (data.object === 'instagram') {
+      for (const entry of data.entry) {
+        // Handle messages
+        if (entry.messaging) {
+          for (const event of entry.messaging) {
+            if (event.message) {
+              handleInstagramMessage(event).catch(err => {
+                console.error('[Instagram Webhook] Message handling error:', err);
+              });
+            }
+          }
+        }
+
+        // Handle comments
+        if (entry.changes) {
+          for (const change of entry.changes) {
+            if (change.field === 'comments') {
+              handleInstagramComment(change.value).catch(err => {
+                console.error('[Instagram Webhook] Comment handling error:', err);
+              });
+            }
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[Instagram Webhook] Processing error:', error);
+  }
+});
+
+// Handle Instagram DM
+async function handleInstagramMessage(event) {
+  try {
+    const senderId = event.sender.id;
+    const recipientId = event.recipient.id; // This is the business Instagram userId
+    const messageText = event.message.text;
+
+    console.log('[Instagram DM] Received from:', senderId, 'to:', recipientId);
+    console.log('[Instagram DM] Message:', messageText);
+
+    // Find business by Instagram userId
+    const businesses = await db.getAllBusinesses();
+    const business = businesses.find(b => {
+      try {
+        const ig = typeof b.instagram === 'string' ? JSON.parse(b.instagram) : b.instagram;
+        return ig && ig.userId === recipientId;
+      } catch (e) {
+        return false;
+      }
+    });
+
+    if (!business) {
+      console.error('[Instagram DM] No business found for Instagram userId:', recipientId);
+      return;
+    }
+
+    console.log('[Instagram DM] Business found:', business.name);
+
+    // Get Instagram config
+    let instagramData = typeof business.instagram === 'string' ? JSON.parse(business.instagram) : business.instagram;
+    const config = instagramData.config || {};
+
+    if (!config.dmEnabled) {
+      console.log('[Instagram DM] DM agent disabled for business:', business.name);
+      return;
+    }
+
+    // Check for matching rules
+    const rules = config.rules || [];
+    let matchedRule = null;
+
+    for (const rule of rules) {
+      // Check if rule applies to DMs
+      if (!rule.scope || !rule.scope.includes('dm')) continue;
+
+      // Check keywords
+      if (rule.keywords && rule.keywords.length > 0) {
+        const messageUpper = messageText.toUpperCase();
+        const hasKeyword = rule.keywords.some(kw => messageUpper.includes(kw.toUpperCase()));
+        if (hasKeyword) {
+          matchedRule = rule;
+          break;
+        }
+      } else if (!rule.keywords || rule.keywords.length === 0) {
+        // Catch-all rule (no keywords)
+        matchedRule = rule;
+        break;
+      }
+    }
+
+    let replyText = '';
+
+    if (matchedRule) {
+      console.log('[Instagram DM] Matched rule:', matchedRule.mode);
+
+      if (matchedRule.mode === 'template') {
+        // Use template response
+        replyText = matchedRule.content || 'Thank you for your message!';
+      } else if (matchedRule.mode === 'append') {
+        // Generate AI response with appended context
+        const appendedPrompt = `${business.aiPrompt || ''}\n\n${matchedRule.content || ''}`;
+        replyText = await getAIResponse(messageText, appendedPrompt);
+      } else {
+        // AI autonomous mode
+        replyText = await getAIResponse(messageText, business.aiPrompt);
+      }
+    } else {
+      // No rule matched - use default AI
+      replyText = await getAIResponse(messageText, business.aiPrompt);
+    }
+
+    // Send reply via Instagram Graph API
+    await sendInstagramMessage(recipientId, senderId, replyText, instagramData.accessToken);
+
+    console.log('[Instagram DM] Reply sent successfully');
+
+  } catch (error) {
+    console.error('[Instagram DM] Handler error:', error);
+  }
+}
+
+// Handle Instagram Comment
+async function handleInstagramComment(commentData) {
+  try {
+    const commentId = commentData.id;
+    const commentText = commentData.text;
+    const mediaId = commentData.media?.id;
+    const userId = commentData.from?.id;
+
+    console.log('[Instagram Comment] Received:', commentText, 'on media:', mediaId);
+
+    // Find business by Instagram userId (need to implement media owner lookup)
+    // For now, log and skip
+    console.log('[Instagram Comment] Comment handling not fully implemented yet');
+
+  } catch (error) {
+    console.error('[Instagram Comment] Handler error:', error);
+  }
+}
+
+// Send Instagram DM via Graph API
+async function sendInstagramMessage(recipientUserId, senderId, messageText, accessToken) {
+  const url = `https://graph.instagram.com/v21.0/me/messages`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`
+    },
+    body: JSON.stringify({
+      recipient: { id: senderId },
+      message: { text: messageText }
+    })
+  });
+
+  const data = await response.json();
+
+  if (data.error) {
+    console.error('[Instagram] Send message failed:', data.error);
+    throw new Error(data.error.message);
+  }
+
+  return data;
+}
+
+// Validate Instagram access token (keep for manual token entry)
 app.post('/api/instagram/validate-token', async (req, res) => {
   try {
     const { token } = req.body;
