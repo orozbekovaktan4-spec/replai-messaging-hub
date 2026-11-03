@@ -18,79 +18,86 @@
     <!-- Mobile Block -->
     <script>
         if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768) {
-            document.write('<html><head><title>Desktop Only</title><style>body{font-family:-apple-system,sans-serif;background:linear-gradient(135deg,#0A1628,#1e293b);min-height:100vh;display:flex;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px}.container{max-width:500px}.icon{font-size:80px;margin-bottom:20px}h1{font-size:28px;margin-bottom:15px}p{font-size:18px;color:#94a3b8}</style></head><body><div class="container"><div class="icon">💻</div><h1>Desktop Only</h1><p>Enterprise Admin requires desktop browser</p></div></body></html>');
+            document.write('<html><head><title>Desktop Only</title><style>body{font-family:-apple-system,sans-serif;background:#0a0e1a;min-height:100vh;display:flex;align-items:center;justify-content:center;color:#f0f3f9;text-align:center;padding:20px}.container{max-width:500px}.icon{width:64px;height:64px;margin:0 auto 24px;background:#1a1f2e;border-radius:16px;display:flex;align-items:center;justify-content:center}h1{font-size:24px;margin-bottom:12px;font-weight:600}p{font-size:16px;color:#9ca3af;line-height:1.5}</style></head><body><div class="container"><div class="icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg></div><h1>Desktop Only</h1><p>Admin panel requires desktop browser</p></div></body></html>');
             document.close();
         }
     </script>
     
     <style>
-        /* Professional Messaging Automation Tool */
+        /* REPLAI Messaging Automation - Professional Color System */
         :root[data-theme="light"] {
-            /* Accent Color - Platform neutral */
-            --accent: #0f172a;
-            --accent-hover: #1e293b;
+            /* Primary Brand - Deep Indigo with energy */
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --primary-light: rgba(79,70,229,0.1);
+            --primary-foreground: #ffffff;
 
-            /* Base Colors */
+            /* Accent - Electric accent for actions */
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --accent-light: rgba(99,102,241,0.12);
+
+            /* Base Colors - Clean and airy */
             --bg-primary: #ffffff;
-            --bg-secondary: #f6f7f9;
-            --bg-tertiary: #eef0f4;
-            --text-primary: #0b0d12;
-            --text-secondary: #5b6270;
-            --text-tertiary: #8a919f;
-            --border-color: #e3e6ec;
+            --bg-secondary: #f8fafc;
+            --bg-tertiary: #f1f5f9;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --text-tertiary: #94a3b8;
+            --border-color: #e2e8f0;
 
-            /* Shadows - Simplified */
-            --card-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            --card-shadow-hover: 0 2px 8px rgba(0,0,0,0.15);
+            /* Shadows - Subtle depth */
+            --card-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            --card-shadow-hover: 0 4px 12px rgba(0,0,0,0.12);
 
             /* Sidebar */
             --sidebar-bg: #ffffff;
-            --sidebar-border: #e3e6ec;
-
-            /* Primary Colors */
-            --primary: #2563EB;
-            --primary-light: rgba(37,99,235,0.1);
-            --primary-foreground: #ffffff;
+            --sidebar-border: #e2e8f0;
 
             /* Status Colors */
             --success: #10b981;
-            --success-light: rgba(16,185,129,0.12);
+            --success-light: rgba(16,185,129,0.1);
             --warning: #f59e0b;
-            --warning-light: rgba(245,158,11,0.12);
+            --warning-light: rgba(245,158,11,0.1);
             --danger: #ef4444;
-            --danger-light: rgba(239,68,68,0.12);
+            --danger-light: rgba(239,68,68,0.1);
 
-            /* Platform Colors - Used functionally */
+            /* Platform Colors - Bold and prominent */
             --instagram: #E4405F;
+            --instagram-light: rgba(228,64,95,0.12);
             --whatsapp: #25D366;
+            --whatsapp-light: rgba(37,211,102,0.12);
             --telegram: #0088CC;
+            --telegram-light: rgba(0,136,204,0.12);
         }
         :root[data-theme="dark"] {
-            /* Accent Color - Platform neutral */
-            --accent: #f8fafc;
-            --accent-hover: #e2e8f0;
+            /* Primary Brand - Vibrant indigo for dark mode */
+            --primary: #6366f1;
+            --primary-hover: #818cf8;
+            --primary-light: rgba(99,102,241,0.15);
+            --primary-foreground: #ffffff;
 
-            /* Base Colors */
-            --bg-primary: #0e1015;
-            --bg-secondary: #08090c;
-            --bg-tertiary: #151820;
-            --text-primary: #eceef2;
-            --text-secondary: #8a919f;
-            --text-tertiary: #5b6270;
-            --border-color: #1d2129;
+            /* Accent - Bright electric for contrast */
+            --accent: #818cf8;
+            --accent-hover: #a5b4fc;
+            --accent-light: rgba(129,140,248,0.15);
 
-            /* Shadows - Simplified */
-            --card-shadow: 0 1px 3px rgba(0,0,0,0.3);
-            --card-shadow-hover: 0 2px 8px rgba(0,0,0,0.5);
+            /* Base Colors - Rich, premium dark */
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #0f1422;
+            --bg-tertiary: #161b2e;
+            --text-primary: #f0f3f9;
+            --text-secondary: #9ca3af;
+            --text-tertiary: #6b7280;
+            --border-color: #1e293b;
+
+            /* Shadows - Depth in darkness */
+            --card-shadow: 0 1px 3px rgba(0,0,0,0.5);
+            --card-shadow-hover: 0 4px 16px rgba(0,0,0,0.7);
 
             /* Sidebar */
-            --sidebar-bg: #0b0c10;
-            --sidebar-border: #1d2129;
-
-            /* Primary Colors */
-            --primary: #3b82f6;
-            --primary-light: rgba(59,130,246,0.15);
-            --primary-foreground: #ffffff;
+            --sidebar-bg: #0f1422;
+            --sidebar-border: #1e293b;
 
             /* Status Colors */
             --success: #10b981;
@@ -100,10 +107,13 @@
             --danger: #ef4444;
             --danger-light: rgba(239,68,68,0.15);
 
-            /* Platform Colors - Used functionally */
+            /* Platform Colors - Vivid against dark */
             --instagram: #E4405F;
+            --instagram-light: rgba(228,64,95,0.15);
             --whatsapp: #25D366;
+            --whatsapp-light: rgba(37,211,102,0.15);
             --telegram: #0088CC;
+            --telegram-light: rgba(0,136,204,0.15);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -142,17 +152,19 @@
             border-bottom: 1px solid var(--border-color);
         }
         .logo {
-            font-size: 28px;
-            font-weight: 700;
+            font-size: 24px;
+            font-weight: 600;
             text-align: center;
+            letter-spacing: -0.02em;
         }
         .logo .repl {
             color: var(--text-primary);
-            font-weight: 700;
         }
         .logo .ai {
-            color: var(--accent);
-            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
         .menu-section { padding: 20px 0; }
         .section-header {
@@ -180,9 +192,10 @@
             transform: translateX(4px);
         }
         .menu-item.active {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            border-left: 2px solid var(--accent);
+            background: var(--primary-light);
+            color: var(--primary);
+            border-left: 3px solid var(--primary);
+            font-weight: 600;
         }
         
         /* Header */
@@ -287,8 +300,7 @@
         }
         .card:hover {
             box-shadow: var(--card-shadow-hover);
-            transform: scale(1.01);
-            border-color: rgba(47,134,255,0.3);
+            border-color: var(--primary-light);
         }
         .card-header {
             padding: 20px 24px;
@@ -394,11 +406,12 @@
             cursor: not-allowed;
         }
         .btn-primary {
-            background: var(--accent);
-            color: var(--bg-primary);
+            background: var(--primary);
+            color: white;
+            border: 1px solid transparent;
         }
         .btn-primary:hover {
-            background: var(--accent-hover);
+            background: var(--primary-hover);
         }
         .btn-primary:active {
             transform: scale(0.98);
@@ -1435,7 +1448,7 @@
             <div class="card">
                 <div class="card-header">
                     <h3 data-i18n="analytics_recent_activity">Recent Activity</h3>
-                    <button class="btn-icon" onclick="loadAnalyticsDashboard()">🔄</button>
+                    <button class="btn-icon" onclick="loadAnalyticsDashboard()"></button>
                 </div>
                 <div class="activity-feed" id="activity-feed">
                     <div class="loading-spinner">
@@ -1911,7 +1924,7 @@
     <div id="telegram-helper-modal" class="modal">
         <div class="modal-content" style="max-width: 700px;">
             <div class="modal-header" style="background: var(--accent); color: white; padding: 24px;">
-                <h2 style="margin: 0; font-size: 24px;">🤖 Создание Telegram бота</h2>
+                <h2 style="margin: 0; font-size: 24px;"> Создание Telegram бота</h2>
                 <button onclick="closeTelegramHelper()" style="background: none; border: none; color: white; font-size: 28px; cursor: pointer; line-height: 1;">&times;</button>
             </div>
 
@@ -1992,7 +2005,7 @@
                     <div style="width: 64px; height: 64px; background: rgba(255,255,255,0.2); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
                         <i data-lucide="check-circle" style="width: 36px; height: 36px; color: white;"></i>
                     </div>
-                    <h2 style="color: white; font-size: 24px; font-weight: 600; margin: 0;" data-i18n="cred_title">✅ Бизнес создан!</h2>
+                    <h2 style="color: white; font-size: 24px; font-weight: 600; margin: 0;" data-i18n="cred_title"> Бизнес создан!</h2>
                 </div>
             </div>
             <div class="modal-body" style="padding: 32px;">
@@ -2027,7 +2040,7 @@
                 <div style="background: var(--warning-light); border-left: 3px solid var(--warning); border-radius: 8px; padding: 16px; display: flex; gap: 12px;">
                     <i data-lucide="alert-triangle" style="width: 20px; height: 20px; color: var(--warning); flex-shrink: 0; margin-top: 2px;"></i>
                     <div>
-                        <div style="font-weight: 600; color: var(--warning); margin-bottom: 4px;" data-i18n="cred_warning_title">⚠️ Важно!</div>
+                        <div style="font-weight: 600; color: var(--warning); margin-bottom: 4px;" data-i18n="cred_warning_title"> Важно!</div>
                         <div style="font-size: 14px; color: var(--text-primary);" data-i18n="cred_warning_text">Сохраните эти данные! Пароль показывается только один раз и не может быть восстановлен.</div>
                     </div>
                 </div>
@@ -2045,7 +2058,7 @@
     <div id="quick-connect-modal" class="modal">
         <div class="modal-content" style="max-width: 900px;">
             <div class="modal-header">
-                <h2 data-i18n="connect_title" style="margin: 0;">⚡ Быстрое подключение платформ</h2>
+                <h2 data-i18n="connect_title" style="margin: 0;"> Быстрое подключение платформ</h2>
                 <p style="margin: 4px 0 0; font-size: 14px; color: var(--text-secondary);"><span data-i18n="connect_for">Для:</span> <strong id="connect-business-name">—</strong></p>
             </div>
             <div class="modal-body" style="padding: 40px;">
@@ -2145,7 +2158,7 @@
                         <div class="instagram-config-panel" id="instagram-config-panel" style="display:none;">
                             <div class="config-header">
                                 <h3 style="margin:0 0 8px 0;">Instagram Configuration</h3>
-                                <p class="connected-status"><span id="instagram-username-display">@username</span> - ✓ Подключен</p>
+                                <p class="connected-status"><span id="instagram-username-display">@username</span> -  Подключен</p>
                             </div>
 
                             <div class="config-section">
@@ -2266,7 +2279,7 @@
                                 class="btn-primary-large"
                                 style="width: 100%; margin-bottom: 12px; background: var(--accent); border: none; padding: 12px; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
                                 <i data-lucide="bot" style="width: 20px; height: 20px;"></i>
-                                <span>🤖 Создать бота (Помощник)</span>
+                                <span> Создать бота (Помощник)</span>
                             </button>
 
                             <a href="https://t.me/BotFather"
@@ -2353,7 +2366,7 @@
 
                             <div style="background: var(--warning-light); border-left: 3px solid var(--warning); border-radius: 6px; padding: 12px; margin-top: 12px;">
                                 <p style="margin: 0; font-size: 12px; color: var(--text-primary); line-height: 1.5;">
-                                    ⚠️ <strong>Важно:</strong> Нужен WhatsApp Business API доступ (не обычное приложение WhatsApp Business).
+                                     <strong>Важно:</strong> Нужен WhatsApp Business API доступ (не обычное приложение WhatsApp Business).
                                 </p>
                             </div>
 
@@ -2378,7 +2391,7 @@
     </div>
                     <i data-lucide="alert-triangle" style="width: 20px; height: 20px; color: var(--warning); flex-shrink: 0; margin-top: 2px;"></i>
                     <div>
-                        <div style="font-weight: 600; color: var(--warning); margin-bottom: 4px;">⚠️ Важно!</div>
+                        <div style="font-weight: 600; color: var(--warning); margin-bottom: 4px;"> Важно!</div>
                         <div style="font-size: 14px; color: var(--text-primary);">Сохраните эти данные! Пароль показывается только один раз и не может быть восстановлен.</div>
                     </div>
                 </div>
@@ -2392,7 +2405,7 @@
         </div>
     </div>
     <script>
-        console.log('[Admin] 🚀 Admin panel script loading... Version: v2024.09.22.001');
+        console.log('[Admin]  Admin panel script loading... Version: v2024.09.22.001');
         console.log('[Admin] Build time:', new Date().toISOString());
         
         // ============= LANGUAGE SYSTEM =============
@@ -2515,7 +2528,7 @@
                 'plan_popular': 'ПОПУЛЯРНЫЙ',
 
                 // Quick Connect Modal
-                'connect_title': '⚡ Быстрое подключение платформ',
+                'connect_title': ' Быстрое подключение платформ',
                 'connect_for': 'Для:',
                 'connect_instagram': 'Instagram',
                 'connect_telegram': 'Telegram',
@@ -2526,14 +2539,14 @@
                 'connect_telegram_help': 'Создать бота через @BotFather',
                 'connect_whatsapp_placeholder': '+996555123456',
                 'connect_whatsapp_help': 'Настроить WhatsApp Business API',
-                'connect_tip': 'Совет: Вставьте токены, сохраните, и платформы подключатся мгновенно! ⚡',
+                'connect_tip': 'Совет: Вставьте токены, сохраните, и платформы подключатся мгновенно! ',
                 'connect_button': 'Подключить платформы',
 
                 // Credentials Modal
-                'cred_title': '✅ Бизнес создан!',
+                'cred_title': ' Бизнес создан!',
                 'cred_email': 'Email',
                 'cred_password': 'Пароль',
-                'cred_warning_title': '⚠️ Важно!',
+                'cred_warning_title': ' Важно!',
                 'cred_warning_text': 'Сохраните эти данные! Пароль показывается только один раз и не может быть восстановлен.',
                 'cred_button': 'Понятно, я сохранил',
 
@@ -2617,7 +2630,7 @@
                 'msg_created': 'создан успешно!',
                 'msg_updated': 'обновлен успешно!',
                 'msg_deleted': 'удален успешно!',
-                'msg_connected': 'Платформы подключены успешно! 🎉',
+                'msg_connected': 'Платформы подключены успешно! ',
                 'msg_error': 'Ошибка',
                 'msg_copied': 'скопирован в буфер обмена!',
                 'msg_settings_saved': 'Настройки сохранены успешно',
@@ -2773,7 +2786,7 @@
                 'plan_popular': 'POPULAR',
 
                 // Quick Connect Modal
-                'connect_title': '⚡ Quick Platform Connection',
+                'connect_title': ' Quick Platform Connection',
                 'connect_for': 'For:',
                 'connect_instagram': 'Instagram',
                 'connect_telegram': 'Telegram',
@@ -2784,14 +2797,14 @@
                 'connect_telegram_help': 'Create bot via @BotFather',
                 'connect_whatsapp_placeholder': '+996555123456',
                 'connect_whatsapp_help': 'Setup WhatsApp Business API',
-                'connect_tip': 'Tip: Paste tokens, save, and platforms will connect instantly! ⚡',
+                'connect_tip': 'Tip: Paste tokens, save, and platforms will connect instantly! ',
                 'connect_button': 'Connect Platforms',
 
                 // Credentials Modal
-                'cred_title': '✅ Business Created!',
+                'cred_title': ' Business Created!',
                 'cred_email': 'Email',
                 'cred_password': 'Password',
-                'cred_warning_title': '⚠️ Important!',
+                'cred_warning_title': ' Important!',
                 'cred_warning_text': 'Save these credentials! Password is shown only once and cannot be recovered.',
                 'cred_button': 'Got it, I saved them',
 
@@ -2875,7 +2888,7 @@
                 'msg_created': 'created successfully!',
                 'msg_updated': 'updated successfully!',
                 'msg_deleted': 'deleted successfully!',
-                'msg_connected': 'Platforms connected successfully! 🎉',
+                'msg_connected': 'Platforms connected successfully! ',
                 'msg_error': 'Error',
                 'msg_copied': 'copied to clipboard!',
                 'msg_settings_saved': 'Settings saved successfully',
@@ -3031,7 +3044,7 @@
                 'plan_popular': 'ПОПУЛЯРДУУ',
 
                 // Quick Connect Modal
-                'connect_title': '⚡ Тез платформа туташуусу',
+                'connect_title': ' Тез платформа туташуусу',
                 'connect_for': 'Үчүн:',
                 'connect_instagram': 'Instagram',
                 'connect_telegram': 'Telegram',
@@ -3042,14 +3055,14 @@
                 'connect_telegram_help': '@BotFather аркылуу бот түзүү',
                 'connect_whatsapp_placeholder': '+996555123456',
                 'connect_whatsapp_help': 'WhatsApp Business API орнотуу',
-                'connect_tip': 'Кеңеш: Токендерди чаптаңыз, сактаңыз жана платформалар дароо туташат! ⚡',
+                'connect_tip': 'Кеңеш: Токендерди чаптаңыз, сактаңыз жана платформалар дароо туташат! ',
                 'connect_button': 'Платформаларды туташтыруу',
 
                 // Credentials Modal
-                'cred_title': '✅ Бизнес түзүлдү!',
+                'cred_title': ' Бизнес түзүлдү!',
                 'cred_email': 'Email',
                 'cred_password': 'Сыр сөз',
-                'cred_warning_title': '⚠️ Маанилүү!',
+                'cred_warning_title': ' Маанилүү!',
                 'cred_warning_text': 'Бул маалыматты сактаңыз! Сыр сөз бир жолу гана көрсөтүлөт жана калыбына келтирүүгө болбойт.',
                 'cred_button': 'Түшүндүм, мен сактадым',
 
@@ -3133,7 +3146,7 @@
                 'msg_created': 'ийгиликтүү түзүлдү!',
                 'msg_updated': 'ийгиликтүү жаңыртылды!',
                 'msg_deleted': 'ийгиликтүү өчүрүлдү!',
-                'msg_connected': 'Платформалар ийгиликтүү туташты! 🎉',
+                'msg_connected': 'Платформалар ийгиликтүү туташты! ',
                 'msg_error': 'Ката',
                 'msg_copied': 'буферге көчүрүлдү!',
                 'msg_settings_saved': 'Тууралоолор ийгиликтүү сакталды',
@@ -3581,7 +3594,7 @@
         // Init
         window.addEventListener('DOMContentLoaded', () => {
             console.log('[Admin] ============================================');
-            console.log('[Admin] ✓ DOMContentLoaded FIRED');
+            console.log('[Admin]  DOMContentLoaded FIRED');
             console.log('[Admin] Admin Panel Initializing...');
             console.log('[Admin] Timestamp:', new Date().toISOString());
             console.log('[Admin] ============================================');
@@ -3626,7 +3639,7 @@
                     tbody.innerHTML = `
                         <tr><td colspan="8" style="text-align:center;padding:40px;">
                             <div style="color: var(--danger);">
-                                <p style="font-size:18px;margin-bottom:10px;">⚠️ Loading timed out</p>
+                                <p style="font-size:18px;margin-bottom:10px;"> Loading timed out</p>
                                 <p style="color:var(--text-secondary);margin:10px 0;">Check browser console (F12) for errors</p>
                                 <div style="display:flex;gap:10px;justify-content:center;margin-top:20px;">
                                     <button onclick="location.reload()" class="btn-primary">Reload Page</button>
@@ -3899,7 +3912,7 @@
                         tbody.innerHTML = `
                             <tr><td colspan="8" style="text-align: center; padding: 40px;">
                                 <div style="color: var(--danger);">
-                                    <p>❌ Failed to load businesses</p>
+                                    <p> Failed to load businesses</p>
                                     <p style="font-size: 14px; margin-top: 8px;">${data.error || 'Unknown error'}</p>
                                     <button class="btn-primary" onclick="loadBusinessesDashboard()" style="margin-top: 16px;">
                                         Retry
@@ -3922,7 +3935,7 @@
                     tbody.innerHTML = `
                         <tr><td colspan="8" style="text-align: center; padding: 40px;">
                             <div style="color: var(--danger);">
-                                <p>❌ Error loading businesses</p>
+                                <p> Error loading businesses</p>
                                 <p style="font-size: 14px; margin-top: 8px;">${error.message}</p>
                                 <button class="btn-primary" onclick="loadBusinessesDashboard()" style="margin-top: 16px;">
                                     Retry
@@ -4150,7 +4163,7 @@
                 
                 if (data.success) {
                     closeQuickConnect();
-                    showToast('Platforms connected successfully! 🎉', 'success');
+                    showToast('Platforms connected successfully! ', 'success');
                     loadBusinessesDashboard();
                 } else {
                     showToast('Error: ' + (data.error || 'Failed to connect'), 'error');
@@ -4386,7 +4399,7 @@
 
             recent.forEach(b => {
                 activities.push({
-                    icon: '🏢',
+                    icon: '',
                     title: 'New business registered',
                     description: `${b.name} joined the platform`,
                     time: getRelativeTime(b.registrationDate)
@@ -4506,13 +4519,13 @@
             const resultDiv = document.getElementById('ai-key-test-result');
 
             if (!provider || !apiKey) {
-                resultDiv.textContent = '⚠️ Please select provider and enter API key';
+                resultDiv.textContent = ' Please select provider and enter API key';
                 resultDiv.style.display = 'block';
                 resultDiv.style.color = 'var(--warning)';
                 return;
             }
 
-            resultDiv.textContent = '🔄 Testing key...';
+            resultDiv.textContent = ' Testing key...';
             resultDiv.style.display = 'block';
             resultDiv.style.color = 'var(--text-secondary)';
 
@@ -4526,14 +4539,14 @@
                 const result = await response.json();
 
                 if (result.success && result.valid) {
-                    resultDiv.textContent = '✓ API key is valid!';
+                    resultDiv.textContent = ' API key is valid!';
                     resultDiv.style.color = 'var(--success)';
                 } else {
-                    resultDiv.textContent = '✗ Invalid API key or unable to verify';
+                    resultDiv.textContent = ' Invalid API key or unable to verify';
                     resultDiv.style.color = 'var(--danger)';
                 }
             } catch (error) {
-                resultDiv.textContent = '✗ Test failed: ' + error.message;
+                resultDiv.textContent = ' Test failed: ' + error.message;
                 resultDiv.style.color = 'var(--danger)';
             }
         }
@@ -4568,7 +4581,7 @@
                     // Show detailed error with option to skip validation
                     if (result.error.includes('Invalid API key') || result.error.includes('unable to verify')) {
                         const skipValidation = confirm(
-                            `❌ Key validation failed: ${result.error}\n\n` +
+                            ` Key validation failed: ${result.error}\n\n` +
                             `This could mean:\n` +
                             `• The API key is incorrect\n` +
                             `• The provider's API is temporarily down\n` +
@@ -4589,7 +4602,7 @@
                             if (retryResult.success) {
                                 closeAddAIKeyModal();
                                 await loadAIProviderKeys();
-                                showNotification('⚠️  Key added without validation', 'warning');
+                                showNotification('  Key added without validation', 'warning');
                             } else {
                                 showNotification('Failed to add key: ' + retryResult.error, 'error');
                             }
@@ -4707,7 +4720,7 @@
                 const validation = await validateRes.json();
 
                 if (!validation.valid) {
-                    return showToast('❌ ' + validation.error, 'error');
+                    return showToast(' ' + validation.error, 'error');
                 }
 
                 // Show bot info
@@ -4736,7 +4749,7 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    showToast('✅ Telegram подключен! (@' + (validation.botInfo?.username || '') + ')', 'success');
+                    showToast(' Telegram подключен! (@' + (validation.botInfo?.username || '') + ')', 'success');
                     closeTelegramHelper();
                     backToPlatforms();
                     loadBusinessesDashboard();
@@ -4792,7 +4805,7 @@
                 const validation = await validateRes.json();
 
                 if (!validation.valid) {
-                    return showToast('❌ ' + validation.error, 'error');
+                    return showToast(' ' + validation.error, 'error');
                 }
 
                 // Show account info
@@ -4820,7 +4833,7 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    showToast('✅ Instagram подключен! (@' + (validation.accountInfo?.username || '') + ')', 'success');
+                    showToast(' Instagram подключен! (@' + (validation.accountInfo?.username || '') + ')', 'success');
                     backToPlatforms(); // Go back to platform cards
                     loadBusinessesDashboard(); // Reload business list
                 } else {
@@ -4861,7 +4874,7 @@
                 const validation = await validateRes.json();
 
                 if (!validation.valid) {
-                    return showToast('❌ ' + validation.error, 'error');
+                    return showToast(' ' + validation.error, 'error');
                 }
 
                 // Show phone info
@@ -4892,7 +4905,7 @@
 
                 if (data.success) {
                     const phoneDisplay = validation.phoneInfo?.display_phone_number || phoneNumberId;
-                    showToast('✅ WhatsApp подключен! (' + phoneDisplay + ')', 'success');
+                    showToast(' WhatsApp подключен! (' + phoneDisplay + ')', 'success');
                     backToPlatforms();
                     loadBusinessesDashboard();
                 } else {
@@ -4914,9 +4927,9 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    showToast(`✅ ${platform}: ${data.message}`, 'success');
+                    showToast(` ${platform}: ${data.message}`, 'success');
                 } else {
-                    showToast(`❌ ${platform}: ${data.error}`, 'error');
+                    showToast(` ${platform}: ${data.error}`, 'error');
                 }
             } catch (err) {
                 showToast(`Ошибка проверки ${platform}`, 'error');
@@ -4931,7 +4944,7 @@
 
                 if (data.success) {
                     const info = data.webhooks;
-                    let message = '📡 WEBHOOK URLS:\n\n';
+                    let message = ' WEBHOOK URLS:\n\n';
                     message += `Instagram:\n${info.instagram.url}\nVerify Token: ${info.instagram.verifyToken}\n\n`;
                     message += `Telegram:\n${info.telegram.url}\n\n`;
                     message += `WhatsApp:\n${info.whatsapp.url}\nVerify Token: ${info.whatsapp.verifyToken}`;
@@ -4986,7 +4999,7 @@
             modal.id = 'instagram-instructions-modal';
             modal.innerHTML = `
                 <div class="instruction-modal-content">
-                    <h2>📸 Подключение Instagram</h2>
+                    <h2> Подключение Instagram</h2>
 
                     <div class="instruction-section">
                         <h3>1. Подготовка профиля (в приложении Instagram)</h3>
@@ -5013,7 +5026,7 @@
                     </div>
 
                     <div class="instruction-section warning">
-                        <h3>⚠️ Важные условия</h3>
+                        <h3> Важные условия</h3>
                         <ul>
                             <li>Используйте официальный браузер</li>
                             <li>Выключите VPN или анонимайзер</li>
