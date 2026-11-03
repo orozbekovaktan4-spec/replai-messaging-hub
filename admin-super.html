@@ -26,9 +26,9 @@
     <style>
         /* Professional Messaging Automation Tool */
         :root[data-theme="light"] {
-            /* Accent Color */
-            --accent: #2563EB;
-            --accent-hover: #1d4ed8;
+            /* Accent Color - Platform neutral */
+            --accent: #0f172a;
+            --accent-hover: #1e293b;
 
             /* Base Colors */
             --bg-primary: #ffffff;
@@ -66,9 +66,9 @@
             --telegram: #0088CC;
         }
         :root[data-theme="dark"] {
-            /* Accent Color */
-            --accent: #3b82f6;
-            --accent-hover: #2563eb;
+            /* Accent Color - Platform neutral */
+            --accent: #f8fafc;
+            --accent-hover: #e2e8f0;
 
             /* Base Colors */
             --bg-primary: #0e1015;
@@ -112,9 +112,9 @@
             color: var(--text-primary);
             transition: background-color 0.3s, color 0.3s;
         }
-        h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; }
-        h2 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; }
-        h3 { font-size: 18px; font-weight: 600; }
+        h1 { font-size: 32px; font-weight: 600; letter-spacing: -0.02em; }
+        h2 { font-size: 24px; font-weight: 600; letter-spacing: 0; }
+        h3 { font-size: 18px; font-weight: 500; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -157,10 +157,8 @@
         .menu-section { padding: 20px 0; }
         .section-header {
             padding: 0 20px 12px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            font-size: 12px;
+            font-weight: 500;
             color: var(--text-tertiary);
         }
         .menu-item {
@@ -182,9 +180,9 @@
             transform: translateX(4px);
         }
         .menu-item.active {
-            background: var(--accent);
-            color: white;
-            box-shadow: 0 8px 16px rgba(96,239,255,0.3);
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border-left: 2px solid var(--accent);
         }
         
         /* Header */
@@ -397,15 +395,13 @@
         }
         .btn-primary {
             background: var(--accent);
-            color: white;
-            box-shadow: 0 4px 12px rgba(0,97,255,0.25);
+            color: var(--bg-primary);
         }
         .btn-primary:hover {
-            box-shadow: 0 6px 16px rgba(0,97,255,0.35);
-            transform: translateY(-1px);
+            background: var(--accent-hover);
         }
         .btn-primary:active {
-            transform: translateY(0);
+            transform: scale(0.98);
         }
         .btn-primary-large {
             padding: 12px 24px;
