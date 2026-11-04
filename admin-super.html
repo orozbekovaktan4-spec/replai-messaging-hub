@@ -1188,6 +1188,288 @@
             color: var(--text-secondary);
             line-height: 1.6;
         }
+
+        /* Business Monitor Modal Styles */
+        .monitor-modal-content {
+            max-width: 1200px;
+            width: 95vw;
+            max-height: 90vh;
+            background: var(--bg-primary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .monitor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .monitor-title h2 {
+            margin: 0 0 8px 0;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        .monitor-platforms {
+            display: flex;
+            gap: 8px;
+        }
+        .platform-status {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .platform-status::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .platform-status.connected::before {
+            background: var(--success);
+        }
+        .platform-status.disconnected::before {
+            background: var(--danger);
+        }
+        .platform-status.instagram { background: var(--instagram-light); color: var(--instagram); }
+        .platform-status.whatsapp { background: var(--whatsapp-light); color: var(--whatsapp); }
+        .platform-status.telegram { background: var(--telegram-light); color: var(--telegram); }
+        .monitor-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .monitor-tabs {
+            display: flex;
+            gap: 4px;
+            padding: 0 24px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .monitor-tab {
+            padding: 12px 16px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .monitor-tab:hover {
+            color: var(--text-primary);
+        }
+        .monitor-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        .monitor-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+        .monitor-tab-content {
+            display: none;
+        }
+        .monitor-tab-content.active {
+            display: block;
+        }
+        .messages-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .message-item {
+            padding: 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            border-left: 3px solid var(--instagram);
+        }
+        .message-item.whatsapp { border-left-color: var(--whatsapp); }
+        .message-item.telegram { border-left-color: var(--telegram); }
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .message-platform {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+        .message-time {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+        .message-content {
+            margin: 8px 0;
+            padding-left: 12px;
+            border-left: 2px solid var(--border-color);
+        }
+        .message-text {
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--text-primary);
+            margin: 4px 0;
+        }
+        .message-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        .message-status.sent { background: var(--success-light); color: var(--success); }
+        .message-status.failed { background: var(--danger-light); color: var(--danger); }
+        .health-platform {
+            padding: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .health-platform-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .health-status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .health-status-indicator.connected { background: var(--success); }
+        .health-status-indicator.disconnected { background: var(--danger); }
+        .health-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            font-size: 13px;
+        }
+        .health-detail-item {
+            display: flex;
+            justify-content: space-between;
+        }
+        .health-detail-label {
+            color: var(--text-secondary);
+        }
+        .health-detail-value {
+            color: var(--text-primary);
+            font-weight: 500;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card-monitor {
+            padding: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+        .stat-value-monitor {
+            font-size: 32px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .stat-label-monitor {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .debug-section {
+            margin-bottom: 24px;
+        }
+        .debug-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+        .debug-info {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .debug-row {
+            display: flex;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .debug-row:last-child {
+            border-bottom: none;
+        }
+        .debug-key {
+            flex: 0 0 180px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .debug-value {
+            flex: 1;
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+        .error-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            background: var(--danger-light);
+            border: 1px solid var(--danger);
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        .error-icon {
+            color: var(--danger);
+            flex-shrink: 0;
+        }
+        .error-details {
+            flex: 1;
+        }
+        .error-time {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            margin-bottom: 4px;
+        }
+        .error-message {
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+        .monitor-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .last-updated {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
     </style>
 </head>
 <body>
@@ -4031,6 +4313,9 @@
                                     <i data-lucide="more-vertical" style="width: 16px; height: 16px;"></i>
                                 </button>
                                 <div class="actions-menu">
+                                    <a onclick="openBusinessMonitor('${b.id}', '${b.name}')">
+                                        <i data-lucide="activity" style="width: 16px; height: 16px;"></i> Monitor
+                                    </a>
                                     <a onclick="viewBusiness('${b.id}')">
                                         <i data-lucide="eye" style="width: 16px; height: 16px;"></i> ${t('action_view')}
                                     </a>
@@ -5271,6 +5556,348 @@
 
             loadInstagramConfig();
         }
+
+        // ============================================
+        // BUSINESS MONITORING FUNCTIONS
+        // ============================================
+
+        let currentMonitorBusinessId = null;
+        let currentMonitorData = null;
+
+        // Open monitor modal
+        async function openBusinessMonitor(businessId, businessName) {
+            currentMonitorBusinessId = businessId;
+
+            document.getElementById('monitor-business-name').textContent = businessName;
+            document.getElementById('business-monitor-modal').classList.add('show');
+
+            // Setup tab switching
+            setupMonitorTabs();
+
+            // Load monitoring data
+            await refreshMonitorData();
+
+            lucide.createIcons();
+        }
+
+        // Close monitor modal
+        function closeBusinessMonitor() {
+            document.getElementById('business-monitor-modal').classList.remove('show');
+            currentMonitorBusinessId = null;
+            currentMonitorData = null;
+        }
+
+        // Setup tab switching
+        function setupMonitorTabs() {
+            const tabs = document.querySelectorAll('.monitor-tab');
+            tabs.forEach(tab => {
+                tab.onclick = () => {
+                    const targetTab = tab.dataset.tab;
+
+                    // Update active tab
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    // Update active content
+                    document.querySelectorAll('.monitor-tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    document.getElementById(`monitor-tab-${targetTab}`).classList.add('active');
+                };
+            });
+        }
+
+        // Refresh monitoring data
+        async function refreshMonitorData() {
+            if (!currentMonitorBusinessId) return;
+
+            try {
+                const response = await fetch(`/api/business/${currentMonitorBusinessId}/monitor`);
+                const data = await response.json();
+
+                if (!data.success) {
+                    showToast('Failed to load monitoring data', 'error');
+                    return;
+                }
+
+                currentMonitorData = data;
+
+                // Update platform status
+                updatePlatformStatus(data.platforms);
+
+                // Update messages
+                updateMessagesList(data.messages);
+
+                // Update health
+                updateHealthContent(data.platforms);
+
+                // Update stats
+                updateStatsContent(data.stats);
+
+                // Update debug
+                updateDebugContent(data);
+
+                // Update last updated time
+                document.getElementById('monitor-last-updated').textContent = new Date().toLocaleTimeString();
+
+            } catch (error) {
+                console.error('Failed to load monitoring data:', error);
+                showToast('Failed to load monitoring data', 'error');
+            }
+        }
+
+        // Update platform status badges
+        function updatePlatformStatus(platforms) {
+            const igStatus = document.getElementById('monitor-ig-status');
+            const waStatus = document.getElementById('monitor-wa-status');
+            const tgStatus = document.getElementById('monitor-tg-status');
+
+            igStatus.className = `platform-status instagram ${platforms.instagram.status}`;
+            igStatus.textContent = platforms.instagram.status === 'connected' ? 'Instagram' : 'Instagram (offline)';
+
+            waStatus.className = `platform-status whatsapp ${platforms.whatsapp.status}`;
+            waStatus.textContent = platforms.whatsapp.status === 'connected' ? 'WhatsApp' : 'WhatsApp (offline)';
+
+            tgStatus.className = `platform-status telegram ${platforms.telegram.status}`;
+            tgStatus.textContent = platforms.telegram.status === 'connected' ? 'Telegram' : 'Telegram (offline)';
+        }
+
+        // Update messages list
+        function updateMessagesList(messages) {
+            const container = document.getElementById('messages-list');
+
+            if (messages.length === 0) {
+                container.innerHTML = '<div class="empty-state">No messages yet</div>';
+                return;
+            }
+
+            container.innerHTML = messages.map(msg => `
+                <div class="message-item ${msg.platform}">
+                    <div class="message-header">
+                        <span class="message-platform">${msg.platform.toUpperCase()}</span>
+                        <span class="message-time">${formatTime(msg.timestamp)}</span>
+                    </div>
+                    <div class="message-content">
+                        <div class="message-text">
+                            <strong>${msg.direction === 'in' ? '→' : '←'}</strong>
+                            ${msg.direction === 'in' ? 'From' : 'To'}: ${msg.direction === 'in' ? msg.sender : msg.recipient}
+                        </div>
+                        <div class="message-text">${escapeHtml(msg.message)}</div>
+                    </div>
+                    <div class="message-footer" style="margin-top: 8px;">
+                        <span class="message-status ${msg.status}">${msg.status}</span>
+                        ${msg.error ? `<span class="message-error" style="color: var(--danger); font-size: 12px; margin-left: 8px;">${msg.error}</span>` : ''}
+                        ${msg.responseTime ? `<span style="font-size: 12px; color: var(--text-tertiary); margin-left: 8px;">${Math.round(msg.responseTime)}ms</span>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Filter messages
+        function filterMessages() {
+            if (!currentMonitorData) return;
+
+            const platform = document.getElementById('message-platform-filter').value;
+            let messages = currentMonitorData.messages;
+
+            if (platform !== 'all') {
+                messages = messages.filter(m => m.platform === platform);
+            }
+
+            updateMessagesList(messages);
+        }
+
+        // Update health content
+        function updateHealthContent(platforms) {
+            const container = document.getElementById('health-content');
+
+            container.innerHTML = `
+                ${renderHealthPlatform('Instagram', platforms.instagram, 'instagram')}
+                ${renderHealthPlatform('WhatsApp', platforms.whatsapp, 'whatsapp')}
+                ${renderHealthPlatform('Telegram', platforms.telegram, 'telegram')}
+            `;
+        }
+
+        function renderHealthPlatform(name, platform, type) {
+            return `
+                <div class="health-platform">
+                    <div class="health-platform-header">
+                        <h3 style="margin: 0; font-size: 16px; font-weight: 600;">${name}</h3>
+                        <span class="health-status-indicator ${platform.status}"></span>
+                    </div>
+                    <div class="health-details">
+                        <div class="health-detail-item">
+                            <span class="health-detail-label">Status</span>
+                            <span class="health-detail-value">${platform.status}</span>
+                        </div>
+                        ${platform.username ? `
+                            <div class="health-detail-item">
+                                <span class="health-detail-label">Account</span>
+                                <span class="health-detail-value">${platform.username}</span>
+                            </div>
+                        ` : ''}
+                        ${platform.phone ? `
+                            <div class="health-detail-item">
+                                <span class="health-detail-label">Phone</span>
+                                <span class="health-detail-value">${platform.phone}</span>
+                            </div>
+                        ` : ''}
+                        ${platform.tokenValid !== undefined ? `
+                            <div class="health-detail-item">
+                                <span class="health-detail-label">Token</span>
+                                <span class="health-detail-value">${platform.tokenValid ? '✓ Valid' : '✗ Invalid'}</span>
+                            </div>
+                        ` : ''}
+                        ${platform.lastMessage ? `
+                            <div class="health-detail-item">
+                                <span class="health-detail-label">Last Message</span>
+                                <span class="health-detail-value">${formatRelativeTime(platform.lastMessage)}</span>
+                            </div>
+                        ` : ''}
+                        ${platform.webhookStatus ? `
+                            <div class="health-detail-item">
+                                <span class="health-detail-label">Webhook</span>
+                                <span class="health-detail-value">${platform.webhookStatus}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Update stats content
+        function updateStatsContent(stats) {
+            const container = document.getElementById('stats-content');
+
+            container.innerHTML = `
+                <div class="stats-grid">
+                    <div class="stat-card-monitor">
+                        <div class="stat-value-monitor">${stats.total24h}</div>
+                        <div class="stat-label-monitor">Total Messages (24h)</div>
+                    </div>
+                    <div class="stat-card-monitor">
+                        <div class="stat-value-monitor">${stats.responseRate}%</div>
+                        <div class="stat-label-monitor">Response Rate</div>
+                    </div>
+                    <div class="stat-card-monitor">
+                        <div class="stat-value-monitor">${stats.avgResponseTime}s</div>
+                        <div class="stat-label-monitor">Avg Response Time</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px;">
+                    <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600;">Messages by Platform</h3>
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span style="flex: 0 0 100px; font-size: 14px; color: var(--text-secondary);">Instagram</span>
+                            <div style="flex: 1; height: 8px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden;">
+                                <div style="width: ${stats.total24h > 0 ? (stats.byPlatform.instagram / stats.total24h * 100) : 0}%; height: 100%; background: var(--instagram);"></div>
+                            </div>
+                            <span style="flex: 0 0 40px; text-align: right; font-size: 14px; font-weight: 600; color: var(--text-primary);">${stats.byPlatform.instagram}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span style="flex: 0 0 100px; font-size: 14px; color: var(--text-secondary);">WhatsApp</span>
+                            <div style="flex: 1; height: 8px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden;">
+                                <div style="width: ${stats.total24h > 0 ? (stats.byPlatform.whatsapp / stats.total24h * 100) : 0}%; height: 100%; background: var(--whatsapp);"></div>
+                            </div>
+                            <span style="flex: 0 0 40px; text-align: right; font-size: 14px; font-weight: 600; color: var(--text-primary);">${stats.byPlatform.whatsapp}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span style="flex: 0 0 100px; font-size: 14px; color: var(--text-secondary);">Telegram</span>
+                            <div style="flex: 1; height: 8px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden;">
+                                <div style="width: ${stats.total24h > 0 ? (stats.byPlatform.telegram / stats.total24h * 100) : 0}%; height: 100%; background: var(--telegram);"></div>
+                            </div>
+                            <span style="flex: 0 0 40px; text-align: right; font-size: 14px; font-weight: 600; color: var(--text-primary);">${stats.byPlatform.telegram}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Update debug content
+        function updateDebugContent(data) {
+            const container = document.getElementById('debug-content');
+
+            container.innerHTML = `
+                <div class="debug-section">
+                    <h3 class="debug-section-title">Business Information</h3>
+                    <div class="debug-info">
+                        <div class="debug-row">
+                            <span class="debug-key">Business ID</span>
+                            <span class="debug-value">${data.business.id}</span>
+                        </div>
+                        <div class="debug-row">
+                            <span class="debug-key">Name</span>
+                            <span class="debug-value">${data.business.name}</span>
+                        </div>
+                        <div class="debug-row">
+                            <span class="debug-key">Created</span>
+                            <span class="debug-value">${new Date(data.business.created).toLocaleString()}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="debug-section">
+                    <h3 class="debug-section-title">Recent Errors</h3>
+                    ${data.errors.length > 0 ? data.errors.map(err => `
+                        <div class="error-item">
+                            <span class="error-icon">⚠</span>
+                            <div class="error-details">
+                                <div class="error-time">${formatTime(err.timestamp)}</div>
+                                <div class="error-message">${escapeHtml(err.message)}</div>
+                            </div>
+                        </div>
+                    `).join('') : '<p style="color: var(--text-secondary); font-size: 14px;">No recent errors</p>'}
+                </div>
+
+                <div class="debug-section">
+                    <h3 class="debug-section-title">Webhook Endpoints</h3>
+                    <div class="debug-info">
+                        <div class="debug-row">
+                            <span class="debug-key">Instagram</span>
+                            <span class="debug-value">/webhook/instagram</span>
+                        </div>
+                        <div class="debug-row">
+                            <span class="debug-key">WhatsApp</span>
+                            <span class="debug-value">/webhook/whatsapp</span>
+                        </div>
+                        <div class="debug-row">
+                            <span class="debug-key">Telegram</span>
+                            <span class="debug-value">/webhook/telegram</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Helper: Format time
+        function formatTime(timestamp) {
+            return new Date(timestamp).toLocaleTimeString();
+        }
+
+        // Helper: Format relative time
+        function formatRelativeTime(timestamp) {
+            const diff = Date.now() - new Date(timestamp).getTime();
+            const minutes = Math.floor(diff / 60000);
+            if (minutes < 1) return 'just now';
+            if (minutes < 60) return `${minutes}m ago`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours}h ago`;
+            const days = Math.floor(hours / 24);
+            return `${days}d ago`;
+        }
+
+        // Helper: Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ============================================
+        // END BUSINESS MONITORING FUNCTIONS
+        // ============================================
+
     </script>
 
     <!-- Add AI Provider Key Modal -->
@@ -5336,5 +5963,83 @@
             </form>
         </div>
     </div>
+
+    <!-- Business Monitor Modal -->
+    <div id="business-monitor-modal" class="modal">
+        <div class="monitor-modal-content">
+            <!-- Header -->
+            <div class="monitor-header">
+                <div class="monitor-title">
+                    <h2 id="monitor-business-name">Business Monitor</h2>
+                    <div class="monitor-platforms">
+                        <span class="platform-status instagram" id="monitor-ig-status">Instagram</span>
+                        <span class="platform-status whatsapp" id="monitor-wa-status">WhatsApp</span>
+                        <span class="platform-status telegram" id="monitor-tg-status">Telegram</span>
+                    </div>
+                </div>
+                <div class="monitor-actions">
+                    <button class="btn-icon" onclick="refreshMonitorData()" title="Refresh">
+                        <i data-lucide="refresh-cw"></i>
+                    </button>
+                    <button class="btn-icon" onclick="closeBusinessMonitor()">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="monitor-tabs">
+                <button class="monitor-tab active" data-tab="messages">Messages</button>
+                <button class="monitor-tab" data-tab="health">Health</button>
+                <button class="monitor-tab" data-tab="stats">Statistics</button>
+                <button class="monitor-tab" data-tab="debug">Debug</button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="monitor-body">
+                <!-- Messages Tab -->
+                <div id="monitor-tab-messages" class="monitor-tab-content active">
+                    <div class="messages-filters" style="margin-bottom: 16px;">
+                        <select id="message-platform-filter" onchange="filterMessages()" style="padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
+                            <option value="all">All Platforms</option>
+                            <option value="instagram">Instagram</option>
+                            <option value="whatsapp">WhatsApp</option>
+                            <option value="telegram">Telegram</option>
+                        </select>
+                    </div>
+                    <div id="messages-list" class="messages-list">
+                        <div class="empty-state">Loading messages...</div>
+                    </div>
+                </div>
+
+                <!-- Health Tab -->
+                <div id="monitor-tab-health" class="monitor-tab-content">
+                    <div id="health-content" class="health-content">
+                        <div class="empty-state">Loading health data...</div>
+                    </div>
+                </div>
+
+                <!-- Stats Tab -->
+                <div id="monitor-tab-stats" class="monitor-tab-content">
+                    <div id="stats-content" class="stats-content">
+                        <div class="empty-state">Loading statistics...</div>
+                    </div>
+                </div>
+
+                <!-- Debug Tab -->
+                <div id="monitor-tab-debug" class="monitor-tab-content">
+                    <div id="debug-content" class="debug-content">
+                        <div class="empty-state">Loading debug info...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="monitor-footer">
+                <span class="last-updated">Last updated: <span id="monitor-last-updated">—</span></span>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
