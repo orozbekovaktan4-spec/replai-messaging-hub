@@ -198,6 +198,57 @@ const stats = {
   lastResetDate: new Date().toDateString()
 };
 
+// Message logging system for monitoring
+const messageLogs = new Map(); // businessId -> Array of messages
+const errorLogs = new Map();   // businessId -> Array of errors
+const MAX_MESSAGES_PER_BUSINESS = 1000;
+const MAX_ERRORS_PER_BUSINESS = 100;
+
+// Log message function
+function logMessage(messageData) {
+  const { businessId } = messageData;
+  if (!businessId) return;
+
+  if (!messageLogs.has(businessId)) {
+    messageLogs.set(businessId, []);
+  }
+
+  const logs = messageLogs.get(businessId);
+  logs.unshift({
+    id: crypto.randomUUID(),
+    ...messageData,
+    timestamp: messageData.timestamp || new Date().toISOString()
+  });
+
+  // Keep bounded
+  if (logs.length > MAX_MESSAGES_PER_BUSINESS) {
+    logs.pop();
+  }
+}
+
+// Log error function
+function logError(businessId, error, platform = null) {
+  if (!businessId) return;
+
+  if (!errorLogs.has(businessId)) {
+    errorLogs.set(businessId, []);
+  }
+
+  const logs = errorLogs.get(businessId);
+  logs.unshift({
+    id: crypto.randomUUID(),
+    timestamp: new Date().toISOString(),
+    platform,
+    message: error.message || error.toString(),
+    stack: error.stack
+  });
+
+  // Keep bounded
+  if (logs.length > MAX_ERRORS_PER_BUSINESS) {
+    logs.pop();
+  }
+}
+
 // Function to reset today's messages at midnight
 function resetDailyStats() {
   const today = new Date().toDateString();
@@ -1587,6 +1638,287 @@ app.post('/api/admin/ai-settings', (req, res) => {
   }
 });
 
+
+
+
+// ============================================
+// BUSINESS MONITORING ENDPOINTS
+// ============================================
+
+// Get complete monitoring data for a business
+app.get('/api/business/:id/monitor', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const business = await prisma.business.findUnique({ where: { id } });
+
+    if (!business) {
+      return res.status(404).json({ success: false, error: 'Business not found' });
+    }
+
+    // Get platform health
+    const platforms = {
+      instagram: await getInstagramHealth(business),
+      whatsapp: await getWhatsAppHealth(business),
+      telegram: await getTelegramHealth(business)
+    };
+
+    // Get recent messages
+    const messages = messageLogs.get(id) || [];
+    const recentMessages = messages.slice(0, 50);
+
+    // Get stats
+    const stats = getBusinessStats(id);
+
+    // Get recent errors
+    const errors = errorLogs.get(id) || [];
+    const recentErrors = errors.slice(0, 10);
+
+    res.json({
+      success: true,
+      business: {
+        id: business.id,
+        name: business.name,
+        created: business.createdAt
+      },
+      platforms,
+      messages: recentMessages,
+      stats,
+      errors: recentErrors
+    });
+  } catch (error) {
+    console.error('[Monitor] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get filtered messages for a business
+app.get('/api/business/:id/messages', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { platform, limit = 50 } = req.query;
+
+    let messages = messageLogs.get(id) || [];
+
+    if (platform && platform !== 'all') {
+      messages = messages.filter(m => m.platform === platform);
+    }
+
+    const limitNum = parseInt(limit, 10);
+    const filtered = messages.slice(0, limitNum);
+
+    res.json({ success: true, messages: filtered });
+  } catch (error) {
+    console.error('[Monitor] Error getting messages:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Test platform connectivity
+app.post('/api/business/:id/test-platform', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { platform } = req.body;
+
+    const business = await prisma.business.findUnique({ where: { id } });
+    if (!business) {
+      return res.status(404).json({ success: false, error: 'Business not found' });
+    }
+
+    let result = { success: false, message: 'Unknown platform' };
+
+    if (platform === 'instagram') {
+      result = await testInstagramConnection(business);
+    } else if (platform === 'whatsapp') {
+      result = await testWhatsAppConnection(business);
+    } else if (platform === 'telegram') {
+      result = await testTelegramConnection(business);
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('[Monitor] Test error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Helper: Get Instagram health
+async function getInstagramHealth(business) {
+  try {
+    const ig = business.instagram ? JSON.parse(business.instagram) : {};
+    if (!ig.connected) {
+      return { status: 'disconnected' };
+    }
+
+    const messages = messageLogs.get(business.id) || [];
+    const igMessages = messages.filter(m => m.platform === 'instagram');
+    const lastMessage = igMessages[0];
+
+    return {
+      status: 'connected',
+      username: ig.username || 'Unknown',
+      tokenValid: true,
+      tokenExpires: ig.expiresAt || null,
+      lastMessage: lastMessage ? lastMessage.timestamp : null,
+      webhookStatus: 'receiving'
+    };
+  } catch (error) {
+    return { status: 'error', error: error.message };
+  }
+}
+
+// Helper: Get WhatsApp health
+async function getWhatsAppHealth(business) {
+  try {
+    const wa = business.whatsapp ? JSON.parse(business.whatsapp) : {};
+    if (!wa.connected) {
+      return { status: 'disconnected' };
+    }
+
+    const messages = messageLogs.get(business.id) || [];
+    const waMessages = messages.filter(m => m.platform === 'whatsapp');
+    const lastMessage = waMessages[0];
+
+    return {
+      status: 'connected',
+      phone: wa.displayPhone || 'Unknown',
+      tokenValid: true,
+      lastMessage: lastMessage ? lastMessage.timestamp : null,
+      webhookStatus: 'receiving'
+    };
+  } catch (error) {
+    return { status: 'error', error: error.message };
+  }
+}
+
+// Helper: Get Telegram health
+async function getTelegramHealth(business) {
+  try {
+    const tg = business.telegram ? JSON.parse(business.telegram) : {};
+    if (!tg.connected) {
+      return { status: 'disconnected' };
+    }
+
+    const messages = messageLogs.get(business.id) || [];
+    const tgMessages = messages.filter(m => m.platform === 'telegram');
+    const lastMessage = tgMessages[0];
+
+    return {
+      status: 'connected',
+      username: tg.bot_username || 'Unknown',
+      tokenValid: true,
+      lastMessage: lastMessage ? lastMessage.timestamp : null,
+      webhookStatus: 'receiving'
+    };
+  } catch (error) {
+    return { status: 'error', error: error.message };
+  }
+}
+
+// Helper: Get business stats
+function getBusinessStats(businessId) {
+  const messages = messageLogs.get(businessId) || [];
+  const now = Date.now();
+  const last24h = messages.filter(m => now - new Date(m.timestamp).getTime() < 24 * 60 * 60 * 1000);
+
+  const byPlatform = {
+    instagram: last24h.filter(m => m.platform === 'instagram').length,
+    whatsapp: last24h.filter(m => m.platform === 'whatsapp').length,
+    telegram: last24h.filter(m => m.platform === 'telegram').length
+  };
+
+  const inbound = last24h.filter(m => m.direction === 'in');
+  const outbound = last24h.filter(m => m.direction === 'out');
+  const failed = last24h.filter(m => m.status === 'failed');
+
+  const responseTimes = outbound.filter(m => m.responseTime).map(m => m.responseTime);
+  const avgResponseTime = responseTimes.length > 0
+    ? Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length / 1000)
+    : 0;
+
+  const responseRate = inbound.length > 0
+    ? Math.round((outbound.length / inbound.length) * 100)
+    : 0;
+
+  return {
+    total24h: last24h.length,
+    byPlatform,
+    responseRate,
+    avgResponseTime,
+    failedMessages: failed.length
+  };
+}
+
+// Helper: Test Instagram connection
+async function testInstagramConnection(business) {
+  try {
+    const ig = business.instagram ? JSON.parse(business.instagram) : {};
+    if (!ig.connected || !ig.accessToken) {
+      return { success: false, message: 'Instagram not connected' };
+    }
+
+    // Test API call
+    const response = await fetch(`https://graph.instagram.com/me?fields=id,username&access_token=${ig.accessToken}`);
+    const data = await response.json();
+
+    if (data.error) {
+      return { success: false, message: data.error.message };
+    }
+
+    return { success: true, message: `Connected as @${data.username}` };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+}
+
+// Helper: Test WhatsApp connection
+async function testWhatsAppConnection(business) {
+  try {
+    const wa = business.whatsapp ? JSON.parse(business.whatsapp) : {};
+    if (!wa.connected || !wa.accessToken) {
+      return { success: false, message: 'WhatsApp not connected' };
+    }
+
+    // Test API call
+    const response = await fetch(
+      `https://graph.facebook.com/v18.0/${wa.phoneNumberId}?access_token=${wa.accessToken}`
+    );
+    const data = await response.json();
+
+    if (data.error) {
+      return { success: false, message: data.error.message };
+    }
+
+    return { success: true, message: `Connected: ${data.display_phone_number}` };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+}
+
+// Helper: Test Telegram connection
+async function testTelegramConnection(business) {
+  try {
+    const tg = business.telegram ? JSON.parse(business.telegram) : {};
+    if (!tg.connected || !tg.token) {
+      return { success: false, message: 'Telegram not connected' };
+    }
+
+    // Test API call
+    const response = await fetch(`https://api.telegram.org/bot${tg.token}/getMe`);
+    const data = await response.json();
+
+    if (!data.ok) {
+      return { success: false, message: data.description || 'Failed to connect' };
+    }
+
+    return { success: true, message: `Connected as @${data.result.username}` };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+}
+
+// ============================================
+// END BUSINESS MONITORING ENDPOINTS
+// ============================================
 
 
 // --- ADMIN BOOKING APIS ---
@@ -3511,6 +3843,7 @@ app.post('/api/instagram/webhook', async (req, res) => {
 
 // Handle Instagram DM
 async function handleInstagramMessage(event) {
+  const startTime = Date.now();
   try {
     const senderId = event.sender.id;
     const recipientId = event.recipient.id; // This is the business Instagram userId
@@ -3536,6 +3869,18 @@ async function handleInstagramMessage(event) {
     }
 
     console.log('[Instagram DM] Business found:', business.name);
+
+    // Log incoming message
+    logMessage({
+      businessId: business.id,
+      platform: 'instagram',
+      direction: 'in',
+      sender: senderId,
+      recipient: recipientId,
+      message: messageText,
+      status: 'received',
+      timestamp: new Date().toISOString()
+    });
 
     // Get Instagram config
     let instagramData = typeof business.instagram === 'string' ? JSON.parse(business.instagram) : business.instagram;
@@ -3595,8 +3940,26 @@ async function handleInstagramMessage(event) {
 
     console.log('[Instagram DM] Reply sent successfully');
 
+    // Log outgoing message
+    const responseTime = Date.now() - startTime;
+    logMessage({
+      businessId: business.id,
+      platform: 'instagram',
+      direction: 'out',
+      sender: recipientId,
+      recipient: senderId,
+      message: replyText,
+      status: 'sent',
+      responseTime,
+      timestamp: new Date().toISOString()
+    });
+
   } catch (error) {
     console.error('[Instagram DM] Handler error:', error);
+    // Log error if we have business context
+    if (error.businessId) {
+      logError(error.businessId, error, 'instagram');
+    }
   }
 }
 
