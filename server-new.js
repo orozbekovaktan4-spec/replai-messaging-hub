@@ -4459,36 +4459,6 @@ app.get('/webhook/:platform', (req, res) => {
   }
 });
 
-app.get('/api/instagram/webhook', (req, res) => {
-  const mode = req.query['hub.mode'];
-  const token = req.query['hub.verify_token'];
-  const challenge = req.query['hub.challenge'];
-  const verifyToken = process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN || process.env.WEBHOOK_VERIFY_TOKEN;
-
-  if (!verifyToken) {
-    console.error('[Instagram Webhook] INSTAGRAM_WEBHOOK_VERIFY_TOKEN or WEBHOOK_VERIFY_TOKEN is not configured');
-    return res.sendStatus(500);
-  }
-
-  if (mode === 'subscribe' && token === verifyToken) {
-    return res.status(200).send(challenge);
-  }
-
-  if (mode === 'subscribe') {
-    return res.sendStatus(403);
-  }
-
-  res.sendStatus(200);
-});
-
-app.post('/api/instagram/webhook', async (req, res) => {
-  const originalUrl = req.url;
-  req.url = '/webhook/instagram';
-  app._router.handle(req, res, () => {
-    req.url = originalUrl;
-    res.sendStatus(404);
-  });
-});
 
 // Generic multi-platform incoming message handling webhook
 app.post('/webhook/:platform', async (req, res) => {
