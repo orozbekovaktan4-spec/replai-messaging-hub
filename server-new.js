@@ -1489,6 +1489,10 @@ app.post('/webhook/twilio', async (req, res) => {
 
     if (!incomingMsg) return res.status(200).send('OK');
 
+    // Find business for this webhook (for now, use first business)
+    const businesses = await db.getAllBusinesses();
+    const business = businesses[0];
+
     // Generate AI Response using your free core engine module
     const aiResponse = await getAIResponse(fromNumber.toString(), incomingMsg);
 
@@ -1513,6 +1517,19 @@ app.post('/webhook/twilio', async (req, res) => {
 
     updateMessageStats();
 
+    // ✅ NEW: Log incoming message to monitoring dashboard
+    if (business) {
+      logMessage({
+        businessId: business.id,
+        platform: 'whatsapp',
+        direction: 'in',
+        sender: fromNumber,
+        message: incomingMsg,
+        status: 'received',
+        timestamp: new Date().toISOString()
+      });
+    }
+
     // Track incoming message in analytics
     analyticsManager.trackMessage({
       platform: 'whatsapp',
@@ -1533,10 +1550,31 @@ app.post('/webhook/twilio', async (req, res) => {
       conversationId: fromNumber
     });
 
+    // ✅ NEW: Log outgoing message to monitoring dashboard
+    if (business) {
+      logMessage({
+        businessId: business.id,
+        platform: 'whatsapp',
+        direction: 'out',
+        recipient: fromNumber,
+        message: aiResponse,
+        status: 'sent',
+        timestamp: new Date().toISOString()
+      });
+    }
+
     console.log(`[Twilio] Sent reply to ${fromNumber}`);
     res.status(200).send('OK');
   } catch (error) {
     console.error('[Twilio Error]', error);
+
+    // ✅ NEW: Log error to monitoring dashboard
+    const businesses = await db.getAllBusinesses();
+    const business = businesses[0];
+    if (business) {
+      logError(business.id, error, 'whatsapp');
+    }
+
     res.status(500).send('Error');
   }
 });
@@ -4567,11 +4605,16 @@ app.post('/webhook/:platform', async (req, res) => {
     if (userMessage && userId) {
       // Mark as processed
       if (messageId) markMessageProcessed(messageId);
-      
+
       console.log(`[${platform}] ${userId}: "${userMessage}"`);
+
+      // Find business for this webhook (for now, use first business - TODO: improve business matching)
+      const businesses = await db.getAllBusinesses();
+      const business = businesses[0]; // TODO: Match business by platform config
 
       const aiResponse = await getAIResponse(userId.toString(), userMessage);
 
+      // Log to old chatLogs (keep for backwards compatibility)
       chatLogs.unshift({
         platform,
         userId,
@@ -4586,11 +4629,52 @@ app.post('/webhook/:platform', async (req, res) => {
 
       updateMessageStats();
 
+      // ✅ NEW: Log incoming message to monitoring dashboard
+      if (business) {
+        logMessage({
+          businessId: business.id,
+          platform: platform,
+          direction: 'in',
+          sender: userId,
+          message: userMessage,
+          status: 'received',
+          timestamp: new Date().toISOString()
+        });
+      }
+
       const sendResult = await sendResponseToPlatform(platform, userId, aiResponse);
       if (sendResult.ok) {
         console.log(`[${platform}] AI reply sent to ${userId}`);
+
+        // ✅ NEW: Log outgoing message to monitoring dashboard
+        if (business) {
+          logMessage({
+            businessId: business.id,
+            platform: platform,
+            direction: 'out',
+            recipient: userId,
+            message: aiResponse,
+            status: 'sent',
+            timestamp: new Date().toISOString()
+          });
+        }
       } else {
         console.error(`[${platform}] AI reply was generated but not sent to ${userId}: ${sendResult.error}`);
+
+        // ✅ NEW: Log failed message to monitoring dashboard
+        if (business) {
+          logMessage({
+            businessId: business.id,
+            platform: platform,
+            direction: 'out',
+            recipient: userId,
+            message: aiResponse,
+            status: 'failed',
+            timestamp: new Date().toISOString()
+          });
+
+          logError(business.id, new Error(sendResult.error || 'Failed to send message'), platform);
+        }
       }
     }
 
