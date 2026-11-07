@@ -620,7 +620,7 @@ async function replyToInstagramComment(commentId, message, accessToken) {
 // Main message processor with rules
 async function processInstagramMessage(business, message, isComment = false) {
   const settings = business.instagram?.settings;
-  const accessToken = business.instagram?.accessToken || process.env.INSTAGRAM_ACCESS_TOKEN;
+  const accessToken = process.env.INSTAGRAM_ACCESS_TOKEN;
 
   // Check if AI is enabled
   if (!settings?.enabled) {
@@ -762,11 +762,10 @@ async function handleCommentResponse(business, comment, aiResponse, settings, ac
 async function pollInstagramDirectInboxForBusiness(business) {
   try {
     // Check if this business has Instagram connected
-    if (!business.instagram?.accessToken) {
-      return { processed: 0, businessId: business.id, error: 'No Instagram token' };
+    const accessToken = process.env.INSTAGRAM_ACCESS_TOKEN;
+    if (!accessToken) {
+      return { processed: 0, businessId: business.id, error: 'No Instagram token in environment' };
     }
-
-    const accessToken = business.instagram.accessToken;
     const userId = business.instagram.userId || business.instagram.igUserId;
 
     if (!userId) {
@@ -3974,7 +3973,8 @@ async function handleInstagramMessage(event) {
     }
 
     // Send reply via Instagram Graph API
-    await sendInstagramMessage(recipientId, senderId, replyText, instagramData.accessToken);
+    const accessToken = process.env.INSTAGRAM_ACCESS_TOKEN;
+    await sendInstagramMessage(recipientId, senderId, replyText, accessToken);
 
     console.log('[Instagram DM] Reply sent successfully');
 
@@ -5242,7 +5242,7 @@ app.get('/api/admin/businesses', optionalAuth, async (req, res) => {
       channels: {
         instagram: {
           connected: business.instagram?.connected === true || false,
-          username: business.instagram?.username || (business.instagram?.accessToken ? '@akt4n.o' : null)
+          username: business.instagram?.username || null
         },
         telegram: {
           connected: business.telegram?.connected === true || false,
