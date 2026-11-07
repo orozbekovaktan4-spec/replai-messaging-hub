@@ -3868,7 +3868,6 @@ app.get('/api/instagram/webhook', (req, res) => {
     res.sendStatus(403);
   }
 });
-});
 
 // Instagram webhook events
 app.post('/api/instagram/webhook', async (req, res) => {
