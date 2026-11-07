@@ -3875,8 +3875,9 @@ app.get('/api/instagram/webhook', (req, res) => {
 app.post('/api/instagram/webhook', async (req, res) => {
   const timestamp = new Date().toISOString();
 
+  // ALWAYS log that we received SOMETHING, even before processing
   console.log('\n' + '='.repeat(80));
-  console.log(`[${timestamp}] 🔔 INSTAGRAM WEBHOOK RECEIVED`);
+  console.log(`[${timestamp}] 🔔 INSTAGRAM WEBHOOK ENDPOINT HIT!`);
   console.log('='.repeat(80));
 
   console.log('\n📨 REQUEST DETAILS:');
