@@ -1478,6 +1478,29 @@ app.get('/api/health', (req, res) => {
   res.status(200).send('OK');
 });
 
+// Test endpoint to verify webhooks reach the server
+app.all('/test-webhook', (req, res) => {
+  const timestamp = new Date().toISOString();
+  console.log('\n' + '='.repeat(80));
+  console.log(`[${timestamp}] 🧪 TEST WEBHOOK HIT!`);
+  console.log('='.repeat(80));
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Body:', JSON.stringify(req.body, null, 2));
+  console.log('='.repeat(80) + '\n');
+
+  res.json({
+    success: true,
+    timestamp,
+    received: {
+      method: req.method,
+      body: req.body,
+      headers: req.headers
+    }
+  });
+});
+
 // --- TWILIO WHATSAPP INCOMING WEBHOOK ---
 app.post('/webhook/twilio', async (req, res) => {
   try {
@@ -3828,42 +3851,101 @@ app.get('/api/instagram/webhook', (req, res) => {
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
 
+  console.log('[Instagram Webhook] GET verification request');
+  console.log('  Mode:', mode);
+  console.log('  Token provided:', token ? 'Yes' : 'No');
+  console.log('  Challenge:', challenge);
+
   const verifyToken = process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN || 'replai_instagram_webhook_2024';
 
   if (mode === 'subscribe' && token === verifyToken) {
-    console.log('[Instagram Webhook] Verification successful');
+    console.log('[Instagram Webhook] ✅ Verification successful');
     res.status(200).send(challenge);
   } else {
-    console.error('[Instagram Webhook] Verification failed');
+    console.error('[Instagram Webhook] ❌ Verification failed');
+    console.error('  Expected token:', verifyToken);
+    console.error('  Received token:', token);
     res.sendStatus(403);
   }
+});
 });
 
 // Instagram webhook events
 app.post('/api/instagram/webhook', async (req, res) => {
+  const timestamp = new Date().toISOString();
+
+  console.log('\n' + '='.repeat(80));
+  console.log(`[${timestamp}] 🔔 INSTAGRAM WEBHOOK RECEIVED`);
+  console.log('='.repeat(80));
+
+  console.log('\n📨 REQUEST DETAILS:');
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  console.log('IP:', req.ip);
+  console.log('User-Agent:', req.get('user-agent'));
+
+  console.log('\n📋 HEADERS:');
+  console.log('X-Hub-Signature-256:', req.get('X-Hub-Signature-256') ? 'Present' : 'MISSING');
+  console.log('Content-Type:', req.get('content-type'));
+
+  console.log('\n📦 BODY:');
+  console.log(JSON.stringify(req.body, null, 2));
+
+  // Verify signature (Instagram webhooks use same signature as Facebook)
+  const appSecret = process.env.INSTAGRAM_APP_SECRET || process.env.FACEBOOK_APP_SECRET;
+  if (appSecret) {
+    console.log('\n🔐 VERIFYING SIGNATURE...');
+    if (!validateMetaSignature(req, appSecret)) {
+      console.error('❌ SIGNATURE VERIFICATION FAILED - Rejecting webhook');
+      console.log('='.repeat(80) + '\n');
+      return res.sendStatus(403);
+    }
+    console.log('✅ Signature verified successfully');
+  } else {
+    console.warn('⚠️  WARNING: No app secret configured - skipping signature verification');
+  }
+
   // Respond immediately (required by Meta)
   res.sendStatus(200);
+  console.log('\n✅ Response sent: 200 OK');
 
   try {
     const data = req.body;
 
+    console.log('\n🔍 PROCESSING WEBHOOK DATA...');
+    console.log('Object type:', data.object);
+
     // Process webhook asynchronously
     if (data.object === 'instagram') {
+      console.log('✅ Object type is "instagram" - processing entries...');
+      console.log('Number of entries:', data.entry?.length || 0);
+
       for (const entry of data.entry) {
+        console.log('\n📬 Processing entry:', entry.id);
+
         // Handle messages
         if (entry.messaging) {
+          console.log('  → Found messaging events:', entry.messaging.length);
           for (const event of entry.messaging) {
+            console.log('  → Event type:', event.message ? 'message' : event.postback ? 'postback' : 'other');
             if (event.message) {
+              console.log('  → Message text:', event.message.text);
+              console.log('  → Sender:', event.sender.id);
+              console.log('  → Recipient:', event.recipient.id);
               handleInstagramMessage(event).catch(err => {
                 console.error('[Instagram Webhook] Message handling error:', err);
               });
             }
           }
+        } else {
+          console.log('  → No messaging events in this entry');
         }
 
         // Handle comments
         if (entry.changes) {
+          console.log('  → Found changes:', entry.changes.length);
           for (const change of entry.changes) {
+            console.log('  → Change field:', change.field);
             if (change.field === 'comments') {
               handleInstagramComment(change.value).catch(err => {
                 console.error('[Instagram Webhook] Comment handling error:', err);
@@ -3872,10 +3954,17 @@ app.post('/api/instagram/webhook', async (req, res) => {
           }
         }
       }
+    } else {
+      console.warn('⚠️  Object type is NOT "instagram":', data.object);
     }
+
+    console.log('\n✅ WEBHOOK PROCESSING COMPLETE');
   } catch (error) {
-    console.error('[Instagram Webhook] Processing error:', error);
+    console.error('\n❌ WEBHOOK PROCESSING ERROR:', error);
+    console.error('Stack:', error.stack);
   }
+
+  console.log('='.repeat(80) + '\n');
 });
 
 // Handle Instagram DM
@@ -6395,6 +6484,22 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🧠 Using AI Provider: ${provider.toUpperCase()}`);
   console.log(`✅ Server running at: http://localhost:${PORT}`);
   console.log(`⚙️  Admin Panel: http://localhost:${PORT}`);
+
+  // Debug: Instagram environment variables
+  console.log('\n📋 Instagram Configuration:');
+  console.log('  INSTAGRAM_WEBHOOK_VERIFY_TOKEN:', process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN ? '✅ SET' : '❌ MISSING');
+  console.log('  INSTAGRAM_ACCESS_TOKEN:', process.env.INSTAGRAM_ACCESS_TOKEN ? '✅ SET' : '❌ MISSING');
+  console.log('  INSTAGRAM_APP_SECRET:', process.env.INSTAGRAM_APP_SECRET ? '✅ SET' : '❌ MISSING');
+  console.log('  INSTAGRAM_BUSINESS_ACCOUNT_ID:', process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID ? '✅ SET' : '❌ MISSING');
+  console.log('  FACEBOOK_APP_SECRET:', process.env.FACEBOOK_APP_SECRET ? '✅ SET' : '❌ MISSING');
+
+  console.log('\n🔔 Webhook endpoint ready:');
+  console.log('  GET  /api/instagram/webhook (verification)');
+  console.log('  POST /api/instagram/webhook (messages)');
+
+  console.log('\n🧪 Test endpoint available:');
+  console.log('  POST /test-webhook (accepts any data)');
+
   console.log('\nPress Ctrl+C to stop.');
 });
 
