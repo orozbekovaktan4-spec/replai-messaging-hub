@@ -2389,7 +2389,9 @@ app.get('/api/admin/instagram/oauth/start', (req, res) => {
     console.log('[Instagram OAuth] Starting OAuth flow...');
     
     const connector = connectionManager.getConnector('instagram');
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    // Force HTTPS for production (Render always serves over HTTPS externally)
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : req.protocol;
+    const baseUrl = `${protocol}://${req.get('host')}`;
     
     const authUrl = connector.getAuthUrl(baseUrl);
     
