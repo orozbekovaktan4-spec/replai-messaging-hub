@@ -14,19 +14,8 @@ import { analyticsManager } from './analytics-manager.js';
 import * as db from './db.js';
 import { prisma } from './db.js';
 
-// Global request logger - logs EVERY request to the server
-app.use((req, res, next) => {
-  if (req.path.includes('/instagram/webhook')) {
-    console.log('\n🚨🚨🚨 INSTAGRAM WEBHOOK PATH HIT 🚨🚨🚨');
-    console.log('Method:', req.method);
-    console.log('Path:', req.path);
-    console.log('Query:', req.query);
-    console.log('Headers:', JSON.stringify(req.headers, null, 2));
-    console.log('Body:', JSON.stringify(req.body, null, 2));
-    console.log('🚨🚨🚨 END WEBHOOK REQUEST 🚨🚨🚨\n');
-  }
-  next();
-});
+// Load environment variables
+dotenv.config();
 
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
