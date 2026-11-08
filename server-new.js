@@ -14,8 +14,19 @@ import { analyticsManager } from './analytics-manager.js';
 import * as db from './db.js';
 import { prisma } from './db.js';
 
-// Load environment variables
-dotenv.config();
+// Global request logger - logs EVERY request to the server
+app.use((req, res, next) => {
+  if (req.path.includes('/instagram/webhook')) {
+    console.log('\n🚨🚨🚨 INSTAGRAM WEBHOOK PATH HIT 🚨🚨🚨');
+    console.log('Method:', req.method);
+    console.log('Path:', req.path);
+    console.log('Query:', req.query);
+    console.log('Headers:', JSON.stringify(req.headers, null, 2));
+    console.log('Body:', JSON.stringify(req.body, null, 2));
+    console.log('🚨🚨🚨 END WEBHOOK REQUEST 🚨🚨🚨\n');
+  }
+  next();
+});
 
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -38,6 +49,22 @@ if (!process.env[providerKey]) {
 
 // Initialize Express app
 const app = express();
+
+// ========================================
+// EXTREME WEBHOOK LOGGING (TEMPORARY DEBUG)
+// ========================================
+app.use((req, res, next) => {
+  if (req.path.includes('/instagram/webhook')) {
+    console.log('\n🚨🚨🚨 INSTAGRAM WEBHOOK PATH HIT 🚨🚨🚨');
+    console.log('Time:', new Date().toISOString());
+    console.log('Method:', req.method);
+    console.log('Path:', req.path);
+    console.log('Query:', req.query);
+    console.log('IP:', req.ip);
+    console.log('🚨🚨🚨 END WEBHOOK LOG 🚨🚨🚨\n');
+  }
+  next();
+});
 
 // ========================================
 // SECURITY MIDDLEWARE (ADDED FOR PROTECTION)
