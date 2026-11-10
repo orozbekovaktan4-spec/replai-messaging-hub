@@ -6707,3 +6707,48 @@ app.post('/api/admin/init-database', async (req, res) => {
     res.status(500).json({ error: error.message, stack: error.stack });
   }
 });
+
+
+// Find and update ANY existing business with Instagram config
+app.get('/api/admin/fix-any-business', async (req, res) => {
+  try {
+    console.log('[Admin] Finding and fixing business...');
+    
+    const businesses = await db.getAllBusinesses();
+    
+    if (businesses.length === 0) {
+      return res.status(404).json({ error: 'No businesses in database' });
+    }
+    
+    // Use the first business found
+    const business = businesses[0];
+    
+    console.log('[Admin] Found business:', business.id, business.email);
+    
+    const instagramData = JSON.stringify({
+      connected: true,
+      userId: '17841442927870144',
+      username: 'akt4n.o',
+      accessToken: process.env.INSTAGRAM_ACCESS_TOKEN,
+      pageId: '1077310258808665',
+      pageName: 'Akt4n.o',
+      connectedAt: new Date().toISOString(),
+      config: { dmEnabled: true, rules: [] }
+    });
+    
+    await db.updateBusiness(business.id, { instagram: instagramData });
+    
+    console.log('[Admin] ✅ Instagram config updated for business:', business.id);
+    
+    res.json({ 
+      success: true, 
+      message: 'Instagram config updated',
+      businessId: business.id,
+      userId: '17841442927870144'
+    });
+    
+  } catch (error) {
+    console.error('[Admin] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
