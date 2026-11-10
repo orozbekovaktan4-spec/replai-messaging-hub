@@ -6668,18 +6668,15 @@ app.post('/api/admin/init-database', async (req, res) => {
     
     // Create business using raw SQL to set custom ID
     await prisma.$executeRaw`
-      INSERT INTO "Business" (id, email, name, password, "ownerName", phone, address, city, plan, active, instagram, "createdAt", "updatedAt")
+      INSERT INTO "Business" (id, email, name, password, "ownerName", industry, plan, instagram, "createdAt", "updatedAt")
       VALUES (
         'biz_001',
         'aziz@barber.com',
         'Aziz Barber Shop',
         '$2b$10$KQ8/aUIt5TkpY9bLujgD3e3jcjPej2zF8L5bP6u/2jAldTAlLm5NO',
         'Aziz Karimov',
-        '+996555001001',
-        'Bishkek, Chuy Ave 5',
-        'Bishkek',
+        'Barber',
         'free',
-        true,
         ${JSON.stringify({
           connected: true,
           userId: '17841442927870144',
