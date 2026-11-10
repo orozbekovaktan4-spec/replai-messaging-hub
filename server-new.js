@@ -6546,3 +6546,49 @@ process.on('SIGINT', () => {
   console.log('\n👋 Shutting down server...');
   process.exit(0);
 });
+
+
+// ========================================
+// ADMIN: Fix Instagram Database Config
+// ========================================
+app.post('/api/admin/fix-instagram-db', async (req, res) => {
+  try {
+    console.log('[Admin] Fixing Instagram database configuration...');
+    
+    const businesses = await db.getAllBusinesses();
+    const business = businesses.find(b => b.id === 'biz_001');
+    
+    if (!business) {
+      return res.status(404).json({ error: 'Business biz_001 not found' });
+    }
+    
+    const instagramData = {
+      userId: '17841442927870144',
+      username: 'akt4n.o',
+      connected: true,
+      accessToken: process.env.INSTAGRAM_ACCESS_TOKEN || 'EAAc3h9iWFtsBS0lz5FBLwNwxvbaPlnUIgLpKaNbwksPXXKFUe9A7zNtXb1j1FqPXju2G9rUMrrjjGqXRJlLZAXQ8VNFmGcsyE0ZAksWBjYHxBHLHTDZAwJLyzsbmx0rrXVMT5DYZA5t2YJGoI6ObfGoZBsHFUyHD4AKxdvSWoW5dhOlZBq6oKhBE5BdjHkyyl1YHTXeNIZBSEApiy7Tkdsm',
+      pageId: '1077310258808665',
+      pageName: 'Akt4n.o',
+      config: {
+        dmEnabled: true,
+        rules: []
+      }
+    };
+    
+    await db.updateBusiness('biz_001', {
+      instagram: JSON.stringify(instagramData)
+    });
+    
+    console.log('[Admin] ✅ Instagram config updated in database');
+    
+    res.json({
+      success: true,
+      message: 'Instagram configuration updated in database',
+      instagram: instagramData
+    });
+    
+  } catch (error) {
+    console.error('[Admin] Error updating Instagram config:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
