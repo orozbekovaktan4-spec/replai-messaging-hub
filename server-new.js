@@ -6752,3 +6752,37 @@ app.get('/api/admin/fix-any-business', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+
+// Initialize API keys file from environment variables
+app.post('/api/admin/init-api-keys', async (req, res) => {
+  try {
+    const fs = await import('fs');
+    const apiKeysData = {
+      replaiKeys: [],
+      aiProviderKeys: [
+        {
+          id: 'groq_1',
+          name: 'Groq API Key',
+          type: 'ai_provider',
+          provider: 'groq',
+          key: process.env.GROQ_API_KEY,
+          status: 'active',
+          requestCount: 0,
+          priority: 1,
+          createdAt: new Date().toISOString(),
+          lastUsed: null
+        }
+      ]
+    };
+    
+    fs.writeFileSync('./api-keys.json', JSON.stringify(apiKeysData, null, 2));
+    
+    console.log('[Admin] ✅ API keys file created');
+    
+    res.json({ success: true, message: 'API keys initialized' });
+  } catch (error) {
+    console.error('[Admin] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
