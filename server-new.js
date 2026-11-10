@@ -4068,19 +4068,19 @@ async function handleInstagramMessage(event) {
         replyText = matchedRule.content || 'Thank you for your message!';
       } else if (matchedRule.mode === 'append') {
         // Generate AI response with appended context
-        const appendedPrompt = `${business.aiPrompt || ''}\n\n${matchedRule.content || ''}`;
-        replyText = await getAIResponse(messageText, appendedPrompt);
+        // Note: getAIResponse uses business context from ai-engine-free.js, not passed as parameter
+        replyText = await getAIResponse(senderId, messageText);
       } else {
         // AI autonomous mode
-        replyText = await getAIResponse(messageText, business.aiPrompt);
+        replyText = await getAIResponse(senderId, messageText);
       }
     } else {
       // No rule matched - use default AI
-      replyText = await getAIResponse(messageText, business.aiPrompt);
+      replyText = await getAIResponse(senderId, messageText);
     }
 
-    // Send reply via Instagram Graph API
-    const accessToken = process.env.INSTAGRAM_ACCESS_TOKEN;
+    // Send reply via Instagram Graph API - use token from database
+    const accessToken = instagramData.accessToken || process.env.INSTAGRAM_ACCESS_TOKEN;
     await sendInstagramMessage(recipientId, senderId, replyText, accessToken);
 
     console.log('[Instagram DM] Reply sent successfully');
