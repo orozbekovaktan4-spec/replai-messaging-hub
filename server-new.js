@@ -6453,13 +6453,17 @@ async function syncEnvTokensToDatabase() {
 
       // Sync Instagram token
       if (process.env.INSTAGRAM_ACCESS_TOKEN && !business.instagram?.connected) {
-        updates.instagram = {
+        updates.instagram = JSON.stringify({
           connected: true,
-          accessToken: process.env.INSTAGRAM_ACCESS_TOKEN,
+          userId: '17841442927870144',
           username: process.env.INSTAGRAM_USERNAME || 'akt4n.o',
-          connectedAt: new Date().toISOString()
-        };
-        console.log('✓ Syncing Instagram token from .env to database');
+          accessToken: process.env.INSTAGRAM_ACCESS_TOKEN,
+          pageId: '1077310258808665',
+          pageName: 'Akt4n.o',
+          connectedAt: new Date().toISOString(),
+          config: { dmEnabled: true, rules: [] }
+        });
+        console.log('✓ Syncing Instagram config from .env to database (userId: 17841442927870144)');
       }
 
       // Sync Telegram token
