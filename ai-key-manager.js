@@ -17,14 +17,73 @@ class AIKeyManager {
       // Check if file exists first
       if (!fs.existsSync(this.keysFilePath)) {
         console.log('⚠️  api-keys.json not found - using environment variables for API keys');
-        return { replaiKeys: [], aiProviderKeys: [] };
+        return this.loadFromEnvironment();
       }
       const data = fs.readFileSync(this.keysFilePath, 'utf8');
       return JSON.parse(data);
     } catch (error) {
       console.log('⚠️  Could not load api-keys.json - using environment variables for API keys');
-      return { replaiKeys: [], aiProviderKeys: [] };
+      return this.loadFromEnvironment();
     }
+  }
+
+  loadFromEnvironment() {
+    const aiProviderKeys = [];
+    
+    // Load GROQ key from environment
+    if (process.env.GROQ_API_KEY) {
+      aiProviderKeys.push({
+        id: 'env_groq_1',
+        name: 'Groq API Key (from env)',
+        provider: 'groq',
+        apiKey: process.env.GROQ_API_KEY,
+        status: 'active',
+        priority: 1,
+        rateLimitReached: false
+      });
+    }
+
+    // Load other providers if they exist
+    if (process.env.HUGGINGFACE_API_KEY) {
+      aiProviderKeys.push({
+        id: 'env_huggingface_1',
+        name: 'HuggingFace API Key (from env)',
+        provider: 'huggingface',
+        apiKey: process.env.HUGGINGFACE_API_KEY,
+        status: 'active',
+        priority: 2,
+        rateLimitReached: false
+      });
+    }
+
+    if (process.env.OPENROUTER_API_KEY) {
+      aiProviderKeys.push({
+        id: 'env_openrouter_1',
+        name: 'OpenRouter API Key (from env)',
+        provider: 'openrouter',
+        apiKey: process.env.OPENROUTER_API_KEY,
+        status: 'active',
+        priority: 3,
+        rateLimitReached: false
+      });
+    }
+
+    if (process.env.TOGETHER_API_KEY) {
+      aiProviderKeys.push({
+        id: 'env_together_1',
+        name: 'Together API Key (from env)',
+        provider: 'together',
+        apiKey: process.env.TOGETHER_API_KEY,
+        status: 'active',
+        priority: 4,
+        rateLimitReached: false
+      });
+    }
+
+    return { 
+      replaiKeys: [], 
+      aiProviderKeys 
+    };
   }
 
   saveKeysFile(data) {

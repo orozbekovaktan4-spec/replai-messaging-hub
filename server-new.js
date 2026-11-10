@@ -6725,11 +6725,17 @@ app.get('/api/admin/fix-any-business', async (req, res) => {
     
     console.log('[Admin] Found business:', business.id, business.email);
     
+    // Allow manual token override via query param
+    const manualToken = req.query.token;
+    const tokenToUse = manualToken || process.env.INSTAGRAM_ACCESS_TOKEN;
+    
+    console.log('[Admin] Using token:', tokenToUse ? 'Token provided (length: ' + tokenToUse.length + ')' : 'No token');
+    
     const instagramData = JSON.stringify({
       connected: true,
       userId: '17841442927870144',
       username: 'akt4n.o',
-      accessToken: process.env.INSTAGRAM_ACCESS_TOKEN,
+      accessToken: tokenToUse,
       pageId: '1077310258808665',
       pageName: 'Akt4n.o',
       connectedAt: new Date().toISOString(),
@@ -6744,7 +6750,51 @@ app.get('/api/admin/fix-any-business', async (req, res) => {
       success: true, 
       message: 'Instagram config updated',
       businessId: business.id,
-      userId: '17841442927870144'
+      userId: '17841442927870144',
+      tokenLength: tokenToUse?.length || 0
+    });
+    
+  } catch (error) {
+    console.error('[Admin] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Check current Instagram token in database
+app.get('/api/admin/check-instagram-token', async (req, res) => {
+  try {
+    const businesses = await db.getAllBusinesses();
+    
+    if (businesses.length === 0) {
+      return res.status(404).json({ error: 'No businesses in database' });
+    }
+    
+    const business = businesses[0];
+    let instagramData;
+    
+    try {
+      instagramData = typeof business.instagram === 'string' ? JSON.parse(business.instagram) : business.instagram;
+    } catch (e) {
+      return res.json({ error: 'Invalid Instagram data in database' });
+    }
+    
+    const tokenInDb = instagramData?.accessToken;
+    const tokenInEnv = process.env.INSTAGRAM_ACCESS_TOKEN;
+    
+    res.json({
+      businessId: business.id,
+      businessName: business.name,
+      tokenInDb: tokenInDb ? {
+        length: tokenInDb.length,
+        first10: tokenInDb.substring(0, 10),
+        last10: tokenInDb.substring(tokenInDb.length - 10)
+      } : null,
+      tokenInEnv: tokenInEnv ? {
+        length: tokenInEnv.length,
+        first10: tokenInEnv.substring(0, 10),
+        last10: tokenInEnv.substring(tokenInEnv.length - 10)
+      } : null,
+      tokensMatch: tokenInDb === tokenInEnv
     });
     
   } catch (error) {
