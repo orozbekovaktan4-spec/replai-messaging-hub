@@ -6642,39 +6642,60 @@ app.post('/api/admin/init-database', async (req, res) => {
     console.log('[Admin] Initializing database...');
     
     // Check if business already exists
-    const businesses = await db.getAllBusinesses();
-    const existing = businesses.find(b => b.id === 'biz_001');
+    const existing = await db.findBusinessById('biz_001');
     
     if (existing) {
+      // Update it with Instagram config
+      await db.updateBusiness('biz_001', {
+        instagram: JSON.stringify({
+          connected: true,
+          userId: '17841442927870144',
+          username: 'akt4n.o',
+          accessToken: process.env.INSTAGRAM_ACCESS_TOKEN,
+          pageId: '1077310258808665',
+          pageName: 'Akt4n.o',
+          connectedAt: new Date().toISOString(),
+          config: { dmEnabled: true, rules: [] }
+        })
+      });
+      
       return res.json({ 
         success: true, 
-        message: 'Business already exists',
+        message: 'Business Instagram config updated',
         business: existing
       });
     }
     
-    // Create business with Instagram config
-    const newBusiness = await db.createBusiness({
-      id: 'biz_001',
-      name: 'Aziz Barber Shop',
-      email: 'aziz@barber.com',
-      ownerName: 'Aziz Karimov',
-      phone: '+996555001001',
-      address: 'Bishkek, Chuy Ave 5',
-      city: 'Bishkek',
-      plan: 'free',
-      active: true,
-      instagram: JSON.stringify({
-        connected: true,
-        userId: '17841442927870144',
-        username: 'akt4n.o',
-        accessToken: process.env.INSTAGRAM_ACCESS_TOKEN,
-        pageId: '1077310258808665',
-        pageName: 'Akt4n.o',
-        connectedAt: new Date().toISOString(),
-        config: { dmEnabled: true, rules: [] }
-      })
-    });
+    // Create business using raw SQL to set custom ID
+    await prisma.$executeRaw`
+      INSERT INTO "Business" (id, email, name, password, "ownerName", phone, address, city, plan, active, instagram, "createdAt", "updatedAt")
+      VALUES (
+        'biz_001',
+        'aziz@barber.com',
+        'Aziz Barber Shop',
+        '$2b$10$KQ8/aUIt5TkpY9bLujgD3e3jcjPej2zF8L5bP6u/2jAldTAlLm5NO',
+        'Aziz Karimov',
+        '+996555001001',
+        'Bishkek, Chuy Ave 5',
+        'Bishkek',
+        'free',
+        true,
+        ${JSON.stringify({
+          connected: true,
+          userId: '17841442927870144',
+          username: 'akt4n.o',
+          accessToken: process.env.INSTAGRAM_ACCESS_TOKEN,
+          pageId: '1077310258808665',
+          pageName: 'Akt4n.o',
+          connectedAt: new Date().toISOString(),
+          config: { dmEnabled: true, rules: [] }
+        })},
+        NOW(),
+        NOW()
+      )
+    `;
+    
+    const newBusiness = await db.findBusinessById('biz_001');
     
     console.log('[Admin] ✅ Business created:', newBusiness.id);
     
