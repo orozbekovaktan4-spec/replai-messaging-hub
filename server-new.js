@@ -6634,3 +6634,58 @@ app.get('/api/admin/sync-instagram-now', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+
+// Initialize database with default business
+app.post('/api/admin/init-database', async (req, res) => {
+  try {
+    console.log('[Admin] Initializing database...');
+    
+    // Check if business already exists
+    const businesses = await db.getAllBusinesses();
+    const existing = businesses.find(b => b.id === 'biz_001');
+    
+    if (existing) {
+      return res.json({ 
+        success: true, 
+        message: 'Business already exists',
+        business: existing
+      });
+    }
+    
+    // Create business with Instagram config
+    const newBusiness = await db.createBusiness({
+      id: 'biz_001',
+      name: 'Aziz Barber Shop',
+      email: 'aziz@barber.com',
+      ownerName: 'Aziz Karimov',
+      phone: '+996555001001',
+      address: 'Bishkek, Chuy Ave 5',
+      city: 'Bishkek',
+      plan: 'free',
+      active: true,
+      instagram: JSON.stringify({
+        connected: true,
+        userId: '17841442927870144',
+        username: 'akt4n.o',
+        accessToken: process.env.INSTAGRAM_ACCESS_TOKEN,
+        pageId: '1077310258808665',
+        pageName: 'Akt4n.o',
+        connectedAt: new Date().toISOString(),
+        config: { dmEnabled: true, rules: [] }
+      })
+    });
+    
+    console.log('[Admin] ✅ Business created:', newBusiness.id);
+    
+    res.json({ 
+      success: true, 
+      message: 'Database initialized',
+      business: newBusiness
+    });
+    
+  } catch (error) {
+    console.error('[Admin] Init error:', error);
+    res.status(500).json({ error: error.message, stack: error.stack });
+  }
+});
