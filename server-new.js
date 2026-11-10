@@ -6596,3 +6596,41 @@ app.post('/api/admin/fix-instagram-db', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+
+// Manual trigger to sync Instagram config
+app.get('/api/admin/sync-instagram-now', async (req, res) => {
+  try {
+    console.log('[Admin] Manual sync triggered...');
+    const businesses = await db.getAllBusinesses();
+    const business = businesses.find(b => b.id === 'biz_001');
+    
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+    
+    const instagramData = JSON.stringify({
+      connected: true,
+      userId: '17841442927870144',
+      username: 'akt4n.o',
+      accessToken: process.env.INSTAGRAM_ACCESS_TOKEN,
+      pageId: '1077310258808665',
+      pageName: 'Akt4n.o',
+      connectedAt: new Date().toISOString(),
+      config: { dmEnabled: true, rules: [] }
+    });
+    
+    await db.updateBusiness('biz_001', { instagram: instagramData });
+    
+    console.log('[Admin] ✅ Instagram synced');
+    
+    res.json({ 
+      success: true, 
+      message: 'Instagram config synced to database',
+      userId: '17841442927870144'
+    });
+  } catch (error) {
+    console.error('[Admin] Sync error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
