@@ -6760,6 +6760,163 @@ app.get('/api/admin/fix-any-business', async (req, res) => {
   }
 });
 
+// Add a new business to the system
+app.post('/api/admin/add-business', async (req, res) => {
+  try {
+    const {
+      businessId,
+      email,
+      name,
+      instagramUserId,
+      instagramUsername,
+      instagramAccessToken,
+      instagramPageId,
+      instagramPageName
+    } = req.body;
+
+    // Validate required fields
+    if (!businessId || !email || !name) {
+      return res.status(400).json({ error: 'Missing required fields: businessId, email, name' });
+    }
+
+    // Create Instagram config if provided
+    let instagramConfig = null;
+    if (instagramUserId && instagramAccessToken) {
+      instagramConfig = JSON.stringify({
+        connected: true,
+        userId: instagramUserId,
+        username: instagramUsername || '',
+        accessToken: instagramAccessToken.trim(),
+        pageId: instagramPageId || '',
+        pageName: instagramPageName || '',
+        connectedAt: new Date().toISOString(),
+        config: { dmEnabled: true, rules: [] }
+      });
+    }
+
+    // Create business in database
+    const business = await db.createBusiness({
+      id: businessId,
+      email,
+      name,
+      industry: req.body.industry || 'General',
+      ownerName: req.body.ownerName || '',
+      password: req.body.password || 'changeme',
+      instagram: instagramConfig,
+      plan: 'free',
+      status: 'active',
+      messageCount: 0
+    });
+
+    console.log('[Admin] ✅ Business created:', businessId);
+
+    res.json({
+      success: true,
+      message: 'Business created successfully',
+      business: {
+        id: business.id,
+        name: business.name,
+        email: business.email,
+        instagramConnected: !!instagramConfig
+      }
+    });
+
+  } catch (error) {
+    console.error('[Admin] Error creating business:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// List all businesses
+app.get('/api/admin/list-businesses', async (req, res) => {
+  try {
+    const businesses = await db.getAllBusinesses();
+    
+    const businessList = businesses.map(b => {
+      let instagramData = null;
+      try {
+        instagramData = typeof b.instagram === 'string' ? JSON.parse(b.instagram) : b.instagram;
+      } catch (e) {}
+
+      return {
+        id: b.id,
+        name: b.name,
+        email: b.email,
+        instagram: instagramData ? {
+          connected: instagramData.connected,
+          userId: instagramData.userId,
+          username: instagramData.username,
+          pageName: instagramData.pageName
+        } : { connected: false },
+        messageCount: b.messageCount,
+        status: b.status,
+        createdAt: b.createdAt
+      };
+    });
+
+    res.json({
+      success: true,
+      count: businessList.length,
+      businesses: businessList
+    });
+
+  } catch (error) {
+    console.error('[Admin] Error listing businesses:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update Instagram config for a specific business
+app.post('/api/admin/update-business-instagram', async (req, res) => {
+  try {
+    const {
+      businessId,
+      instagramUserId,
+      instagramUsername,
+      instagramAccessToken,
+      instagramPageId,
+      instagramPageName
+    } = req.body;
+
+    if (!businessId) {
+      return res.status(400).json({ error: 'businessId is required' });
+    }
+
+    const businesses = await db.getAllBusinesses();
+    const business = businesses.find(b => b.id === businessId);
+
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    const instagramConfig = JSON.stringify({
+      connected: true,
+      userId: instagramUserId,
+      username: instagramUsername || '',
+      accessToken: (instagramAccessToken || '').trim(),
+      pageId: instagramPageId || '',
+      pageName: instagramPageName || '',
+      connectedAt: new Date().toISOString(),
+      config: { dmEnabled: true, rules: [] }
+    });
+
+    await db.updateBusiness(businessId, { instagram: instagramConfig });
+
+    console.log('[Admin] ✅ Instagram config updated for business:', businessId);
+
+    res.json({
+      success: true,
+      message: 'Instagram config updated',
+      businessId,
+      userId: instagramUserId
+    });
+
+  } catch (error) {
+    console.error('[Admin] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Check current Instagram token in database
 app.get('/api/admin/check-instagram-token', async (req, res) => {
   try {
