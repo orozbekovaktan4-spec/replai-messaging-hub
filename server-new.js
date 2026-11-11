@@ -4129,13 +4129,13 @@ async function handleInstagramComment(commentData) {
 
 // Send Instagram DM via Graph API
 async function sendInstagramMessage(recipientUserId, senderId, messageText, accessToken) {
-  const url = `https://graph.instagram.com/v21.0/me/messages`;
+  // Use query parameter for access token (Facebook Graph API standard)
+  const url = `https://graph.facebook.com/v21.0/me/messages?access_token=${encodeURIComponent(accessToken)}`;
 
   const response = await fetch(url, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify({
       recipient: { id: senderId },
