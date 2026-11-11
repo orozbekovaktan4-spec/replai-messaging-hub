@@ -6781,20 +6781,85 @@ app.get('/api/admin/check-instagram-token', async (req, res) => {
     const tokenInDb = instagramData?.accessToken;
     const tokenInEnv = process.env.INSTAGRAM_ACCESS_TOKEN;
     
+    // Add show_full query param for debugging
+    const showFull = req.query.show_full === 'true';
+    
     res.json({
       businessId: business.id,
       businessName: business.name,
-      tokenInDb: tokenInDb ? {
+      tokenInDb: tokenInDb ? (showFull ? tokenInDb : {
         length: tokenInDb.length,
         first10: tokenInDb.substring(0, 10),
         last10: tokenInDb.substring(tokenInDb.length - 10)
-      } : null,
-      tokenInEnv: tokenInEnv ? {
+      }) : null,
+      tokenInEnv: tokenInEnv ? (showFull ? tokenInEnv : {
         length: tokenInEnv.length,
         first10: tokenInEnv.substring(0, 10),
         last10: tokenInEnv.substring(tokenInEnv.length - 10)
-      } : null,
-      tokensMatch: tokenInDb === tokenInEnv
+      }) : null,
+      tokensMatch: tokenInDb === tokenInEnv,
+      note: showFull ? 'Full tokens shown' : 'Add ?show_full=true to see full tokens'
+    });
+    
+  } catch (error) {
+    console.error('[Admin] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Test Instagram token by attempting to fetch account info
+app.get('/api/admin/test-instagram-token', async (req, res) => {
+  try {
+    const businesses = await db.getAllBusinesses();
+    
+    if (businesses.length === 0) {
+      return res.status(404).json({ error: 'No businesses in database' });
+    }
+    
+    const business = businesses[0];
+    let instagramData;
+    
+    try {
+      instagramData = typeof business.instagram === 'string' ? JSON.parse(business.instagram) : business.instagram;
+    } catch (e) {
+      return res.json({ error: 'Invalid Instagram data in database' });
+    }
+    
+    const tokenInDb = (instagramData?.accessToken || '').trim();
+    const tokenInEnv = (process.env.INSTAGRAM_ACCESS_TOKEN || '').trim();
+    
+    // Test both tokens
+    const testResults = {};
+    
+    // Test DB token
+    if (tokenInDb) {
+      try {
+        const dbResponse = await fetch(`https://graph.facebook.com/v21.0/me?access_token=${tokenInDb}`);
+        const dbData = await dbResponse.json();
+        testResults.db = dbData.error ? { valid: false, error: dbData.error } : { valid: true, data: dbData };
+      } catch (error) {
+        testResults.db = { valid: false, error: error.message };
+      }
+    }
+    
+    // Test ENV token  
+    if (tokenInEnv) {
+      try {
+        const envResponse = await fetch(`https://graph.facebook.com/v21.0/me?access_token=${tokenInEnv}`);
+        const envData = await envResponse.json();
+        testResults.env = envData.error ? { valid: false, error: envData.error } : { valid: true, data: envData };
+      } catch (error) {
+        testResults.env = { valid: false, error: error.message };
+      }
+    }
+    
+    res.json({
+      businessId: business.id,
+      tokenLengths: {
+        db: tokenInDb.length,
+        env: tokenInEnv.length
+      },
+      testResults
     });
     
   } catch (error) {
