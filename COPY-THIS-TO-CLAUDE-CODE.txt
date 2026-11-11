@@ -1,0 +1,322 @@
+==========================================================
+📋 PASTE THIS ENTIRE MESSAGE INTO CLAUDE CODE
+==========================================================
+
+I need you to implement a Business Onboarding Questionnaire System for REPLAI messaging automation platform.
+
+## SYSTEM CONTEXT
+
+**Tech Stack:**
+- Node.js + Express server (server-new.js)
+- Prisma + PostgreSQL database
+- AI: Groq API via ai-engine-free.js
+- Frontend: Vanilla HTML/JS
+- Deployed on Render.com
+
+**Current Limitation:**
+- ONE global business-info.json for ALL businesses
+- Need: PER-BUSINESS RAG knowledge base
+
+**Database Model (Prisma):**
+```prisma
+model Business {
+  id         String   @id
+  email      String   @unique
+  name       String
+  industry   String?
+  ownerName  String?
+  instagram  String?  // JSON config
+  messageCount Int    @default(0)
+  createdAt  DateTime @default(now())
+}
+```
+
+**AI Engine (ai-engine-free.js):**
+```javascript
+// Currently loads ONE file at startup:
+const businessInfo = JSON.parse(fs.readFileSync('./business-info.json', 'utf8'));
+
+function createSystemPrompt(language, userId) {
+  const { business } = businessInfo;
+  return `You are AI for ${business.name}...`;
+}
+```
+
+## WHAT TO BUILD
+
+### 1. Business Onboarding Wizard (NEW FILE)
+
+**Create:** `/business-onboarding-wizard.html`
+
+**Requirements:**
+- Multi-step wizard (7 steps)
+- Beautiful UI with purple gradient (#667eea → #764ba2)
+- Progress bar
+- Form validation
+
+**Steps:**
+1. **Basic Info:** name, description, industry, owner name
+2. **Contact:** phone, email, address, website
+3. **Business Hours:** Mon-Sun time picker with "closed" checkbox
+4. **Services:** Dynamic list (name, description, price, duration)
+5. **FAQs:** Dynamic Q&A pairs
+6. **AI Config:** tone, language, response length
+7. **Review:** Summary before creation
+
+**On Submit:** POST to `/api/admin/create-business-with-rag`
+
+### 2. Backend API Endpoint (MODIFY)
+
+**File:** `/server-new.js`
+
+**Add endpoint:**
+```javascript
+app.post('/api/admin/create-business-with-rag', async (req, res) => {
+  // 1. Receive: name, description, services, hours, faqs, etc.
+  // 2. Generate businessId = 'biz_' + random()
+  // 3. Create JSON structure:
+  const ragData = {
+    business: {
+      name, description, hours, services,
+      contact: { phone, email, address, website },
+      faqs
+    }
+  };
+  // 4. Save as: business-info-{businessId}.json
+  fs.writeFileSync(`business-info-${businessId}.json`, JSON.stringify(ragData, null, 2));
+  // 5. Create in database:
+  await db.createBusiness({ id: businessId, email, name, ownerName, ... });
+  // 6. Return success
+  res.json({ success: true, business });
+});
+```
+
+### 3. Per-Business RAG Loading (MODIFY)
+
+**File:** `/ai-engine-free.js`
+
+**Change from:**
+```javascript
+const businessInfo = JSON.parse(fs.readFileSync('./business-info.json', 'utf8'));
+```
+
+**To:**
+```javascript
+function loadBusinessInfo(businessId) {
+  const specificPath = `./business-info-${businessId}.json`;
+  if (fs.existsSync(specificPath)) {
+    return JSON.parse(fs.readFileSync(specificPath, 'utf8'));
+  }
+  // Fallback to default
+  return JSON.parse(fs.readFileSync('./business-info.json', 'utf8'));
+}
+
+function createSystemPrompt(language, userId, businessId) {
+  const businessInfo = loadBusinessInfo(businessId);
+  const { business } = businessInfo;
+  return `You are AI for ${business.name}...`;
+}
+```
+
+**Update getAIResponse signature:**
+```javascript
+export async function getAIResponse(userId, userMessage, language = 'auto', businessId = null) {
+  // ... existing code ...
+  // Pass businessId to createSystemPrompt and groq function
+  const messages = [
+    { role: 'system', content: createSystemPrompt(language, userId, businessId) },
+    ...history
+  ];
+  // ...
+}
+```
+
+### 4. Instagram Handler Update (MODIFY)
+
+**File:** `/server-new.js`
+
+**Find:** `handleInstagramMessage` function
+
+**Change:**
+```javascript
+// OLD:
+const replyText = await getAIResponse(senderId, messageText);
+
+// NEW:
+const replyText = await getAIResponse(senderId, messageText, 'auto', business.id);
+```
+
+This passes the business ID so AI loads correct RAG file!
+
+## WIZARD UI REQUIREMENTS
+
+**Design:**
+- Gradient background
+- White card with rounded corners
+- Progress bar at top
+- Step indicators (dots)
+- Form fields with labels
+- "Back" and "Next" buttons
+- Smooth animations
+
+**Dynamic Lists:**
+- Services: Add button creates new service form
+- Each service: name, description, price, duration
+- Remove button (X) on each item
+- FAQs: Same pattern
+
+**Time Picker:**
+- Grid layout for 7 days
+- Each day: open time, close time inputs
+- "Closed" checkbox disables inputs
+
+**Validation:**
+- Step 1: All fields required
+- Step 2: Valid email/phone required
+- Step 4: Min 1 service required
+- Show alert if validation fails
+
+## EXAMPLE DATA STRUCTURE
+
+**What wizard should send to API:**
+```json
+{
+  "name": "White Gold Jewelry",
+  "description": "Premium jewelry store...",
+  "industry": "Jewelry",
+  "ownerName": "John Doe",
+  "email": "john@whitegold.com",
+  "phone": "+996555001001",
+  "address": "Bishkek, Manas Ave 45",
+  "website": "https://whitegold.com",
+  "hours": {
+    "monday": "10:00-19:00",
+    "tuesday": "10:00-19:00",
+    "wednesday": "10:00-19:00",
+    "thursday": "10:00-19:00",
+    "friday": "10:00-19:00",
+    "saturday": "10:00-18:00",
+    "sunday": "closed"
+  },
+  "services": [
+    {
+      "name": "Custom Ring Design",
+      "description": "Create your unique ring",
+      "price": "5,000 сом",
+      "duration": 30
+    },
+    {
+      "name": "Ring Resizing",
+      "description": "Perfect fit guaranteed",
+      "price": "500 сом",
+      "duration": 20
+    }
+  ],
+  "faqs": [
+    {
+      "question": "Do you buy gold?",
+      "answer": "Yes, we buy gold jewelry at competitive market rates."
+    }
+  ],
+  "aiTone": "friendly",
+  "aiLanguage": "auto",
+  "businessId": "biz_abc123xyz"
+}
+```
+
+**What gets saved (business-info-biz_abc123xyz.json):**
+```json
+{
+  "business": {
+    "name": "White Gold Jewelry",
+    "description": "Premium jewelry store...",
+    "hours": { "monday": "10:00-19:00", ... },
+    "services": [ { "name": "Custom Ring Design", ... } ],
+    "serviceDuration": 30,
+    "contact": {
+      "phone": "+996555001001",
+      "email": "john@whitegold.com",
+      "address": "Bishkek, Manas Ave 45",
+      "website": "https://whitegold.com"
+    },
+    "faqs": [ { "question": "Do you buy gold?", "answer": "Yes..." } ]
+  }
+}
+```
+
+## TESTING
+
+After implementation:
+
+1. **Test Wizard:**
+   - Open /business-onboarding-wizard.html
+   - Fill all 7 steps
+   - Submit form
+   - Should create business & RAG file
+
+2. **Test RAG Loading:**
+   - Create 2 businesses with different info
+   - Send Instagram message to Business 1
+   - AI should respond with Business 1 context
+   - Send Instagram message to Business 2
+   - AI should respond with Business 2 context
+
+3. **Verify Files:**
+   - Check business-info-biz_xxx.json files exist
+   - Each has unique business data
+   - Database has both business records
+
+## KEY FILES TO MODIFY
+
+1. **CREATE:** `/business-onboarding-wizard.html`
+2. **MODIFY:** `/server-new.js` (add endpoint + update handler)
+3. **MODIFY:** `/ai-engine-free.js` (per-business RAG)
+
+## IMPORTANT PATTERNS TO FOLLOW
+
+**Database Access:**
+```javascript
+const db = require('./db.js');
+await db.createBusiness({ id, email, name, ... });
+await db.getAllBusinesses();
+```
+
+**File Operations:**
+```javascript
+const fs = require('fs');
+const path = require('path');
+fs.writeFileSync(path.join(__dirname, 'file.json'), JSON.stringify(data, null, 2));
+```
+
+**Error Handling:**
+```javascript
+try {
+  // operation
+  res.json({ success: true, data });
+} catch (error) {
+  console.error('[Error]:', error);
+  res.status(500).json({ success: false, error: error.message });
+}
+```
+
+## PRIORITY ORDER
+
+1. ✅ Create beautiful wizard UI
+2. ✅ Add backend API endpoint
+3. ✅ Modify AI engine for per-business RAG
+4. ✅ Update Instagram handler
+5. ✅ Test with 2 businesses
+
+## NOTES
+
+- Use Lucide icons: `<i data-lucide="icon-name"></i>`
+- Initialize icons: `lucide.createIcons();`
+- Modern form styling (rounded, shadows)
+- Smooth transitions between steps
+- Mobile-friendly (but desktop-first)
+
+START WITH THE WIZARD UI - Make it beautiful and functional first, then connect backend.
+
+==========================================================
+END OF PROMPT - COPY EVERYTHING ABOVE
+==========================================================
