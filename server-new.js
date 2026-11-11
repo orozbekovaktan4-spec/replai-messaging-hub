@@ -1714,6 +1714,122 @@ app.post('/api/admin/ai-settings', (req, res) => {
   }
 });
 
+// Create business with RAG (from onboarding wizard)
+app.post('/api/admin/create-business-with-rag', async (req, res) => {
+  try {
+    const {
+      name,
+      description,
+      industry,
+      ownerName,
+      phone,
+      email,
+      address,
+      website,
+      hours,
+      services,
+      faqs,
+      aiTone,
+      aiLanguage,
+      responseLength
+    } = req.body;
+
+    // Validate required fields
+    if (!name || !description || !industry || !ownerName || !phone || !email) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields'
+      });
+    }
+
+    // Validate services
+    if (!services || services.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'At least one service is required'
+      });
+    }
+
+    // Generate unique business ID
+    const businessId = `biz_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+
+    // Create RAG data structure
+    const ragData = {
+      business: {
+        name,
+        description,
+        hours: hours || {},
+        services: services.map(s => ({
+          name: s.name,
+          description: s.description,
+          price: s.price || 'Contact for pricing',
+          duration: s.duration || 30
+        })),
+        serviceDuration: services[0]?.duration || 30,
+        contact: {
+          phone,
+          email,
+          address: address || '',
+          website: website || ''
+        },
+        faqs: faqs || []
+      },
+      aiConfig: {
+        tone: aiTone || 'friendly',
+        language: aiLanguage || 'auto',
+        responseLength: responseLength || 'medium'
+      },
+      metadata: {
+        businessId,
+        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString()
+      }
+    };
+
+    // Save RAG file as business-info-{businessId}.json
+    const ragFilePath = path.join(__dirname, `business-info-${businessId}.json`);
+    fs.writeFileSync(ragFilePath, JSON.stringify(ragData, null, 2), 'utf8');
+
+    console.log(`✅ [Onboarding] Created RAG file: business-info-${businessId}.json`);
+
+    // Create business record in database
+    const hashedPassword = await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10);
+
+    const business = await prisma.business.create({
+      data: {
+        id: businessId,
+        email: email.toLowerCase(),
+        name,
+        industry,
+        ownerName,
+        password: hashedPassword, // Random password (OAuth/session based auth)
+        status: 'active',
+        plan: 'free',
+        messageCount: 0
+      }
+    });
+
+    console.log(`✅ [Onboarding] Business created in database: ${businessId}`);
+
+    res.json({
+      success: true,
+      business: {
+        id: business.id,
+        email: business.email,
+        name: business.name,
+        ragFile: `business-info-${businessId}.json`
+      }
+    });
+
+  } catch (error) {
+    console.error('[Onboarding] Error creating business:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to create business'
+    });
+  }
+});
+
 
 
 
@@ -4067,16 +4183,15 @@ async function handleInstagramMessage(event) {
         // Use template response
         replyText = matchedRule.content || 'Thank you for your message!';
       } else if (matchedRule.mode === 'append') {
-        // Generate AI response with appended context
-        // Note: getAIResponse uses business context from ai-engine-free.js, not passed as parameter
-        replyText = await getAIResponse(senderId, messageText);
+        // Generate AI response with per-business RAG context
+        replyText = await getAIResponse(senderId, messageText, 'auto', business.id);
       } else {
-        // AI autonomous mode
-        replyText = await getAIResponse(senderId, messageText);
+        // AI autonomous mode with per-business RAG
+        replyText = await getAIResponse(senderId, messageText, 'auto', business.id);
       }
     } else {
-      // No rule matched - use default AI
-      replyText = await getAIResponse(senderId, messageText);
+      // No rule matched - use default AI with per-business RAG
+      replyText = await getAIResponse(senderId, messageText, 'auto', business.id);
     }
 
     // Send reply via Instagram Graph API - use token from database (trimmed)
@@ -4689,7 +4804,7 @@ app.post('/webhook/:platform', async (req, res) => {
       const businesses = await db.getAllBusinesses();
       const business = businesses[0]; // TODO: Match business by platform config
 
-      const aiResponse = await getAIResponse(userId.toString(), userMessage);
+      const aiResponse = await getAIResponse(userId.toString(), userMessage, 'auto', business?.id || null);
 
       // Log to old chatLogs (keep for backwards compatibility)
       chatLogs.unshift({

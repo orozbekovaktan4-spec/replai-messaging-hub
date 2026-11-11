@@ -56,23 +56,24 @@ model Booking {
 }
 
 model Business {
-  id              String    @id
-  email           String    @unique
-  name            String
-  industry        String?
-  ownerName       String?
-  password        String
-  whatsapp        String?   @db.Text
-  instagram       String?   @db.Text
-  telegram        String?   @db.Text
-  plan            String    @default("free")
-  subscriptionEnd DateTime?
-  messageCount    Int       @default(0)
-  status          String    @default("active")
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  Message         Message[]
-  Session         Session[]
+  id                      String    @id
+  email                   String    @unique
+  name                    String
+  industry                String?
+  ownerName               String?
+  password                String
+  whatsapp                String?   @db.Text
+  instagram               String?   @db.Text
+  telegram                String?   @db.Text
+  plan                    String    @default("free")
+  subscriptionEnd         DateTime?
+  messageCount            Int       @default(0)
+  status                  String    @default("active")
+  hasCompletedOnboarding  Boolean   @default(false)
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  Message                 Message[]
+  Session                 Session[]
 
   @@index([status])
   @@index([email])

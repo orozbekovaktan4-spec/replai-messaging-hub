@@ -1,916 +1,1030 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Business Onboarding Wizard - REPLAI</title>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Business Onboarding - REPLAI</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
 
-        .wizard-container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-width: 900px;
-            width: 100%;
-            max-height: 90vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
+    .wizard-container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      width: 100%;
+      max-width: 700px;
+      overflow: hidden;
+    }
 
-        .wizard-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
+    .wizard-header {
+      padding: 30px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-align: center;
+    }
 
-        .wizard-header h1 {
-            font-size: 28px;
-            margin-bottom: 8px;
-        }
+    .wizard-header h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
 
-        .wizard-header p {
-            opacity: 0.9;
-            font-size: 16px;
-        }
+    .wizard-header p {
+      opacity: 0.9;
+      font-size: 14px;
+    }
 
-        .progress-bar {
-            height: 4px;
-            background: rgba(255,255,255,0.2);
-            position: relative;
-        }
+    .progress-bar {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.3);
+      position: relative;
+    }
 
-        .progress-fill {
-            height: 100%;
-            background: white;
-            transition: width 0.3s ease;
-        }
+    .progress-fill {
+      height: 100%;
+      background: white;
+      transition: width 0.3s ease;
+    }
 
-        .wizard-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 40px;
-        }
+    .step-indicators {
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+      gap: 12px;
+    }
 
-        .step {
-            display: none;
-        }
+    .step-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      transition: all 0.3s ease;
+    }
 
-        .step.active {
-            display: block;
-            animation: fadeIn 0.3s ease;
-        }
+    .step-dot.active {
+      background: #667eea;
+      transform: scale(1.3);
+    }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+    .step-dot.completed {
+      background: #4caf50;
+    }
 
-        .step-title {
-            font-size: 24px;
-            margin-bottom: 8px;
-            color: #1a202c;
-        }
+    .wizard-body {
+      padding: 40px;
+    }
 
-        .step-subtitle {
-            color: #718096;
-            margin-bottom: 30px;
-            font-size: 15px;
-        }
+    .step {
+      display: none;
+    }
 
-        .form-group {
-            margin-bottom: 24px;
-        }
+    .step.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
 
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #2d3748;
-            font-size: 14px;
-        }
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
 
-        .form-label .required {
-            color: #e53e3e;
-        }
+    .step-title {
+      font-size: 24px;
+      margin-bottom: 8px;
+      color: #333;
+    }
 
-        .form-input,
-        .form-textarea,
-        .form-select {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            font-size: 15px;
-            transition: border-color 0.2s;
-        }
+    .step-subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
 
-        .form-input:focus,
-        .form-textarea:focus,
-        .form-select:focus {
-            outline: none;
-            border-color: #667eea;
-        }
+    .form-group {
+      margin-bottom: 20px;
+    }
 
-        .form-textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #333;
+      font-size: 14px;
+    }
 
-        .form-hint {
-            font-size: 13px;
-            color: #a0aec0;
-            margin-top: 6px;
-        }
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="url"],
+    input[type="time"],
+    input[type="number"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.3s ease;
+      font-family: inherit;
+    }
 
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
 
-        .dynamic-list {
-            border: 2px dashed #e2e8f0;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 12px;
-        }
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
 
-        .dynamic-item {
-            background: #f7fafc;
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 12px;
-            position: relative;
-        }
+    .hours-grid {
+      display: grid;
+      gap: 12px;
+    }
 
-        .dynamic-item .remove-btn {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            background: #fc8181;
-            color: white;
-            border: none;
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 18px;
-            line-height: 1;
-        }
+    .day-row {
+      display: grid;
+      grid-template-columns: 100px 1fr 1fr 80px;
+      gap: 10px;
+      align-items: center;
+    }
 
-        .dynamic-item .remove-btn:hover {
-            background: #f56565;
-        }
+    .day-label {
+      font-weight: 500;
+      color: #333;
+    }
 
-        .add-item-btn {
-            background: #48bb78;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 12px;
-        }
+    .closed-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+    }
 
-        .add-item-btn:hover {
-            background: #38a169;
-        }
+    .service-item,
+    .faq-item {
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 15px;
+      position: relative;
+    }
 
-        .wizard-footer {
-            padding: 20px 40px;
-            background: #f7fafc;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-top: 1px solid #e2e8f0;
-        }
+    .remove-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #f44336;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.3s ease;
+    }
 
-        .btn {
-            padding: 12px 32px;
-            border-radius: 10px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s;
-        }
+    .remove-btn:hover {
+      background: #d32f2f;
+    }
 
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
+    .add-btn {
+      width: 100%;
+      padding: 12px;
+      background: #f5f5f5;
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #666;
+      transition: all 0.3s ease;
+    }
 
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102,126,234,0.4);
-        }
+    .add-btn:hover {
+      background: #eeeeee;
+      border-color: #667eea;
+      color: #667eea;
+    }
 
-        .btn-secondary {
-            background: white;
-            color: #4a5568;
-            border: 2px solid #e2e8f0;
-        }
+    .wizard-actions {
+      display: flex;
+      justify-content: space-between;
+      padding: 30px 40px;
+      border-top: 1px solid #e0e0e0;
+      gap: 15px;
+    }
 
-        .btn-secondary:hover {
-            background: #f7fafc;
-        }
+    .btn {
+      padding: 14px 32px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
 
-        .step-indicator {
-            display: flex;
-            gap: 8px;
-        }
+    .btn-back {
+      background: #f5f5f5;
+      color: #666;
+    }
 
-        .step-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #cbd5e0;
-            transition: all 0.2s;
-        }
+    .btn-back:hover {
+      background: #eeeeee;
+    }
 
-        .step-dot.active {
-            background: #667eea;
-            width: 30px;
-            border-radius: 5px;
-        }
+    .btn-next,
+    .btn-submit {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      flex: 1;
+    }
 
-        .success-animation {
-            text-align: center;
-            padding: 60px 20px;
-        }
+    .btn-next:hover,
+    .btn-submit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
 
-        .success-icon {
-            width: 80px;
-            height: 80px;
-            background: #48bb78;
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 24px;
-            font-size: 40px;
-        }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
 
-        .success-title {
-            font-size: 32px;
-            margin-bottom: 12px;
-            color: #1a202c;
-        }
+    .review-section {
+      background: #f9f9f9;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
 
-        .success-subtitle {
-            color: #718096;
-            font-size: 16px;
-            margin-bottom: 32px;
-        }
+    .review-section h3 {
+      font-size: 16px;
+      margin-bottom: 12px;
+      color: #667eea;
+    }
 
-        .time-picker {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 12px;
-            margin-top: 12px;
-        }
+    .review-item {
+      display: flex;
+      padding: 8px 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
 
-        .day-time {
-            background: #f7fafc;
-            border-radius: 8px;
-            padding: 12px;
-        }
+    .review-item:last-child {
+      border-bottom: none;
+    }
 
-        .day-name {
-            font-weight: 600;
-            font-size: 13px;
-            margin-bottom: 8px;
-            color: #2d3748;
-        }
+    .review-label {
+      font-weight: 500;
+      width: 150px;
+      color: #666;
+      font-size: 14px;
+    }
 
-        .time-input {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            font-size: 13px;
-            margin-bottom: 6px;
-        }
+    .review-value {
+      flex: 1;
+      color: #333;
+      font-size: 14px;
+    }
 
-        .closed-checkbox {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            color: #718096;
-        }
-    </style>
+    .alert {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      color: #856404;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    .alert-error {
+      background: #f8d7da;
+      border-color: #f44336;
+      color: #721c24;
+    }
+
+    .alert-success {
+      background: #d4edda;
+      border-color: #4caf50;
+      color: #155724;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    @media (max-width: 600px) {
+      .row {
+        grid-template-columns: 1fr;
+      }
+
+      .day-row {
+        grid-template-columns: 1fr;
+      }
+
+      .wizard-body {
+        padding: 20px;
+      }
+
+      .wizard-actions {
+        padding: 20px;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div class="wizard-container">
-        <!-- Header -->
-        <div class="wizard-header">
-            <h1>🚀 Business Onboarding</h1>
-            <p>Let's set up your AI-powered messaging automation</p>
-        </div>
-
-        <!-- Progress Bar -->
-        <div class="progress-bar">
-            <div class="progress-fill" id="progress-fill" style="width: 14%"></div>
-        </div>
-
-        <!-- Content -->
-        <div class="wizard-content" id="wizard-content">
-            <!-- Step 1: Basic Information -->
-            <div class="step active" data-step="1">
-                <h2 class="step-title">📋 Basic Information</h2>
-                <p class="step-subtitle">Tell us about your business</p>
-
-                <div class="form-group">
-                    <label class="form-label">Business Name <span class="required">*</span></label>
-                    <input type="text" class="form-input" id="business-name" placeholder="e.g., White Gold Jewelry Store" required>
-                    <div class="form-hint">This is how your AI will identify itself to customers</div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Business Description <span class="required">*</span></label>
-                    <textarea class="form-textarea" id="business-description" 
-                              placeholder="Describe what your business does, what makes it unique, and what you offer..."
-                              required></textarea>
-                    <div class="form-hint">Be detailed - this helps the AI understand your business context</div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Industry/Category <span class="required">*</span></label>
-                    <select class="form-select" id="business-industry">
-                        <option value="">Select industry...</option>
-                        <option value="Retail">Retail Store</option>
-                        <option value="Restaurant">Restaurant/Cafe</option>
-                        <option value="Beauty">Beauty/Salon/Spa</option>
-                        <option value="Health">Healthcare/Medical</option>
-                        <option value="Education">Education/Training</option>
-                        <option value="Professional">Professional Services</option>
-                        <option value="Real Estate">Real Estate</option>
-                        <option value="Automotive">Automotive</option>
-                        <option value="Jewelry">Jewelry Store</option>
-                        <option value="Barbershop">Barbershop/Hair Salon</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Owner/Contact Name <span class="required">*</span></label>
-                    <input type="text" class="form-input" id="owner-name" placeholder="Full name" required>
-                </div>
-            </div>
-
-            <!-- Step 2: Contact Information -->
-            <div class="step" data-step="2">
-                <h2 class="step-title">📞 Contact Information</h2>
-                <p class="step-subtitle">How can customers reach you?</p>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Phone Number <span class="required">*</span></label>
-                        <input type="tel" class="form-input" id="phone" placeholder="+996 555 123 456" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Email <span class="required">*</span></label>
-                        <input type="email" class="form-input" id="email" placeholder="contact@business.com" required>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Full Address <span class="required">*</span></label>
-                    <input type="text" class="form-input" id="address" placeholder="Street address, city, country" required>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Website (optional)</label>
-                    <input type="url" class="form-input" id="website" placeholder="https://yourbusiness.com">
-                </div>
-            </div>
-
-            <!-- Step 3: Business Hours -->
-            <div class="step" data-step="3">
-                <h2 class="step-title">⏰ Business Hours</h2>
-                <p class="step-subtitle">When are you open for business?</p>
-
-                <div class="time-picker">
-                    <div class="day-time">
-                        <div class="day-name">Monday</div>
-                        <input type="time" class="time-input" id="mon-open" value="09:00">
-                        <input type="time" class="time-input" id="mon-close" value="18:00">
-                        <label class="closed-checkbox"><input type="checkbox" class="closed-check" data-day="mon"> Closed</label>
-                    </div>
-                    <div class="day-time">
-                        <div class="day-name">Tuesday</div>
-                        <input type="time" class="time-input" id="tue-open" value="09:00">
-                        <input type="time" class="time-input" id="tue-close" value="18:00">
-                        <label class="closed-checkbox"><input type="checkbox" class="closed-check" data-day="tue"> Closed</label>
-                    </div>
-                    <div class="day-time">
-                        <div class="day-name">Wednesday</div>
-                        <input type="time" class="time-input" id="wed-open" value="09:00">
-                        <input type="time" class="time-input" id="wed-close" value="18:00">
-                        <label class="closed-checkbox"><input type="checkbox" class="closed-check" data-day="wed"> Closed</label>
-                    </div>
-                    <div class="day-time">
-                        <div class="day-name">Thursday</div>
-                        <input type="time" class="time-input" id="thu-open" value="09:00">
-                        <input type="time" class="time-input" id="thu-close" value="18:00">
-                        <label class="closed-checkbox"><input type="checkbox" class="closed-check" data-day="thu"> Closed</label>
-                    </div>
-                    <div class="day-time">
-                        <div class="day-name">Friday</div>
-                        <input type="time" class="time-input" id="fri-open" value="09:00">
-                        <input type="time" class="time-input" id="fri-close" value="18:00">
-                        <label class="closed-checkbox"><input type="checkbox" class="closed-check" data-day="fri"> Closed</label>
-                    </div>
-                    <div class="day-time">
-                        <div class="day-name">Saturday</div>
-                        <input type="time" class="time-input" id="sat-open" value="10:00">
-                        <input type="time" class="time-input" id="sat-close" value="16:00">
-                        <label class="closed-checkbox"><input type="checkbox" class="closed-check" data-day="sat"> Closed</label>
-                    </div>
-                    <div class="day-time">
-                        <div class="day-name">Sunday</div>
-                        <input type="time" class="time-input" id="sun-open" value="10:00">
-                        <input type="time" class="time-input" id="sun-close" value="16:00">
-                        <label class="closed-checkbox"><input type="checkbox" class="closed-check" data-day="sun" checked> Closed</label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 4: Services -->
-            <div class="step" data-step="4">
-                <h2 class="step-title">💼 Services & Products</h2>
-                <p class="step-subtitle">What do you offer to customers?</p>
-
-                <div class="form-group">
-                    <label class="form-label">Add Your Services <span class="required">*</span></label>
-                    <div class="dynamic-list" id="services-list">
-                        <!-- Services will be added here -->
-                    </div>
-                    <button class="add-item-btn" onclick="addService()">
-                        <i data-lucide="plus" style="width: 18px; height: 18px;"></i>
-                        Add Service
-                    </button>
-                </div>
-            </div>
-
-            <!-- Step 5: FAQs -->
-            <div class="step" data-step="5">
-                <h2 class="step-title">❓ Frequently Asked Questions</h2>
-                <p class="step-subtitle">Help your AI answer common customer questions</p>
-
-                <div class="form-group">
-                    <label class="form-label">Add Common Questions & Answers</label>
-                    <div class="dynamic-list" id="faqs-list">
-                        <!-- FAQs will be added here -->
-                    </div>
-                    <button class="add-item-btn" onclick="addFAQ()">
-                        <i data-lucide="plus" style="width: 18px; height: 18px;"></i>
-                        Add FAQ
-                    </button>
-                </div>
-            </div>
-
-            <!-- Step 6: AI Configuration -->
-            <div class="step" data-step="6">
-                <h2 class="step-title">🤖 AI Assistant Settings</h2>
-                <p class="step-subtitle">Customize your AI's personality and behavior</p>
-
-                <div class="form-group">
-                    <label class="form-label">AI Tone & Personality</label>
-                    <select class="form-select" id="ai-tone">
-                        <option value="professional">Professional & Formal</option>
-                        <option value="friendly" selected>Friendly & Approachable</option>
-                        <option value="casual">Casual & Relaxed</option>
-                        <option value="luxury">Luxury & Premium</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Default Language</label>
-                    <select class="form-select" id="ai-language">
-                        <option value="auto" selected>Auto-detect customer language</option>
-                        <option value="en">English only</option>
-                        <option value="ru">Russian only</option>
-                        <option value="ky">Kyrgyz only</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Response Length</label>
-                    <select class="form-select" id="response-length">
-                        <option value="short" selected>Short & Concise</option>
-                        <option value="medium">Balanced</option>
-                        <option value="detailed">Detailed & Thorough</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Custom Instructions (optional)</label>
-                    <textarea class="form-textarea" id="custom-instructions" 
-                              placeholder="Any special instructions for your AI? e.g., 'Always mention our warranty', 'Use emojis frequently', etc."></textarea>
-                </div>
-            </div>
-
-            <!-- Step 7: Review & Confirm -->
-            <div class="step" data-step="7">
-                <h2 class="step-title">✅ Review & Confirm</h2>
-                <p class="step-subtitle">Review your information before creating</p>
-
-                <div id="review-content" style="background: #f7fafc; padding: 24px; border-radius: 12px;">
-                    <!-- Review will be populated here -->
-                </div>
-            </div>
-
-            <!-- Final Success Screen -->
-            <div class="step" data-step="8">
-                <div class="success-animation">
-                    <div class="success-icon">✓</div>
-                    <h2 class="success-title">Business Created! 🎉</h2>
-                    <p class="success-subtitle">Your AI assistant is ready to help customers</p>
-                    <button class="btn btn-primary" onclick="window.location.href='/admin-super.html'">
-                        Go to Dashboard
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="wizard-footer">
-            <div class="step-indicator" id="step-indicator">
-                <div class="step-dot active"></div>
-                <div class="step-dot"></div>
-                <div class="step-dot"></div>
-                <div class="step-dot"></div>
-                <div class="step-dot"></div>
-                <div class="step-dot"></div>
-                <div class="step-dot"></div>
-            </div>
-
-            <div style="display: flex; gap: 12px;">
-                <button class="btn btn-secondary" id="back-btn" onclick="previousStep()" style="display: none;">
-                    <i data-lucide="arrow-left" style="width: 18px; height: 18px;"></i>
-                    Back
-                </button>
-                <button class="btn btn-primary" id="next-btn" onclick="nextStep()">
-                    Next
-                    <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
-                </button>
-            </div>
-        </div>
+  <div class="wizard-container">
+    <div class="wizard-header">
+      <h1>Welcome to REPLAI</h1>
+      <p>Let's set up your AI-powered messaging assistant</p>
     </div>
 
-    <script>
-        let currentStep = 1;
-        const totalSteps = 7;
-        let services = [];
-        let faqs = [];
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill" style="width: 14.28%"></div>
+    </div>
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-            
-            // Handle closed checkboxes
-            document.querySelectorAll('.closed-check').forEach(checkbox => {
-                checkbox.addEventListener('change', function() {
-                    const day = this.dataset.day;
-                    const openInput = document.getElementById(`${day}-open`);
-                    const closeInput = document.getElementById(`${day}-close`);
-                    openInput.disabled = this.checked;
-                    closeInput.disabled = this.checked;
-                    if (this.checked) {
-                        openInput.style.opacity = '0.5';
-                        closeInput.style.opacity = '0.5';
-                    } else {
-                        openInput.style.opacity = '1';
-                        closeInput.style.opacity = '1';
-                    }
-                });
-                checkbox.dispatchEvent(new Event('change'));
-            });
+    <div class="step-indicators">
+      <div class="step-dot active" data-step="1"></div>
+      <div class="step-dot" data-step="2"></div>
+      <div class="step-dot" data-step="3"></div>
+      <div class="step-dot" data-step="4"></div>
+      <div class="step-dot" data-step="5"></div>
+      <div class="step-dot" data-step="6"></div>
+      <div class="step-dot" data-step="7"></div>
+    </div>
 
-            updateProgress();
+    <div class="wizard-body">
+      <!-- Step 1: Basic Info -->
+      <div class="step active" id="step1">
+        <h2 class="step-title">Basic Information</h2>
+        <p class="step-subtitle">Tell us about your business</p>
+
+        <div class="form-group">
+          <label for="businessName">Business Name *</label>
+          <input type="text" id="businessName" placeholder="e.g., White Gold Jewelry" required>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Business Description *</label>
+          <textarea id="description" placeholder="Describe what your business does..." required></textarea>
+        </div>
+
+        <div class="row">
+          <div class="form-group">
+            <label for="industry">Industry *</label>
+            <select id="industry" required>
+              <option value="">Select industry</option>
+              <option value="Jewelry">Jewelry</option>
+              <option value="Beauty & Salon">Beauty & Salon</option>
+              <option value="Restaurant">Restaurant</option>
+              <option value="Retail">Retail</option>
+              <option value="Healthcare">Healthcare</option>
+              <option value="Fitness">Fitness</option>
+              <option value="Education">Education</option>
+              <option value="Professional Services">Professional Services</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="ownerName">Owner Name *</label>
+            <input type="text" id="ownerName" placeholder="Your full name" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Contact Information -->
+      <div class="step" id="step2">
+        <h2 class="step-title">Contact Information</h2>
+        <p class="step-subtitle">How can customers reach you?</p>
+
+        <div class="form-group">
+          <label for="phone">Phone Number *</label>
+          <input type="tel" id="phone" placeholder="+996555001001" required>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email *</label>
+          <input type="email" id="email" placeholder="contact@business.com" required>
+        </div>
+
+        <div class="form-group">
+          <label for="address">Physical Address</label>
+          <input type="text" id="address" placeholder="Street, City, Country">
+        </div>
+
+        <div class="form-group">
+          <label for="website">Website</label>
+          <input type="url" id="website" placeholder="https://your-website.com">
+        </div>
+      </div>
+
+      <!-- Step 3: Business Hours -->
+      <div class="step" id="step3">
+        <h2 class="step-title">Business Hours</h2>
+        <p class="step-subtitle">When are you open?</p>
+
+        <div class="hours-grid" id="hoursGrid">
+          <div class="day-row">
+            <span class="day-label">Monday</span>
+            <input type="time" data-day="monday" data-type="open" value="09:00">
+            <input type="time" data-day="monday" data-type="close" value="18:00">
+            <label class="closed-checkbox">
+              <input type="checkbox" data-day="monday">
+              Closed
+            </label>
+          </div>
+
+          <div class="day-row">
+            <span class="day-label">Tuesday</span>
+            <input type="time" data-day="tuesday" data-type="open" value="09:00">
+            <input type="time" data-day="tuesday" data-type="close" value="18:00">
+            <label class="closed-checkbox">
+              <input type="checkbox" data-day="tuesday">
+              Closed
+            </label>
+          </div>
+
+          <div class="day-row">
+            <span class="day-label">Wednesday</span>
+            <input type="time" data-day="wednesday" data-type="open" value="09:00">
+            <input type="time" data-day="wednesday" data-type="close" value="18:00">
+            <label class="closed-checkbox">
+              <input type="checkbox" data-day="wednesday">
+              Closed
+            </label>
+          </div>
+
+          <div class="day-row">
+            <span class="day-label">Thursday</span>
+            <input type="time" data-day="thursday" data-type="open" value="09:00">
+            <input type="time" data-day="thursday" data-type="close" value="18:00">
+            <label class="closed-checkbox">
+              <input type="checkbox" data-day="thursday">
+              Closed
+            </label>
+          </div>
+
+          <div class="day-row">
+            <span class="day-label">Friday</span>
+            <input type="time" data-day="friday" data-type="open" value="09:00">
+            <input type="time" data-day="friday" data-type="close" value="18:00">
+            <label class="closed-checkbox">
+              <input type="checkbox" data-day="friday">
+              Closed
+            </label>
+          </div>
+
+          <div class="day-row">
+            <span class="day-label">Saturday</span>
+            <input type="time" data-day="saturday" data-type="open" value="10:00">
+            <input type="time" data-day="saturday" data-type="close" value="17:00">
+            <label class="closed-checkbox">
+              <input type="checkbox" data-day="saturday">
+              Closed
+            </label>
+          </div>
+
+          <div class="day-row">
+            <span class="day-label">Sunday</span>
+            <input type="time" data-day="sunday" data-type="open" value="10:00">
+            <input type="time" data-day="sunday" data-type="close" value="17:00">
+            <label class="closed-checkbox">
+              <input type="checkbox" data-day="sunday" checked>
+              Closed
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Services -->
+      <div class="step" id="step4">
+        <h2 class="step-title">Services & Products</h2>
+        <p class="step-subtitle">What do you offer? (Add at least one)</p>
+
+        <div id="servicesList">
+          <!-- Services will be added here -->
+        </div>
+
+        <button class="add-btn" onclick="addService()">+ Add Service</button>
+      </div>
+
+      <!-- Step 5: FAQs -->
+      <div class="step" id="step5">
+        <h2 class="step-title">Frequently Asked Questions</h2>
+        <p class="step-subtitle">Common questions your customers ask (optional)</p>
+
+        <div id="faqsList">
+          <!-- FAQs will be added here -->
+        </div>
+
+        <button class="add-btn" onclick="addFAQ()">+ Add FAQ</button>
+      </div>
+
+      <!-- Step 6: AI Configuration -->
+      <div class="step" id="step6">
+        <h2 class="step-title">AI Assistant Configuration</h2>
+        <p class="step-subtitle">Customize how your AI responds</p>
+
+        <div class="form-group">
+          <label for="aiTone">Response Tone *</label>
+          <select id="aiTone" required>
+            <option value="friendly">Friendly & Warm</option>
+            <option value="professional">Professional & Formal</option>
+            <option value="casual">Casual & Conversational</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="aiLanguage">Primary Language *</label>
+          <select id="aiLanguage" required>
+            <option value="auto">Auto-detect customer language</option>
+            <option value="en">English</option>
+            <option value="ru">Russian</option>
+            <option value="ky">Kyrgyz</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="responseLength">Response Length *</label>
+          <select id="responseLength" required>
+            <option value="short">Short & Concise</option>
+            <option value="medium" selected>Medium (Recommended)</option>
+            <option value="detailed">Detailed & Comprehensive</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Step 7: Review -->
+      <div class="step" id="step7">
+        <h2 class="step-title">Review & Confirm</h2>
+        <p class="step-subtitle">Check your information before creating</p>
+
+        <div id="reviewContent">
+          <!-- Review content will be populated here -->
+        </div>
+
+        <div id="alertBox" class="hidden"></div>
+      </div>
+    </div>
+
+    <div class="wizard-actions">
+      <button class="btn btn-back" id="btnBack" onclick="previousStep()">Back</button>
+      <button class="btn btn-next" id="btnNext" onclick="nextStep()">Next</button>
+      <button class="btn btn-submit hidden" id="btnSubmit" onclick="submitWizard()">Create Business</button>
+    </div>
+  </div>
+
+  <script>
+    let currentStep = 1;
+    const totalSteps = 7;
+
+    // Initialize with one service
+    window.addEventListener('DOMContentLoaded', () => {
+      addService();
+      setupHoursListeners();
+    });
+
+    function setupHoursListeners() {
+      const checkboxes = document.querySelectorAll('#hoursGrid input[type="checkbox"]');
+      checkboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+          const day = this.dataset.day;
+          const timeInputs = document.querySelectorAll(`#hoursGrid input[data-day="${day}"][type="time"]`);
+          timeInputs.forEach(input => {
+            input.disabled = this.checked;
+            if (this.checked) {
+              input.style.opacity = '0.5';
+            } else {
+              input.style.opacity = '1';
+            }
+          });
+        });
+      });
+
+      // Trigger change for Sunday (default closed)
+      const sundayCheckbox = document.querySelector('input[type="checkbox"][data-day="sunday"]');
+      if (sundayCheckbox && sundayCheckbox.checked) {
+        sundayCheckbox.dispatchEvent(new Event('change'));
+      }
+    }
+
+    function updateProgress() {
+      const progress = (currentStep / totalSteps) * 100;
+      document.getElementById('progressFill').style.width = progress + '%';
+
+      // Update step dots
+      document.querySelectorAll('.step-dot').forEach((dot, index) => {
+        dot.classList.remove('active', 'completed');
+        if (index + 1 < currentStep) {
+          dot.classList.add('completed');
+        } else if (index + 1 === currentStep) {
+          dot.classList.add('active');
+        }
+      });
+
+      // Show/hide buttons
+      document.getElementById('btnBack').style.display = currentStep === 1 ? 'none' : 'block';
+      document.getElementById('btnNext').style.display = currentStep === totalSteps ? 'none' : 'block';
+      document.getElementById('btnSubmit').classList.toggle('hidden', currentStep !== totalSteps);
+    }
+
+    function showStep(stepNumber) {
+      document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+      document.getElementById('step' + stepNumber).classList.add('active');
+      currentStep = stepNumber;
+      updateProgress();
+
+      if (stepNumber === 7) {
+        populateReview();
+      }
+    }
+
+    function validateStep(stepNumber) {
+      const step = document.getElementById('step' + stepNumber);
+      const requiredInputs = step.querySelectorAll('input[required], textarea[required], select[required]');
+
+      for (let input of requiredInputs) {
+        if (!input.value.trim()) {
+          showAlert('Please fill in all required fields', 'error');
+          input.focus();
+          return false;
+        }
+
+        // Email validation
+        if (input.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value)) {
+          showAlert('Please enter a valid email address', 'error');
+          input.focus();
+          return false;
+        }
+      }
+
+      // Step 4: At least one service
+      if (stepNumber === 4) {
+        const services = document.querySelectorAll('#servicesList .service-item');
+        if (services.length === 0) {
+          showAlert('Please add at least one service', 'error');
+          return false;
+        }
+
+        // Validate all service fields
+        for (let service of services) {
+          const inputs = service.querySelectorAll('input[required], textarea[required]');
+          for (let input of inputs) {
+            if (!input.value.trim()) {
+              showAlert('Please fill in all service fields', 'error');
+              input.focus();
+              return false;
+            }
+          }
+        }
+      }
+
+      return true;
+    }
+
+    function nextStep() {
+      if (!validateStep(currentStep)) {
+        return;
+      }
+
+      if (currentStep < totalSteps) {
+        showStep(currentStep + 1);
+      }
+    }
+
+    function previousStep() {
+      if (currentStep > 1) {
+        showStep(currentStep - 1);
+      }
+    }
+
+    function addService() {
+      const servicesList = document.getElementById('servicesList');
+      const serviceId = Date.now();
+
+      const serviceHTML = `
+        <div class="service-item" data-id="${serviceId}">
+          <button class="remove-btn" onclick="removeService(${serviceId})" type="button">×</button>
+
+          <div class="form-group">
+            <label>Service Name *</label>
+            <input type="text" class="service-name" placeholder="e.g., Custom Ring Design" required>
+          </div>
+
+          <div class="form-group">
+            <label>Description *</label>
+            <textarea class="service-description" placeholder="Brief description..." required></textarea>
+          </div>
+
+          <div class="row">
+            <div class="form-group">
+              <label>Price</label>
+              <input type="text" class="service-price" placeholder="e.g., 5,000 сом">
+            </div>
+
+            <div class="form-group">
+              <label>Duration (minutes)</label>
+              <input type="number" class="service-duration" placeholder="30" min="1">
+            </div>
+          </div>
+        </div>
+      `;
+
+      servicesList.insertAdjacentHTML('beforeend', serviceHTML);
+    }
+
+    function removeService(serviceId) {
+      const service = document.querySelector(`[data-id="${serviceId}"]`);
+      if (service) {
+        service.remove();
+      }
+    }
+
+    function addFAQ() {
+      const faqsList = document.getElementById('faqsList');
+      const faqId = Date.now();
+
+      const faqHTML = `
+        <div class="faq-item" data-id="${faqId}">
+          <button class="remove-btn" onclick="removeFAQ(${faqId})" type="button">×</button>
+
+          <div class="form-group">
+            <label>Question</label>
+            <input type="text" class="faq-question" placeholder="e.g., Do you buy gold?">
+          </div>
+
+          <div class="form-group">
+            <label>Answer</label>
+            <textarea class="faq-answer" placeholder="Your answer..."></textarea>
+          </div>
+        </div>
+      `;
+
+      faqsList.insertAdjacentHTML('beforeend', faqHTML);
+    }
+
+    function removeFAQ(faqId) {
+      const faq = document.querySelector(`[data-id="${faqId}"]`);
+      if (faq) {
+        faq.remove();
+      }
+    }
+
+    function collectFormData() {
+      // Basic Info
+      const data = {
+        name: document.getElementById('businessName').value.trim(),
+        description: document.getElementById('description').value.trim(),
+        industry: document.getElementById('industry').value,
+        ownerName: document.getElementById('ownerName').value.trim(),
+
+        // Contact
+        phone: document.getElementById('phone').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        address: document.getElementById('address').value.trim(),
+        website: document.getElementById('website').value.trim(),
+
+        // Hours
+        hours: {},
+
+        // Services
+        services: [],
+
+        // FAQs
+        faqs: [],
+
+        // AI Config
+        aiTone: document.getElementById('aiTone').value,
+        aiLanguage: document.getElementById('aiLanguage').value,
+        responseLength: document.getElementById('responseLength').value
+      };
+
+      // Collect hours
+      const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+      days.forEach(day => {
+        const checkbox = document.querySelector(`input[type="checkbox"][data-day="${day}"]`);
+        if (checkbox.checked) {
+          data.hours[day] = 'closed';
+        } else {
+          const openTime = document.querySelector(`input[data-day="${day}"][data-type="open"]`).value;
+          const closeTime = document.querySelector(`input[data-day="${day}"][data-type="close"]`).value;
+          data.hours[day] = `${openTime}-${closeTime}`;
+        }
+      });
+
+      // Collect services
+      document.querySelectorAll('#servicesList .service-item').forEach(service => {
+        data.services.push({
+          name: service.querySelector('.service-name').value.trim(),
+          description: service.querySelector('.service-description').value.trim(),
+          price: service.querySelector('.service-price').value.trim(),
+          duration: parseInt(service.querySelector('.service-duration').value) || 30
+        });
+      });
+
+      // Collect FAQs
+      document.querySelectorAll('#faqsList .faq-item').forEach(faq => {
+        const question = faq.querySelector('.faq-question').value.trim();
+        const answer = faq.querySelector('.faq-answer').value.trim();
+        if (question && answer) {
+          data.faqs.push({ question, answer });
+        }
+      });
+
+      return data;
+    }
+
+    function populateReview() {
+      const data = collectFormData();
+      const reviewContent = document.getElementById('reviewContent');
+
+      let html = `
+        <div class="review-section">
+          <h3>Basic Information</h3>
+          <div class="review-item">
+            <span class="review-label">Business Name:</span>
+            <span class="review-value">${data.name}</span>
+          </div>
+          <div class="review-item">
+            <span class="review-label">Industry:</span>
+            <span class="review-value">${data.industry}</span>
+          </div>
+          <div class="review-item">
+            <span class="review-label">Owner:</span>
+            <span class="review-value">${data.ownerName}</span>
+          </div>
+          <div class="review-item">
+            <span class="review-label">Description:</span>
+            <span class="review-value">${data.description}</span>
+          </div>
+        </div>
+
+        <div class="review-section">
+          <h3>Contact Information</h3>
+          <div class="review-item">
+            <span class="review-label">Phone:</span>
+            <span class="review-value">${data.phone}</span>
+          </div>
+          <div class="review-item">
+            <span class="review-label">Email:</span>
+            <span class="review-value">${data.email}</span>
+          </div>
+          ${data.address ? `
+          <div class="review-item">
+            <span class="review-label">Address:</span>
+            <span class="review-value">${data.address}</span>
+          </div>
+          ` : ''}
+          ${data.website ? `
+          <div class="review-item">
+            <span class="review-label">Website:</span>
+            <span class="review-value">${data.website}</span>
+          </div>
+          ` : ''}
+        </div>
+
+        <div class="review-section">
+          <h3>Business Hours</h3>
+          ${Object.entries(data.hours).map(([day, hours]) => `
+            <div class="review-item">
+              <span class="review-label">${day.charAt(0).toUpperCase() + day.slice(1)}:</span>
+              <span class="review-value">${hours}</span>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="review-section">
+          <h3>Services (${data.services.length})</h3>
+          ${data.services.map(service => `
+            <div class="review-item">
+              <span class="review-label">${service.name}:</span>
+              <span class="review-value">${service.price || 'N/A'} • ${service.duration} min</span>
+            </div>
+          `).join('')}
+        </div>
+
+        ${data.faqs.length > 0 ? `
+        <div class="review-section">
+          <h3>FAQs (${data.faqs.length})</h3>
+          ${data.faqs.map(faq => `
+            <div class="review-item">
+              <span class="review-label">Q:</span>
+              <span class="review-value">${faq.question}</span>
+            </div>
+          `).join('')}
+        </div>
+        ` : ''}
+
+        <div class="review-section">
+          <h3>AI Configuration</h3>
+          <div class="review-item">
+            <span class="review-label">Tone:</span>
+            <span class="review-value">${data.aiTone}</span>
+          </div>
+          <div class="review-item">
+            <span class="review-label">Language:</span>
+            <span class="review-value">${data.aiLanguage}</span>
+          </div>
+          <div class="review-item">
+            <span class="review-label">Response Length:</span>
+            <span class="review-value">${data.responseLength}</span>
+          </div>
+        </div>
+      `;
+
+      reviewContent.innerHTML = html;
+    }
+
+    function showAlert(message, type = 'error') {
+      const alertBox = document.getElementById('alertBox');
+      alertBox.className = type === 'error' ? 'alert alert-error' :
+                           type === 'success' ? 'alert alert-success' : 'alert';
+      alertBox.textContent = message;
+      alertBox.classList.remove('hidden');
+
+      setTimeout(() => {
+        alertBox.classList.add('hidden');
+      }, 5000);
+    }
+
+    async function submitWizard() {
+      const submitBtn = document.getElementById('btnSubmit');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating...';
+
+      try {
+        const data = collectFormData();
+
+        const response = await fetch('/api/admin/create-business-with-rag', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
         });
 
-        function nextStep() {
-            if (currentStep === totalSteps) {
-                createBusiness();
-                return;
-            }
+        const result = await response.json();
 
-            // Validate current step
-            if (!validateStep(currentStep)) {
-                return;
-            }
+        if (response.ok && result.success) {
+          showAlert('Business created successfully! Redirecting...', 'success');
 
-            currentStep++;
-            showStep(currentStep);
-            updateProgress();
+          // Store business session
+          localStorage.setItem('businessId', result.business.id);
+          localStorage.setItem('businessEmail', result.business.email);
+
+          setTimeout(() => {
+            window.location.href = '/admin-super.html';
+          }, 2000);
+        } else {
+          showAlert(result.error || 'Failed to create business', 'error');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Create Business';
         }
+      } catch (error) {
+        console.error('Submission error:', error);
+        showAlert('Network error. Please try again.', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create Business';
+      }
+    }
 
-        function previousStep() {
-            if (currentStep > 1) {
-                currentStep--;
-                showStep(currentStep);
-                updateProgress();
-            }
-        }
-
-        function showStep(step) {
-            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-            document.querySelector(`.step[data-step="${step}"]`).classList.add('active');
-
-            // Update buttons
-            const backBtn = document.getElementById('back-btn');
-            const nextBtn = document.getElementById('next-btn');
-
-            backBtn.style.display = step > 1 && step < 8 ? 'flex' : 'none';
-            
-            if (step === totalSteps) {
-                nextBtn.innerHTML = '<i data-lucide="check" style="width: 18px; height: 18px;"></i> Create Business';
-                showReview();
-            } else if (step === 8) {
-                nextBtn.style.display = 'none';
-                backBtn.style.display = 'none';
-            } else {
-                nextBtn.innerHTML = 'Next <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>';
-            }
-
-            lucide.createIcons();
-        }
-
-        function updateProgress() {
-            const progress = (currentStep / totalSteps) * 100;
-            document.getElementById('progress-fill').style.width = progress + '%';
-
-            // Update step indicators
-            document.querySelectorAll('.step-dot').forEach((dot, index) => {
-                dot.classList.toggle('active', index + 1 === currentStep);
-            });
-        }
-
-        function validateStep(step) {
-            let isValid = true;
-            let message = '';
-
-            switch(step) {
-                case 1:
-                    if (!document.getElementById('business-name').value) {
-                        message = 'Please enter business name';
-                        isValid = false;
-                    } else if (!document.getElementById('business-description').value) {
-                        message = 'Please enter business description';
-                        isValid = false;
-                    } else if (!document.getElementById('business-industry').value) {
-                        message = 'Please select industry';
-                        isValid = false;
-                    } else if (!document.getElementById('owner-name').value) {
-                        message = 'Please enter owner name';
-                        isValid = false;
-                    }
-                    break;
-                case 2:
-                    if (!document.getElementById('phone').value) {
-                        message = 'Please enter phone number';
-                        isValid = false;
-                    } else if (!document.getElementById('email').value) {
-                        message = 'Please enter email';
-                        isValid = false;
-                    } else if (!document.getElementById('address').value) {
-                        message = 'Please enter address';
-                        isValid = false;
-                    }
-                    break;
-                case 4:
-                    if (services.length === 0) {
-                        message = 'Please add at least one service';
-                        isValid = false;
-                    }
-                    break;
-            }
-
-            if (!isValid) {
-                alert(message);
-            }
-
-            return isValid;
-        }
-
-        function addService() {
-            const serviceId = 'service-' + Date.now();
-            const html = `
-                <div class="dynamic-item" id="${serviceId}">
-                    <button class="remove-btn" onclick="removeItem('${serviceId}', 'service')">×</button>
-                    <div class="form-group" style="margin-bottom: 12px;">
-                        <label class="form-label">Service Name</label>
-                        <input type="text" class="form-input service-name" placeholder="e.g., Custom Ring Design">
-                    </div>
-                    <div class="form-group" style="margin-bottom: 12px;">
-                        <label class="form-label">Description</label>
-                        <input type="text" class="form-input service-desc" placeholder="Brief description">
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label class="form-label">Price</label>
-                            <input type="text" class="form-input service-price" placeholder="e.g., 5,000 сом">
-                        </div>
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label class="form-label">Duration (minutes)</label>
-                            <input type="number" class="form-input service-duration" placeholder="30" value="30">
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.getElementById('services-list').insertAdjacentHTML('beforeend', html);
-            lucide.createIcons();
-        }
-
-        function addFAQ() {
-            const faqId = 'faq-' + Date.now();
-            const html = `
-                <div class="dynamic-item" id="${faqId}">
-                    <button class="remove-btn" onclick="removeItem('${faqId}', 'faq')">×</button>
-                    <div class="form-group" style="margin-bottom: 12px;">
-                        <label class="form-label">Question</label>
-                        <input type="text" class="form-input faq-question" placeholder="What customers commonly ask?">
-                    </div>
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label">Answer</label>
-                        <textarea class="form-textarea faq-answer" placeholder="How would you answer this?" style="min-height: 80px;"></textarea>
-                    </div>
-                </div>
-            `;
-            document.getElementById('faqs-list').insertAdjacentHTML('beforeend', html);
-            lucide.createIcons();
-        }
-
-        function removeItem(id, type) {
-            document.getElementById(id).remove();
-        }
-
-        function collectServices() {
-            services = [];
-            document.querySelectorAll('#services-list .dynamic-item').forEach(item => {
-                services.push({
-                    name: item.querySelector('.service-name').value,
-                    description: item.querySelector('.service-desc').value,
-                    price: item.querySelector('.service-price').value,
-                    duration: parseInt(item.querySelector('.service-duration').value) || 30
-                });
-            });
-            return services;
-        }
-
-        function collectFAQs() {
-            faqs = [];
-            document.querySelectorAll('#faqs-list .dynamic-item').forEach(item => {
-                const question = item.querySelector('.faq-question').value;
-                const answer = item.querySelector('.faq-answer').value;
-                if (question && answer) {
-                    faqs.push({ question, answer });
-                }
-            });
-            return faqs;
-        }
-
-        function collectBusinessHours() {
-            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-            const daysShort = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-            const hours = {};
-
-            daysShort.forEach((day, index) => {
-                const checkbox = document.querySelector(`.closed-check[data-day="${day}"]`);
-                if (checkbox.checked) {
-                    hours[days[index]] = 'closed';
-                } else {
-                    const open = document.getElementById(`${day}-open`).value;
-                    const close = document.getElementById(`${day}-close`).value;
-                    hours[days[index]] = `${open}-${close}`;
-                }
-            });
-
-            return hours;
-        }
-
-        function showReview() {
-            const data = {
-                businessName: document.getElementById('business-name').value,
-                description: document.getElementById('business-description').value,
-                industry: document.getElementById('business-industry').value,
-                ownerName: document.getElementById('owner-name').value,
-                phone: document.getElementById('phone').value,
-                email: document.getElementById('email').value,
-                address: document.getElementById('address').value,
-                website: document.getElementById('website').value,
-                hours: collectBusinessHours(),
-                services: collectServices(),
-                faqs: collectFAQs()
-            };
-
-            const html = `
-                <h3 style="margin-bottom: 16px; color: #2d3748;">Business Information</h3>
-                <p><strong>Name:</strong> ${data.businessName}</p>
-                <p><strong>Industry:</strong> ${data.industry}</p>
-                <p><strong>Owner:</strong> ${data.ownerName}</p>
-                <p><strong>Email:</strong> ${data.email}</p>
-                <p><strong>Phone:</strong> ${data.phone}</p>
-                <p><strong>Address:</strong> ${data.address}</p>
-                ${data.website ? `<p><strong>Website:</strong> ${data.website}</p>` : ''}
-                
-                <h3 style="margin: 24px 0 12px; color: #2d3748;">Services (${data.services.length})</h3>
-                ${data.services.map(s => `<p>• ${s.name} - ${s.price}</p>`).join('')}
-                
-                <h3 style="margin: 24px 0 12px; color: #2d3748;">FAQs (${data.faqs.length})</h3>
-                ${data.faqs.length > 0 ? data.faqs.map(f => `<p><strong>Q:</strong> ${f.question}</p>`).join('') : '<p>No FAQs added</p>'}
-            `;
-
-            document.getElementById('review-content').innerHTML = html;
-        }
-
-        async function createBusiness() {
-            try {
-                const businessData = {
-                    // Basic info
-                    name: document.getElementById('business-name').value,
-                    description: document.getElementById('business-description').value,
-                    industry: document.getElementById('business-industry').value,
-                    ownerName: document.getElementById('owner-name').value,
-                    
-                    // Contact
-                    email: document.getElementById('email').value,
-                    phone: document.getElementById('phone').value,
-                    address: document.getElementById('address').value,
-                    website: document.getElementById('website').value,
-                    
-                    // Hours
-                    hours: collectBusinessHours(),
-                    
-                    // Services & FAQs
-                    services: collectServices(),
-                    faqs: collectFAQs(),
-                    
-                    // AI settings
-                    aiTone: document.getElementById('ai-tone').value,
-                    aiLanguage: document.getElementById('ai-language').value,
-                    responseLength: document.getElementById('response-length').value,
-                    customInstructions: document.getElementById('custom-instructions').value,
-                    
-                    // Generate business ID
-                    businessId: 'biz_' + Math.random().toString(36).substr(2, 9)
-                };
-
-                // Call API to create business
-                const response = await fetch('/api/admin/create-business-with-rag', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(businessData)
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    currentStep = 8;
-                    showStep(8);
-                } else {
-                    alert('Failed to create business: ' + (result.error || 'Unknown error'));
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Failed to create business. Please try again.');
-            }
-        }
-
-        // Add initial service and FAQ on page load
-        setTimeout(() => {
-            addService();
-            addFAQ();
-        }, 100);
-    </script>
+    // Initialize
+    updateProgress();
+  </script>
 </body>
 </html>

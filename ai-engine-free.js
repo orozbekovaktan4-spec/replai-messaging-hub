@@ -1,9 +1,39 @@
 import fetch from 'node-fetch';
 import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { aiKeyManager } from './ai-key-manager.js';
 
-// Load business information
-const businessInfo = JSON.parse(fs.readFileSync('./business-info.json', 'utf8'));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load business information per business
+function loadBusinessInfo(businessId = null) {
+  try {
+    if (businessId) {
+      const specificPath = path.join(__dirname, `business-info-${businessId}.json`);
+      if (fs.existsSync(specificPath)) {
+        console.log(`📋 [AI] Loading business-specific RAG: business-info-${businessId}.json`);
+        return JSON.parse(fs.readFileSync(specificPath, 'utf8'));
+      } else {
+        console.warn(`⚠️  [AI] Business RAG file not found for ${businessId}, falling back to default`);
+      }
+    }
+
+    // Fallback to default business-info.json
+    const defaultPath = path.join(__dirname, 'business-info.json');
+    if (fs.existsSync(defaultPath)) {
+      console.log(`📋 [AI] Loading default RAG: business-info.json`);
+      return JSON.parse(fs.readFileSync(defaultPath, 'utf8'));
+    }
+
+    throw new Error('No business information file found');
+  } catch (error) {
+    console.error('[AI] Error loading business info:', error.message);
+    throw error;
+  }
+}
+
 const BOOKINGS_PATH = './bookings.json';
 
 
@@ -59,17 +89,21 @@ const languageNames = {
   auto: 'the same language as the customer'
 };
 
-const fallbackMessages = {
-  en: `Sorry, I'm having trouble right now. Please contact us directly at ${businessInfo.business.contact.phone} or ${businessInfo.business.contact.email}`,
-  ru: `Извините, сейчас у меня возникли трудности. Пожалуйста, свяжитесь с нами напрямую: ${businessInfo.business.contact.phone} или ${businessInfo.business.contact.email}`,
-  ky: `Кечиресиз, азыр жооп берүүдө кыйынчылык болуп жатат. Сураныч, биз менен түз байланышыңыз: ${businessInfo.business.contact.phone} же ${businessInfo.business.contact.email}`
-};
+function getFallbackMessages(businessInfo) {
+  const contact = businessInfo?.business?.contact || { phone: 'our phone', email: 'our email' };
+  return {
+    en: `Sorry, I'm having trouble right now. Please contact us directly at ${contact.phone} or ${contact.email}`,
+    ru: `Извините, сейчас у меня возникли трудности. Пожалуйста, свяжитесь с нами напрямую: ${contact.phone} или ${contact.email}`,
+    ky: `Кечиресиз, азыр жооп берүүдө кыйынчылык болуп жатат. Сураныч, биз менен түз байланышыңыз: ${contact.phone} же ${contact.email}`
+  };
+}
 
 // Store conversation history per user (in-memory for MVP)
 const conversationHistory = new Map();
 
 // Create system prompt with business context
-function createSystemPrompt(language = readSavedLanguage(), userId = null) {
+function createSystemPrompt(language = readSavedLanguage(), userId = null, businessId = null) {
+  const businessInfo = loadBusinessInfo(businessId);
   const { business } = businessInfo;
   const responseLanguage = languageNames[language] || languageNames.auto;
   const bookingContext = createBookingContext(userId);
@@ -125,10 +159,10 @@ TONE: Professional, helpful, efficient, and friendly - like a well-trained custo
 }
 
 // Option 1: Groq API (FREE, very fast, Llama models)
-async function getGroqResponse(userMessage, history, language, userId) {
+async function getGroqResponse(userMessage, history, language, userId, businessId = null) {
   try {
     const messages = [
-      { role: 'system', content: createSystemPrompt(language, userId) },
+      { role: 'system', content: createSystemPrompt(language, userId, businessId) },
       ...history
     ];
 
@@ -169,9 +203,9 @@ async function getGroqResponse(userMessage, history, language, userId) {
 }
 
 // Option 2: Hugging Face Inference API (FREE)
-async function getHuggingFaceResponse(userMessage, history, language, userId, apiKey = null) {
+async function getHuggingFaceResponse(userMessage, history, language, userId, businessId = null, apiKey = null) {
   try {
-    const prompt = createSystemPrompt(language, userId) + '\n\n' +
+    const prompt = createSystemPrompt(language, userId, businessId) + '\n\n' +
                    history.map(h => `${h.role}: ${h.content}`).join('\n') +
                    `\nuser: ${userMessage}\nassistant:`;
 
@@ -202,10 +236,10 @@ async function getHuggingFaceResponse(userMessage, history, language, userId, ap
 }
 
 // Option 3: OpenRouter (FREE tier, access to many models)
-async function getOpenRouterResponse(userMessage, history, language, userId) {
+async function getOpenRouterResponse(userMessage, history, language, userId, businessId = null) {
   try {
     const messages = [
-      { role: 'system', content: createSystemPrompt(language, userId) },
+      { role: 'system', content: createSystemPrompt(language, userId, businessId) },
       ...history
     ];
 
@@ -233,10 +267,10 @@ async function getOpenRouterResponse(userMessage, history, language, userId) {
 }
 
 // Option 4: Together AI (FREE credits on signup)
-async function getTogetherResponse(userMessage, history, language, userId) {
+async function getTogetherResponse(userMessage, history, language, userId, businessId = null) {
   try {
     const messages = [
-      { role: 'system', content: createSystemPrompt(language, userId) },
+      { role: 'system', content: createSystemPrompt(language, userId, businessId) },
       ...history
     ];
 
@@ -263,7 +297,7 @@ async function getTogetherResponse(userMessage, history, language, userId) {
 }
 
 // Main function with key rotation and retry logic
-export async function getAIResponse(userId, userMessage, language = readSavedLanguage()) {
+export async function getAIResponse(userId, userMessage, language = readSavedLanguage(), businessId = null) {
   const provider = process.env.AI_PROVIDER || 'groq';
   const maxRetries = 3;
   let lastError = null;
@@ -300,16 +334,16 @@ export async function getAIResponse(userId, userMessage, language = readSavedLan
       let assistantMessage;
       switch (provider) {
         case 'groq':
-          assistantMessage = await getGroqResponse(userMessage, history, language, userId, keyData.apiKey);
+          assistantMessage = await getGroqResponse(userMessage, history, language, userId, businessId);
           break;
         case 'huggingface':
-          assistantMessage = await getHuggingFaceResponse(userMessage, history, language, userId, keyData.apiKey);
+          assistantMessage = await getHuggingFaceResponse(userMessage, history, language, userId, businessId, keyData.apiKey);
           break;
         case 'openrouter':
-          assistantMessage = await getOpenRouterResponse(userMessage, history, language, userId, keyData.apiKey);
+          assistantMessage = await getOpenRouterResponse(userMessage, history, language, userId, businessId);
           break;
         case 'together':
-          assistantMessage = await getTogetherResponse(userMessage, history, language, userId, keyData.apiKey);
+          assistantMessage = await getTogetherResponse(userMessage, history, language, userId, businessId);
           break;
         default:
           throw new Error(`Unknown AI provider: ${provider}`);
@@ -354,6 +388,8 @@ export async function getAIResponse(userId, userMessage, language = readSavedLan
   console.error(`❌ [AI] All attempts failed. Last error:`, lastError?.message);
 
   // Fallback message
+  const businessInfo = loadBusinessInfo(businessId);
+  const fallbackMessages = getFallbackMessages(businessInfo);
   const fallbackLang = language === 'auto' ? 'en' : language;
   return fallbackMessages[fallbackLang] || fallbackMessages.en;
 }
