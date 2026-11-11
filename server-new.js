@@ -4079,8 +4079,8 @@ async function handleInstagramMessage(event) {
       replyText = await getAIResponse(senderId, messageText);
     }
 
-    // Send reply via Instagram Graph API - use token from database
-    const accessToken = instagramData.accessToken || process.env.INSTAGRAM_ACCESS_TOKEN;
+    // Send reply via Instagram Graph API - use token from database (trimmed)
+    const accessToken = (instagramData.accessToken || process.env.INSTAGRAM_ACCESS_TOKEN || '').trim();
     await sendInstagramMessage(recipientId, senderId, replyText, accessToken);
 
     console.log('[Instagram DM] Reply sent successfully');
@@ -6451,13 +6451,13 @@ async function syncEnvTokensToDatabase() {
       const business = businesses[0];
       const updates = {};
 
-      // Sync Instagram token
+      // Sync Instagram token (trim whitespace/newlines)
       if (process.env.INSTAGRAM_ACCESS_TOKEN && !business.instagram?.connected) {
         updates.instagram = JSON.stringify({
           connected: true,
           userId: '17841442927870144',
           username: process.env.INSTAGRAM_USERNAME || 'akt4n.o',
-          accessToken: process.env.INSTAGRAM_ACCESS_TOKEN,
+          accessToken: process.env.INSTAGRAM_ACCESS_TOKEN.trim(),
           pageId: '1077310258808665',
           pageName: 'Akt4n.o',
           connectedAt: new Date().toISOString(),
@@ -6727,7 +6727,7 @@ app.get('/api/admin/fix-any-business', async (req, res) => {
     
     // Allow manual token override via query param
     const manualToken = req.query.token;
-    const tokenToUse = manualToken || process.env.INSTAGRAM_ACCESS_TOKEN;
+    const tokenToUse = (manualToken || process.env.INSTAGRAM_ACCESS_TOKEN || '').trim();
     
     console.log('[Admin] Using token:', tokenToUse ? 'Token provided (length: ' + tokenToUse.length + ')' : 'No token');
     
