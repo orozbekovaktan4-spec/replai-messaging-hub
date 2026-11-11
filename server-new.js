@@ -5790,18 +5790,21 @@ app.put('/api/admin/businesses/:id', optionalAuth, async (req, res) => {
 app.delete('/api/admin/businesses/:id', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const businesses = await db.getAllBusinesses();
-    const businessIndex = businesses.findIndex(b => b.id === id);
-
-    if (businessIndex === -1) {
-      return res.status(404).json({ error: 'Business not found' });
+    
+    // Check if business exists
+    const business = await db.findBusinessById(id);
+    
+    if (!business) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Business not found' 
+      });
     }
 
-    const deletedBusiness = businesses[businessIndex];
-    businesses.splice(businessIndex, 1);
-    // Data saved automatically via Prisma
+    // Delete the business from database
+    await db.deleteBusiness(id);
 
-    console.log(`[Admin] Business deleted: ${deletedBusiness.name} (${id})`);
+    console.log(`[Admin] Business deleted: ${business.name} (${id})`);
 
     res.json({
       success: true,
@@ -5809,7 +5812,11 @@ app.delete('/api/admin/businesses/:id', optionalAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('[Admin] Error deleting business:', error);
-    res.status(500).json({ error: 'Failed to delete business' });
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to delete business',
+      details: error.message
+    });
   }
 });
 
