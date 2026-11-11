@@ -69,7 +69,6 @@ model Business {
   subscriptionEnd         DateTime?
   messageCount            Int       @default(0)
   status                  String    @default("active")
-  hasCompletedOnboarding  Boolean   @default(false)
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
   Message                 Message[]
