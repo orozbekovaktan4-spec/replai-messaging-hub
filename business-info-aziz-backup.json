@@ -1,0 +1,55 @@
+{
+  "business": {
+    "name": "Aziz Barber Shop",
+    "description": "Professional barber shop offering men's haircuts, beard grooming, and styling services in Bishkek.",
+    "hours": {
+      "monday": "09:00-20:00",
+      "tuesday": "09:00-20:00",
+      "wednesday": "09:00-20:00",
+      "thursday": "09:00-20:00",
+      "friday": "09:00-20:00",
+      "saturday": "10:00-18:00",
+      "sunday": "closed"
+    },
+    "services": [
+      {
+        "name": "Haircut",
+        "description": "Classic men's haircut",
+        "price": "500 сом",
+        "duration": 30
+      },
+      {
+        "name": "Beard trim",
+        "description": "Beard shaping and trim",
+        "price": "300 сом",
+        "duration": 20
+      },
+      {
+        "name": "Haircut + Beard",
+        "description": "Full grooming package",
+        "price": "700 сом",
+        "duration": 45
+      },
+      {
+        "name": "Kids haircut",
+        "description": "Haircut for kids under 12",
+        "price": "400 сом",
+        "duration": 25
+      },
+      {
+        "name": "Head shave",
+        "description": "Full head shave",
+        "price": "400 сом",
+        "duration": 25
+      }
+    ],
+    "serviceDuration": 30,
+    "contact": {
+      "phone": "+996555001001",
+      "email": "aziz@barber.com",
+      "address": "Bishkek, Chuy Ave 5",
+      "website": ""
+    },
+    "faqs": []
+  }
+}

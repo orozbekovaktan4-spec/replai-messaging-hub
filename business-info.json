@@ -1,55 +1,127 @@
 {
   "business": {
-    "name": "Aziz Barber Shop",
-    "description": "Professional barber shop offering men's haircuts, beard grooming, and styling services in Bishkek.",
+    "name": "White Gold",
+    "description": "Premium jewelry store specializing in gold, silver, and custom jewelry designs. We offer a curated selection of rings, necklaces, bracelets, and earrings for every occasion.",
     "hours": {
-      "monday": "09:00-20:00",
-      "tuesday": "09:00-20:00",
-      "wednesday": "09:00-20:00",
-      "thursday": "09:00-20:00",
-      "friday": "09:00-20:00",
+      "monday": "10:00-19:00",
+      "tuesday": "10:00-19:00",
+      "wednesday": "10:00-19:00",
+      "thursday": "10:00-19:00",
+      "friday": "10:00-19:00",
       "saturday": "10:00-18:00",
-      "sunday": "closed"
+      "sunday": "11:00-17:00"
     },
     "services": [
       {
-        "name": "Haircut",
-        "description": "Classic men's haircut",
-        "price": "500 сом",
+        "name": "Custom Jewelry Design",
+        "description": "Create your unique piece with our expert jewelers",
+        "price": "Starting from 5,000 сом",
         "duration": 30
       },
       {
-        "name": "Beard trim",
-        "description": "Beard shaping and trim",
-        "price": "300 сом",
+        "name": "Jewelry Repair",
+        "description": "Professional repair and restoration services",
+        "price": "300-2,000 сом",
+        "duration": 15
+      },
+      {
+        "name": "Ring Resizing",
+        "description": "Resize your rings to the perfect fit",
+        "price": "500-1,500 сом",
         "duration": 20
       },
       {
-        "name": "Haircut + Beard",
-        "description": "Full grooming package",
-        "price": "700 сом",
-        "duration": 45
+        "name": "Jewelry Cleaning",
+        "description": "Professional cleaning and polishing",
+        "price": "200 сом",
+        "duration": 15
       },
       {
-        "name": "Kids haircut",
-        "description": "Haircut for kids under 12",
-        "price": "400 сом",
-        "duration": 25
+        "name": "Engraving",
+        "description": "Personalized engraving on your jewelry",
+        "price": "400-800 сом",
+        "duration": 20
       },
       {
-        "name": "Head shave",
-        "description": "Full head shave",
-        "price": "400 сом",
-        "duration": 25
+        "name": "Appraisal",
+        "description": "Professional jewelry valuation",
+        "price": "1,000 сом",
+        "duration": 30
+      }
+    ],
+    "products": [
+      {
+        "category": "Gold Rings",
+        "description": "14k and 18k gold rings",
+        "priceRange": "3,000-50,000 сом"
+      },
+      {
+        "category": "Gold Necklaces",
+        "description": "Elegant gold necklaces and chains",
+        "priceRange": "5,000-80,000 сом"
+      },
+      {
+        "category": "Gold Bracelets",
+        "description": "Fine gold bracelets",
+        "priceRange": "4,000-60,000 сом"
+      },
+      {
+        "category": "Gold Earrings",
+        "description": "Classic and modern gold earrings",
+        "priceRange": "2,000-40,000 сом"
+      },
+      {
+        "category": "Silver Jewelry",
+        "description": "925 sterling silver pieces",
+        "priceRange": "1,500-25,000 сом"
+      },
+      {
+        "category": "Wedding Rings",
+        "description": "Custom and classic wedding bands",
+        "priceRange": "8,000-100,000 сом"
+      },
+      {
+        "category": "Gemstone Jewelry",
+        "description": "Jewelry with precious and semi-precious stones",
+        "priceRange": "10,000-150,000 сом"
       }
     ],
     "serviceDuration": 30,
     "contact": {
-      "phone": "+996555001001",
-      "email": "aziz@barber.com",
-      "address": "Bishkek, Chuy Ave 5",
+      "phone": "+996555002002",
+      "email": "orozbekovaktan4@gmail.com",
+      "address": "Bishkek, Manas Ave 45",
       "website": ""
     },
-    "faqs": []
+    "faqs": [
+      {
+        "question": "Do you buy gold jewelry?",
+        "answer": "Yes, we buy gold jewelry at competitive market rates. Bring your items for a free evaluation."
+      },
+      {
+        "question": "Do you offer warranties on jewelry?",
+        "answer": "Yes, all our jewelry comes with a 1-year warranty covering manufacturing defects. Custom pieces have a 6-month warranty."
+      },
+      {
+        "question": "Can I trade in my old jewelry?",
+        "answer": "Absolutely! We accept trade-ins. The value depends on the weight, purity, and condition of your jewelry."
+      },
+      {
+        "question": "Do you have payment plans?",
+        "answer": "Yes, we offer installment plans for purchases over 10,000 сом. Ask our staff for details."
+      },
+      {
+        "question": "How long does custom design take?",
+        "answer": "Custom jewelry design typically takes 2-4 weeks depending on complexity. We'll provide an exact timeline during consultation."
+      },
+      {
+        "question": "Do you resize rings on the same day?",
+        "answer": "Simple resizing can often be done within 1-2 hours if we're not busy. Complex resizing may take 1-2 days."
+      },
+      {
+        "question": "What purity of gold do you sell?",
+        "answer": "We primarily work with 14k (585) and 18k (750) gold. We can also source 22k and 24k gold upon request."
+      }
+    ]
   }
 }
