@@ -6960,7 +6960,7 @@ app.get('/api/admin/setup-white-gold', async (req, res) => {
     // Find White Gold business by email
     const businesses = await db.getAllBusinesses();
     console.log('[Setup] Found', businesses.length, 'businesses');
-    const business = businesses.find(b => b.email === 'claudeformac12@gmail.com');
+    const business = businesses.find(b => b.email === 'claudeformac12@gmail.co');
 
     if (!business) {
       return res.status(404).json({
