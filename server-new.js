@@ -6954,8 +6954,12 @@ app.get('/api/admin/setup-white-gold', async (req, res) => {
   try {
     console.log('[Setup] Setting up White Gold business with Instagram...');
     
+    // Debug: Check what db methods are available
+    console.log('[Setup] Available db methods:', Object.keys(db));
+    
     // Find White Gold business by email
     const businesses = await db.getAllBusinesses();
+    console.log('[Setup] Found', businesses.length, 'businesses');
     const business = businesses.find(b => b.email === 'claudeformac12@gmail.com');
 
     if (!business) {
