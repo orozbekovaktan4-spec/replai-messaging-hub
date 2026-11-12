@@ -2634,19 +2634,61 @@
                     </div>
                 </div>
 
-                <!-- Business Hours (Compact) -->
+                <!-- Business Hours (All 7 Days) -->
                 <div class="form-group-large">
                     <label>Business Hours</label>
                     <div style="display: grid; gap: 8px; font-size: 13px;">
+                        <!-- Monday -->
                         <div style="display: grid; grid-template-columns: 80px 100px 100px 80px; gap: 8px; align-items: center;">
-                            <span style="font-weight: 500;">Mon-Fri</span>
-                            <input type="time" id="quick-weekday-open" value="09:00" style="height: 36px; padding: 0 8px; font-size: 13px;">
-                            <input type="time" id="quick-weekday-close" value="18:00" style="height: 36px; padding: 0 8px; font-size: 13px;">
+                            <span style="font-weight: 500;">Monday</span>
+                            <input type="time" id="quick-monday-open" value="09:00" style="height: 36px; padding: 0 8px; font-size: 13px;">
+                            <input type="time" id="quick-monday-close" value="18:00" style="height: 36px; padding: 0 8px; font-size: 13px;">
                             <label style="display: flex; align-items: center; gap: 4px; font-size: 12px;">
-                                <input type="checkbox" id="quick-weekday-closed" style="width: 14px; height: 14px;">
+                                <input type="checkbox" id="quick-monday-closed" style="width: 14px; height: 14px;">
                                 Closed
                             </label>
                         </div>
+                        <!-- Tuesday -->
+                        <div style="display: grid; grid-template-columns: 80px 100px 100px 80px; gap: 8px; align-items: center;">
+                            <span style="font-weight: 500;">Tuesday</span>
+                            <input type="time" id="quick-tuesday-open" value="09:00" style="height: 36px; padding: 0 8px; font-size: 13px;">
+                            <input type="time" id="quick-tuesday-close" value="18:00" style="height: 36px; padding: 0 8px; font-size: 13px;">
+                            <label style="display: flex; align-items: center; gap: 4px; font-size: 12px;">
+                                <input type="checkbox" id="quick-tuesday-closed" style="width: 14px; height: 14px;">
+                                Closed
+                            </label>
+                        </div>
+                        <!-- Wednesday -->
+                        <div style="display: grid; grid-template-columns: 80px 100px 100px 80px; gap: 8px; align-items: center;">
+                            <span style="font-weight: 500;">Wednesday</span>
+                            <input type="time" id="quick-wednesday-open" value="09:00" style="height: 36px; padding: 0 8px; font-size: 13px;">
+                            <input type="time" id="quick-wednesday-close" value="18:00" style="height: 36px; padding: 0 8px; font-size: 13px;">
+                            <label style="display: flex; align-items: center; gap: 4px; font-size: 12px;">
+                                <input type="checkbox" id="quick-wednesday-closed" style="width: 14px; height: 14px;">
+                                Closed
+                            </label>
+                        </div>
+                        <!-- Thursday -->
+                        <div style="display: grid; grid-template-columns: 80px 100px 100px 80px; gap: 8px; align-items: center;">
+                            <span style="font-weight: 500;">Thursday</span>
+                            <input type="time" id="quick-thursday-open" value="09:00" style="height: 36px; padding: 0 8px; font-size: 13px;">
+                            <input type="time" id="quick-thursday-close" value="18:00" style="height: 36px; padding: 0 8px; font-size: 13px;">
+                            <label style="display: flex; align-items: center; gap: 4px; font-size: 12px;">
+                                <input type="checkbox" id="quick-thursday-closed" style="width: 14px; height: 14px;">
+                                Closed
+                            </label>
+                        </div>
+                        <!-- Friday -->
+                        <div style="display: grid; grid-template-columns: 80px 100px 100px 80px; gap: 8px; align-items: center;">
+                            <span style="font-weight: 500;">Friday</span>
+                            <input type="time" id="quick-friday-open" value="09:00" style="height: 36px; padding: 0 8px; font-size: 13px;">
+                            <input type="time" id="quick-friday-close" value="18:00" style="height: 36px; padding: 0 8px; font-size: 13px;">
+                            <label style="display: flex; align-items: center; gap: 4px; font-size: 12px;">
+                                <input type="checkbox" id="quick-friday-closed" style="width: 14px; height: 14px;">
+                                Closed
+                            </label>
+                        </div>
+                        <!-- Saturday -->
                         <div style="display: grid; grid-template-columns: 80px 100px 100px 80px; gap: 8px; align-items: center;">
                             <span style="font-weight: 500;">Saturday</span>
                             <input type="time" id="quick-saturday-open" value="10:00" style="height: 36px; padding: 0 8px; font-size: 13px;">
@@ -2656,6 +2698,7 @@
                                 Closed
                             </label>
                         </div>
+                        <!-- Sunday -->
                         <div style="display: grid; grid-template-columns: 80px 100px 100px 80px; gap: 8px; align-items: center;">
                             <span style="font-weight: 500;">Sunday</span>
                             <input type="time" id="quick-sunday-open" value="10:00" style="height: 36px; padding: 0 8px; font-size: 13px;">
@@ -5156,10 +5199,30 @@
                 address: document.getElementById('quick-address').value.trim(),
                 website: document.getElementById('quick-website').value.trim(),
                 hours: {
-                    weekday: {
-                        open: document.getElementById('quick-weekday-open').value,
-                        close: document.getElementById('quick-weekday-close').value,
-                        closed: document.getElementById('quick-weekday-closed').checked
+                    monday: {
+                        open: document.getElementById('quick-monday-open').value,
+                        close: document.getElementById('quick-monday-close').value,
+                        closed: document.getElementById('quick-monday-closed').checked
+                    },
+                    tuesday: {
+                        open: document.getElementById('quick-tuesday-open').value,
+                        close: document.getElementById('quick-tuesday-close').value,
+                        closed: document.getElementById('quick-tuesday-closed').checked
+                    },
+                    wednesday: {
+                        open: document.getElementById('quick-wednesday-open').value,
+                        close: document.getElementById('quick-wednesday-close').value,
+                        closed: document.getElementById('quick-wednesday-closed').checked
+                    },
+                    thursday: {
+                        open: document.getElementById('quick-thursday-open').value,
+                        close: document.getElementById('quick-thursday-close').value,
+                        closed: document.getElementById('quick-thursday-closed').checked
+                    },
+                    friday: {
+                        open: document.getElementById('quick-friday-open').value,
+                        close: document.getElementById('quick-friday-close').value,
+                        closed: document.getElementById('quick-friday-closed').checked
                     },
                     saturday: {
                         open: document.getElementById('quick-saturday-open').value,
@@ -5251,12 +5314,31 @@
             document.getElementById('quick-description').value = '';
             document.getElementById('quick-address').value = '';
             document.getElementById('quick-website').value = '';
-            document.getElementById('quick-weekday-open').value = '09:00';
-            document.getElementById('quick-weekday-close').value = '18:00';
-            document.getElementById('quick-weekday-closed').checked = false;
+            // Monday
+            document.getElementById('quick-monday-open').value = '09:00';
+            document.getElementById('quick-monday-close').value = '18:00';
+            document.getElementById('quick-monday-closed').checked = false;
+            // Tuesday
+            document.getElementById('quick-tuesday-open').value = '09:00';
+            document.getElementById('quick-tuesday-close').value = '18:00';
+            document.getElementById('quick-tuesday-closed').checked = false;
+            // Wednesday
+            document.getElementById('quick-wednesday-open').value = '09:00';
+            document.getElementById('quick-wednesday-close').value = '18:00';
+            document.getElementById('quick-wednesday-closed').checked = false;
+            // Thursday
+            document.getElementById('quick-thursday-open').value = '09:00';
+            document.getElementById('quick-thursday-close').value = '18:00';
+            document.getElementById('quick-thursday-closed').checked = false;
+            // Friday
+            document.getElementById('quick-friday-open').value = '09:00';
+            document.getElementById('quick-friday-close').value = '18:00';
+            document.getElementById('quick-friday-closed').checked = false;
+            // Saturday
             document.getElementById('quick-saturday-open').value = '10:00';
             document.getElementById('quick-saturday-close').value = '17:00';
             document.getElementById('quick-saturday-closed').checked = false;
+            // Sunday
             document.getElementById('quick-sunday-open').value = '10:00';
             document.getElementById('quick-sunday-close').value = '17:00';
             document.getElementById('quick-sunday-closed').checked = true;
