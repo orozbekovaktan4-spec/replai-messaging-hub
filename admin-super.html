@@ -2563,7 +2563,8 @@
                 <div class="wizard-steps">
                     <div class="step active" id="step-indicator-1" data-i18n="wizard_step1">1. Basic Info</div>
                     <div class="step" id="step-indicator-2" data-i18n="wizard_step2">2. Contact</div>
-                    <div class="step" id="step-indicator-3" data-i18n="wizard_step3">3. Setup</div>
+                    <div class="step" id="step-indicator-3" data-i18n="wizard_step3">3. Settings</div>
+                    <div class="step" id="step-indicator-4" data-i18n="wizard_step4">4. Subscription</div>
                 </div>
             </div>
 
@@ -2610,8 +2611,114 @@
                 </div>
             </div>
 
-            <!-- Step 3: Setup -->
-            <div class="wizard-step" id="wizard-step-3">
+            <!-- Step 3: Settings -->
+            <div class="wizard-step" id="wizard-step-3" style="max-height: 600px; overflow-y: auto;">
+                <h3 style="margin-bottom: 20px; font-size: 18px;">Business Settings</h3>
+                <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 24px;">Configure your business profile and AI assistant</p>
+                
+                <!-- Description -->
+                <div class="form-group-large">
+                    <label>Business Description *</label>
+                    <textarea id="quick-description" placeholder="Describe what your business does..." rows="3" style="resize: vertical; font-family: inherit;"></textarea>
+                </div>
+
+                <!-- Address & Website -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                    <div class="form-group-large" style="margin-bottom: 0;">
+                        <label>Physical Address</label>
+                        <input type="text" id="quick-address" placeholder="Street, City, Country">
+                    </div>
+                    <div class="form-group-large" style="margin-bottom: 0;">
+                        <label>Website</label>
+                        <input type="url" id="quick-website" placeholder="https://your-site.com">
+                    </div>
+                </div>
+
+                <!-- Business Hours (Compact) -->
+                <div class="form-group-large">
+                    <label>Business Hours</label>
+                    <div style="display: grid; gap: 8px; font-size: 13px;">
+                        <div style="display: grid; grid-template-columns: 80px 100px 100px 80px; gap: 8px; align-items: center;">
+                            <span style="font-weight: 500;">Mon-Fri</span>
+                            <input type="time" id="quick-weekday-open" value="09:00" style="height: 36px; padding: 0 8px; font-size: 13px;">
+                            <input type="time" id="quick-weekday-close" value="18:00" style="height: 36px; padding: 0 8px; font-size: 13px;">
+                            <label style="display: flex; align-items: center; gap: 4px; font-size: 12px;">
+                                <input type="checkbox" id="quick-weekday-closed" style="width: 14px; height: 14px;">
+                                Closed
+                            </label>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 80px 100px 100px 80px; gap: 8px; align-items: center;">
+                            <span style="font-weight: 500;">Saturday</span>
+                            <input type="time" id="quick-saturday-open" value="10:00" style="height: 36px; padding: 0 8px; font-size: 13px;">
+                            <input type="time" id="quick-saturday-close" value="17:00" style="height: 36px; padding: 0 8px; font-size: 13px;">
+                            <label style="display: flex; align-items: center; gap: 4px; font-size: 12px;">
+                                <input type="checkbox" id="quick-saturday-closed" style="width: 14px; height: 14px;">
+                                Closed
+                            </label>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 80px 100px 100px 80px; gap: 8px; align-items: center;">
+                            <span style="font-weight: 500;">Sunday</span>
+                            <input type="time" id="quick-sunday-open" value="10:00" style="height: 36px; padding: 0 8px; font-size: 13px;">
+                            <input type="time" id="quick-sunday-close" value="17:00" style="height: 36px; padding: 0 8px; font-size: 13px;">
+                            <label style="display: flex; align-items: center; gap: 4px; font-size: 12px;">
+                                <input type="checkbox" id="quick-sunday-closed" checked style="width: 14px; height: 14px;">
+                                Closed
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Services (Compact) -->
+                <div class="form-group-large">
+                    <label>Main Services (add at least one)</label>
+                    <div id="quick-services-list" style="display: flex; flex-direction: column; gap: 12px;">
+                        <!-- Services will be added here -->
+                    </div>
+                    <button type="button" onclick="addQuickService()" style="width: 100%; padding: 10px; background: var(--bg-secondary); border: 1px dashed var(--border-color); border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--text-secondary); margin-top: 8px;">
+                        + Add Service
+                    </button>
+                </div>
+
+                <!-- AI Configuration -->
+                <div class="form-group-large">
+                    <label>AI Assistant Settings</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                        <div>
+                            <label style="font-size: 12px; margin-bottom: 4px; display: block;">Tone</label>
+                            <select id="quick-ai-tone" style="height: 40px; font-size: 13px;">
+                                <option value="friendly">Friendly</option>
+                                <option value="professional">Professional</option>
+                                <option value="casual">Casual</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; margin-bottom: 4px; display: block;">Language</label>
+                            <select id="quick-ai-language" style="height: 40px; font-size: 13px;">
+                                <option value="auto">Auto-detect</option>
+                                <option value="en">English</option>
+                                <option value="ru">Russian</option>
+                                <option value="ky">Kyrgyz</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; margin-bottom: 4px; display: block;">Length</label>
+                            <select id="quick-response-length" style="height: 40px; font-size: 13px;">
+                                <option value="short">Short</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="detailed">Detailed</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="wizard-actions">
+                    <button class="btn btn-secondary" onclick="prevWizardStep(2)"><span data-i18n="btn_back">← Back</span></button>
+                    <button class="btn btn-primary" onclick="nextWizardStep(4)"><span data-i18n="btn_next">Next →</span></button>
+                </div>
+            </div>
+
+            <!-- Step 4: Subscription -->
+            <div class="wizard-step" id="wizard-step-4">
                 <div class="form-group-large">
                     <label data-i18n="form_choose_plan">Choose Plan</label>
                     <div class="plan-selector">
@@ -3247,6 +3354,7 @@
                 'wizard_step1': '1. Основная информация',
                 'wizard_step2': '2. Контакты',
                 'wizard_step3': '3. Настройка',
+                'wizard_step4': '4. Подписка',
                 'form_business_name': 'Название бизнеса',
                 'form_business_placeholder': 'напр., Барбершоп Азиза',
                 'form_industry': 'Отрасль',
@@ -3504,7 +3612,8 @@
                 'modal_add_title': 'Add New Business',
                 'wizard_step1': '1. Basic Info',
                 'wizard_step2': '2. Contact',
-                'wizard_step3': '3. Setup',
+                'wizard_step3': '3. Settings',
+                'wizard_step4': '4. Subscription',
                 'form_business_name': 'Business Name',
                 'form_business_placeholder': 'e.g., Aziz Barber Shop',
                 'form_industry': 'Industry',
@@ -3763,6 +3872,7 @@
                 'wizard_step1': '1. Негизги маалымат',
                 'wizard_step2': '2. Байланыш',
                 'wizard_step3': '3. Орнотуу',
+                'wizard_step4': '4. Жазылуу',
                 'form_business_name': 'Бизнестин аталышы',
                 'form_business_placeholder': 'мис., Азиздин чач алуучу дүкөнү',
                 'form_industry': 'Тармак',
@@ -4956,10 +5066,35 @@
         }
 
         function nextWizardStep(step) {
+            // Validate current step before moving forward
+            if (step === 3) {
+                // Validate step 2 (contact info)
+                const ownerName = document.getElementById('quick-owner-name').value.trim();
+                const email = document.getElementById('quick-email').value.trim();
+                if (!ownerName || !email) {
+                    showToast('Please fill in required fields', 'error');
+                    return;
+                }
+            } else if (step === 4) {
+                // Validate step 3 (settings) - at least description
+                const description = document.getElementById('quick-description').value.trim();
+                if (!description) {
+                    showToast('Please add a business description', 'error');
+                    return;
+                }
+                // Check if at least one service is added
+                const services = document.querySelectorAll('#quick-services-list .quick-service-item');
+                if (services.length === 0) {
+                    showToast('Please add at least one service', 'error');
+                    return;
+                }
+            }
+            
             document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
             document.getElementById('wizard-step-' + step).classList.add('active');
             document.getElementById('step-indicator-' + step).classList.add('active');
+            lucide.createIcons();
         }
 
         function prevWizardStep(step) {
@@ -4972,17 +5107,97 @@
             document.querySelector(`[data-plan="${plan}"]`).classList.add('selected');
         }
 
+        // Quick Wizard Service Management
+        let quickServiceCounter = 0;
+        function addQuickService() {
+            quickServiceCounter++;
+            const servicesList = document.getElementById('quick-services-list');
+            const serviceHTML = `
+                <div class="quick-service-item" data-id="service-${quickServiceCounter}" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; position: relative; background: var(--bg-secondary);">
+                    <button type="button" onclick="removeQuickService('service-${quickServiceCounter}')" style="position: absolute; top: 8px; right: 8px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; line-height: 1;">×</button>
+                    
+                    <div style="display: grid; gap: 10px;">
+                        <input type="text" class="quick-service-name" placeholder="Service name" style="height: 36px; padding: 0 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px;">
+                        <textarea class="quick-service-description" placeholder="Description" rows="2" style="padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; resize: vertical; font-family: inherit;"></textarea>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <input type="text" class="quick-service-price" placeholder="Price" style="height: 36px; padding: 0 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px;">
+                            <input type="number" class="quick-service-duration" placeholder="Duration (min)" style="height: 36px; padding: 0 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px;">
+                        </div>
+                    </div>
+                </div>
+            `;
+            servicesList.insertAdjacentHTML('beforeend', serviceHTML);
+        }
+
+        function removeQuickService(serviceId) {
+            const service = document.querySelector(`[data-id="${serviceId}"]`);
+            if (service) service.remove();
+        }
+
+        // Initialize with one service
+        document.addEventListener('DOMContentLoaded', function() {
+            addQuickService();
+        });
+
         async function createBusinessQuick() {
+            // Collect all data from all steps
             const businessData = {
+                // Step 1: Basic Info
                 name: document.getElementById('quick-business-name').value.trim(),
                 industry: document.getElementById('quick-industry').value,
+                
+                // Step 2: Contact
                 ownerName: document.getElementById('quick-owner-name').value.trim(),
                 ownerEmail: document.getElementById('quick-email').value.trim(),
                 phone: document.getElementById('quick-phone').value.trim(),
+                
+                // Step 3: Settings
+                description: document.getElementById('quick-description').value.trim(),
+                address: document.getElementById('quick-address').value.trim(),
+                website: document.getElementById('quick-website').value.trim(),
+                hours: {
+                    weekday: {
+                        open: document.getElementById('quick-weekday-open').value,
+                        close: document.getElementById('quick-weekday-close').value,
+                        closed: document.getElementById('quick-weekday-closed').checked
+                    },
+                    saturday: {
+                        open: document.getElementById('quick-saturday-open').value,
+                        close: document.getElementById('quick-saturday-close').value,
+                        closed: document.getElementById('quick-saturday-closed').checked
+                    },
+                    sunday: {
+                        open: document.getElementById('quick-sunday-open').value,
+                        close: document.getElementById('quick-sunday-close').value,
+                        closed: document.getElementById('quick-sunday-closed').checked
+                    }
+                },
+                services: [],
+                aiSettings: {
+                    tone: document.getElementById('quick-ai-tone').value,
+                    language: document.getElementById('quick-ai-language').value,
+                    responseLength: document.getElementById('quick-response-length').value
+                },
+                
+                // Step 4: Subscription
                 plan: selectedPlan,
-                country: 'Kyrgyzstan',
-                sendWelcome: document.getElementById('send-welcome-email').checked
+                sendWelcome: document.getElementById('send-welcome-email').checked,
+                country: 'Kyrgyzstan'
             };
+
+            // Collect services
+            document.querySelectorAll('#quick-services-list .quick-service-item').forEach(item => {
+                const name = item.querySelector('.quick-service-name').value.trim();
+                const description = item.querySelector('.quick-service-description').value.trim();
+                if (name && description) {
+                    businessData.services.push({
+                        name,
+                        description,
+                        price: item.querySelector('.quick-service-price').value.trim(),
+                        duration: item.querySelector('.quick-service-duration').value.trim()
+                    });
+                }
+            });
 
             if (!businessData.name || !businessData.ownerName || !businessData.ownerEmail) {
                 showToast(t('msg_fill_fields'), 'error');
@@ -5023,12 +5238,41 @@
         }
 
         function resetWizard() {
+            // Step 1
             document.getElementById('quick-business-name').value = '';
+            document.getElementById('quick-industry').value = 'Barber Shop';
+            
+            // Step 2
             document.getElementById('quick-owner-name').value = '';
             document.getElementById('quick-email').value = '';
             document.getElementById('quick-phone').value = '';
-            nextWizardStep(1);
+            
+            // Step 3
+            document.getElementById('quick-description').value = '';
+            document.getElementById('quick-address').value = '';
+            document.getElementById('quick-website').value = '';
+            document.getElementById('quick-weekday-open').value = '09:00';
+            document.getElementById('quick-weekday-close').value = '18:00';
+            document.getElementById('quick-weekday-closed').checked = false;
+            document.getElementById('quick-saturday-open').value = '10:00';
+            document.getElementById('quick-saturday-close').value = '17:00';
+            document.getElementById('quick-saturday-closed').checked = false;
+            document.getElementById('quick-sunday-open').value = '10:00';
+            document.getElementById('quick-sunday-close').value = '17:00';
+            document.getElementById('quick-sunday-closed').checked = true;
+            document.getElementById('quick-services-list').innerHTML = '';
+            addQuickService(); // Add one service
+            document.getElementById('quick-ai-tone').value = 'friendly';
+            document.getElementById('quick-ai-language').value = 'auto';
+            document.getElementById('quick-response-length').value = 'medium';
+            
+            // Step 4
             selectedPlan = 'pro';
+            document.querySelectorAll('.plan-option').forEach(p => p.classList.remove('selected'));
+            document.querySelector('[data-plan="pro"]').classList.add('selected');
+            
+            // Reset to step 1
+            nextWizardStep(1);
         }
 
         // Analytics Dashboard
