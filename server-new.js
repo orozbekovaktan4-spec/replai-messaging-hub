@@ -7103,6 +7103,137 @@ app.get('/api/admin/setup-white-gold', async (req, res) => {
   }
 });
 
+// Update business Instagram connection
+app.post('/api/admin/business/:businessId/instagram', async (req, res) => {
+  try {
+    const { businessId } = req.params;
+    const { username, userId, pageId, pageName, accessToken } = req.body;
+
+    console.log(`[Admin] Updating Instagram for business ${businessId} to @${username}`);
+
+    const businesses = await db.getAllBusinesses();
+    const business = businesses.find(b => b.id === businessId);
+
+    if (!business) {
+      return res.status(404).json({
+        success: false,
+        error: 'Business not found'
+      });
+    }
+
+    // Create Instagram config
+    const instagramConfig = {
+      connected: true,
+      userId: userId || process.env.INSTAGRAM_USER_ID,
+      igUserId: userId || process.env.INSTAGRAM_USER_ID,
+      username: username,
+      accessToken: accessToken || process.env.INSTAGRAM_ACCESS_TOKEN,
+      pageId: pageId || process.env.INSTAGRAM_PAGE_ID,
+      pageName: pageName || username,
+      connectedAt: new Date().toISOString(),
+      config: {
+        dmEnabled: true,
+        rules: []
+      }
+    };
+
+    // Update business
+    await db.updateBusiness(businessId, {
+      instagram: JSON.stringify(instagramConfig)
+    });
+
+    console.log(`[Admin] ✅ Instagram @${username} connected to ${business.name}`);
+
+    res.json({
+      success: true,
+      message: `Instagram @${username} successfully connected to ${business.name}`,
+      business: {
+        id: business.id,
+        name: business.name,
+        email: business.email
+      },
+      instagram: {
+        username: username,
+        userId: userId,
+        pageName: pageName
+      }
+    });
+
+  } catch (error) {
+    console.error('[Admin] Error updating Instagram:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Quick switch White Gold to @white.gold.kg
+app.get('/api/admin/switch-white-gold-instagram', async (req, res) => {
+  try {
+    console.log('[Admin] Switching White Gold to @white.gold.kg...');
+    
+    // Find White Gold business
+    const businesses = await db.getAllBusinesses();
+    const business = businesses.find(b => b.email === 'claudeformac12@gmail.co');
+
+    if (!business) {
+      return res.status(404).json({
+        success: false,
+        error: 'White Gold business not found'
+      });
+    }
+
+    // Update to white.gold.kg Instagram
+    const instagramConfig = {
+      connected: true,
+      userId: process.env.INSTAGRAM_USER_ID || '17841442927870144',
+      igUserId: process.env.INSTAGRAM_USER_ID || '17841442927870144',
+      username: 'white.gold.kg',
+      accessToken: process.env.INSTAGRAM_ACCESS_TOKEN,
+      pageId: process.env.INSTAGRAM_PAGE_ID || '1077310258808665',
+      pageName: 'White Gold KG',
+      connectedAt: new Date().toISOString(),
+      config: {
+        dmEnabled: true,
+        rules: []
+      }
+    };
+
+    await db.updateBusiness(business.id, {
+      instagram: JSON.stringify(instagramConfig)
+    });
+
+    console.log('[Admin] ✅ White Gold switched to @white.gold.kg');
+
+    res.json({
+      success: true,
+      message: 'White Gold successfully switched to @white.gold.kg Instagram account!',
+      business: {
+        id: business.id,
+        name: business.name,
+        email: business.email
+      },
+      instagram: {
+        username: 'white.gold.kg',
+        oldUsername: 'akt4n.o'
+      },
+      nextSteps: [
+        '1. Make sure @white.gold.kg is connected to your Facebook Page',
+        '2. Update INSTAGRAM_USER_ID in .env if different',
+        '3. Test by sending DM to @white.gold.kg'
+      ]
+    });
+
+  } catch (error) {
+    console.error('[Admin] Error switching Instagram:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // List all businesses
 app.get('/api/admin/list-businesses', async (req, res) => {
   try {
