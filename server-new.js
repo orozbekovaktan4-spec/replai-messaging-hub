@@ -678,7 +678,7 @@ async function processInstagramMessage(business, message, isComment = false) {
 
   switch (matchedRule.responseType) {
     case 'ai_generated':
-      response = await getAIResponse(senderId.toString(), messageText);
+      response = await getAIResponse(senderId.toString(), messageText, 'auto', business.id);
       break;
 
     case 'template':
@@ -706,13 +706,13 @@ Business Info:
       response = await getAIResponse(
         senderId.toString(),
         messageText,
-        null, // businessId
-        extendedContext // additionalContext
+        'auto', // language
+        business.id // businessId
       );
       break;
 
     default:
-      response = await getAIResponse(senderId.toString(), messageText);
+      response = await getAIResponse(senderId.toString(), messageText, 'auto', business.id);
   }
 
   // Send response based on message type
