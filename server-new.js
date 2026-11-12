@@ -7168,6 +7168,77 @@ app.post('/api/admin/business/:businessId/instagram', async (req, res) => {
   }
 });
 
+// Check available Instagram accounts from Facebook Page
+app.get('/api/admin/check-available-instagrams', async (req, res) => {
+  try {
+    const accessToken = process.env.INSTAGRAM_ACCESS_TOKEN;
+    const pageId = process.env.INSTAGRAM_PAGE_ID;
+
+    if (!accessToken || !pageId) {
+      return res.json({
+        success: false,
+        error: 'Instagram credentials not configured',
+        help: 'Set INSTAGRAM_ACCESS_TOKEN and INSTAGRAM_PAGE_ID in .env'
+      });
+    }
+
+    console.log('[Admin] Checking available Instagram accounts...');
+
+    // Get Instagram accounts connected to this Facebook Page
+    const response = await fetch(
+      `https://graph.facebook.com/v21.0/${pageId}?fields=instagram_business_account,name&access_token=${accessToken}`
+    );
+
+    const data = await response.json();
+
+    if (data.error) {
+      return res.json({
+        success: false,
+        error: data.error.message,
+        rawError: data.error
+      });
+    }
+
+    // Get Instagram account details
+    if (data.instagram_business_account) {
+      const igId = data.instagram_business_account.id;
+      const igResponse = await fetch(
+        `https://graph.facebook.com/v21.0/${igId}?fields=id,username,name,profile_picture_url,followers_count,follows_count&access_token=${accessToken}`
+      );
+      const igData = await igResponse.json();
+
+      return res.json({
+        success: true,
+        page: {
+          id: data.id,
+          name: data.name
+        },
+        instagram: igData.error ? null : igData,
+        message: igData.error 
+          ? 'Page found but Instagram account not accessible' 
+          : `Instagram @${igData.username} is connected to this Facebook Page`
+      });
+    } else {
+      return res.json({
+        success: false,
+        message: 'No Instagram account connected to this Facebook Page',
+        page: {
+          id: data.id,
+          name: data.name
+        },
+        help: 'Go to Facebook Business Suite → Settings → Instagram accounts to connect an Instagram account'
+      });
+    }
+
+  } catch (error) {
+    console.error('[Admin] Error checking Instagram accounts:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Quick switch White Gold to @white.gold.kg
 app.get('/api/admin/switch-white-gold-instagram', async (req, res) => {
   try {
