@@ -6949,6 +6949,153 @@ app.post('/api/admin/add-business', async (req, res) => {
   }
 });
 
+// Setup White Gold business with Instagram
+app.get('/api/admin/setup-white-gold', async (req, res) => {
+  try {
+    console.log('[Setup] Setting up White Gold business with Instagram...');
+    
+    // Find White Gold business by email
+    const business = await db.business.findUnique({
+      where: { email: 'claudeformac12@gmail.com' }
+    });
+
+    if (!business) {
+      return res.status(404).json({
+        success: false,
+        error: 'White Gold business not found. Please create it first in the admin panel.'
+      });
+    }
+
+    console.log('[Setup] Found business:', business.name, business.id);
+
+    // Create RAG file for this business
+    const ragFileName = `business-info-${business.id}.json`;
+    const ragFilePath = path.join(__dirname, ragFileName);
+    
+    const ragData = {
+      businessName: business.name,
+      description: "Luxury jewelry store specializing in gold jewelry, custom designs, and professional repair services. Prices based on current gold market rates.",
+      industry: business.industry || "Jewelry",
+      ownerName: business.ownerName || "Business Owner",
+      contact: {
+        phone: business.phone || "+996 555 001 001",
+        email: business.email,
+        address: "Bishkek, Kyrgyzstan",
+        website: ""
+      },
+      hours: {
+        monday: { open: "09:00", close: "18:00", closed: true },
+        tuesday: { open: "09:00", close: "18:00", closed: false },
+        wednesday: { open: "09:00", close: "18:00", closed: false },
+        thursday: { open: "09:00", close: "18:00", closed: false },
+        friday: { open: "09:00", close: "18:00", closed: false },
+        saturday: { open: "10:00", close: "17:00", closed: false },
+        sunday: { open: "10:00", close: "17:00", closed: true }
+      },
+      services: [
+        {
+          name: "Gold Jewelry Collection",
+          description: "Wide selection of gold rings, necklaces, bracelets, and earrings. All pieces are hallmarked. Prices based on current gold market rates and design complexity.",
+          price: "Market rate"
+        },
+        {
+          name: "Custom Jewelry Design",
+          description: "We create unique custom jewelry pieces according to your preferences",
+          price: "Consultation required"
+        },
+        {
+          name: "Jewelry Repair & Resizing",
+          description: "Professional jewelry repair, ring resizing, chain repair, and clasp replacement",
+          price: "Starting from 1,500 сом"
+        },
+        {
+          name: "Gold Buying Service",
+          description: "We buy gold jewelry at fair market prices based on current gold rates",
+          price: "Current market rate"
+        }
+      ],
+      faqs: [
+        {
+          question: "Do you have gold rings?",
+          answer: "Yes! We have a beautiful selection of gold rings in various designs. The price depends on the weight of the gold and current market rates. Our rings typically range from 10,000 to 100,000 сом. I'd recommend visiting us to see our collection and get exact pricing."
+        },
+        {
+          question: "Do you buy gold?",
+          answer: "Yes, we buy gold jewelry at fair market prices based on current gold rates. You can bring your gold items to our store and we'll evaluate them."
+        },
+        {
+          question: "What payment methods do you accept?",
+          answer: "We accept cash, bank cards, and bank transfers. For expensive purchases, we can arrange payment plans."
+        },
+        {
+          question: "Do you make custom jewelry?",
+          answer: "Yes! We specialize in custom jewelry design. You can describe what you want or bring a photo, and we'll create a unique piece just for you."
+        },
+        {
+          question: "Can you repair my broken jewelry?",
+          answer: "Yes, we offer professional jewelry repair services including ring resizing, chain repair, and clasp replacement. Bring your jewelry to our store for assessment."
+        }
+      ],
+      aiSettings: {
+        tone: "friendly",
+        language: "auto",
+        responseLength: "medium"
+      }
+    };
+    
+    fs.writeFileSync(ragFilePath, JSON.stringify(ragData, null, 2));
+    console.log('[Setup] Created RAG file:', ragFileName);
+
+    // Update Instagram connection for this business
+    const instagramConfig = {
+      connected: true,
+      userId: process.env.INSTAGRAM_USER_ID || '17841442927870144',
+      igUserId: process.env.INSTAGRAM_USER_ID || '17841442927870144',
+      username: 'akt4n.o',
+      accessToken: process.env.INSTAGRAM_ACCESS_TOKEN,
+      pageId: process.env.INSTAGRAM_PAGE_ID || '1077310258808665',
+      pageName: 'Akt4n.o',
+      connectedAt: new Date().toISOString(),
+      config: {
+        dmEnabled: true,
+        rules: []
+      }
+    };
+
+    await db.business.update({
+      where: { id: business.id },
+      data: {
+        instagram: JSON.stringify(instagramConfig)
+      }
+    });
+
+    console.log('[Setup] Instagram configured for business:', business.name);
+
+    res.json({
+      success: true,
+      message: 'White Gold business successfully configured with Instagram!',
+      business: {
+        id: business.id,
+        name: business.name,
+        email: business.email
+      },
+      instagram: {
+        username: instagramConfig.username,
+        page: instagramConfig.pageName
+      },
+      ragFile: ragFileName,
+      instructions: 'Now when someone DMs @akt4n.o on Instagram, the AI will use White Gold business context!'
+    });
+
+  } catch (error) {
+    console.error('[Setup] Error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // List all businesses
 app.get('/api/admin/list-businesses', async (req, res) => {
   try {
