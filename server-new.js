@@ -6977,73 +6977,79 @@ app.get('/api/admin/setup-white-gold', async (req, res) => {
     const ragFilePath = path.join(__dirname, ragFileName);
     
     const ragData = {
-      businessName: business.name,
-      description: "Luxury jewelry store specializing in gold jewelry, custom designs, and professional repair services. Prices based on current gold market rates.",
-      industry: business.industry || "Jewelry",
-      ownerName: business.ownerName || "Business Owner",
-      contact: {
-        phone: business.phone || "+996 555 001 001",
-        email: business.email,
-        address: "Bishkek, Kyrgyzstan",
-        website: ""
-      },
-      hours: {
-        monday: { open: "09:00", close: "18:00", closed: true },
-        tuesday: { open: "09:00", close: "18:00", closed: false },
-        wednesday: { open: "09:00", close: "18:00", closed: false },
-        thursday: { open: "09:00", close: "18:00", closed: false },
-        friday: { open: "09:00", close: "18:00", closed: false },
-        saturday: { open: "10:00", close: "17:00", closed: false },
-        sunday: { open: "10:00", close: "17:00", closed: true }
-      },
-      services: [
-        {
-          name: "Gold Jewelry Collection",
-          description: "Wide selection of gold rings, necklaces, bracelets, and earrings. All pieces are hallmarked. Prices based on current gold market rates and design complexity.",
-          price: "Market rate"
+      business: {
+        name: business.name,
+        description: "Luxury jewelry store specializing in gold jewelry, custom designs, and professional repair services. Prices based on current gold market rates.",
+        industry: business.industry || "Jewelry",
+        ownerName: business.ownerName || "Business Owner",
+        contact: {
+          phone: business.phone || "+996 555 001 001",
+          email: business.email,
+          address: "Bishkek, Kyrgyzstan",
+          website: ""
         },
-        {
-          name: "Custom Jewelry Design",
-          description: "We create unique custom jewelry pieces according to your preferences",
-          price: "Consultation required"
+        hours: {
+          monday: "Closed",
+          tuesday: "09:00-18:00",
+          wednesday: "09:00-18:00",
+          thursday: "09:00-18:00",
+          friday: "09:00-18:00",
+          saturday: "10:00-17:00",
+          sunday: "10:00-17:00"
         },
-        {
-          name: "Jewelry Repair & Resizing",
-          description: "Professional jewelry repair, ring resizing, chain repair, and clasp replacement",
-          price: "Starting from 1,500 сом"
-        },
-        {
-          name: "Gold Buying Service",
-          description: "We buy gold jewelry at fair market prices based on current gold rates",
-          price: "Current market rate"
-        }
-      ],
-      faqs: [
-        {
-          question: "Do you have gold rings?",
-          answer: "Yes! We have a beautiful selection of gold rings in various designs. The price depends on the weight of the gold and current market rates. Our rings typically range from 10,000 to 100,000 сом. I'd recommend visiting us to see our collection and get exact pricing."
-        },
-        {
-          question: "Do you buy gold?",
-          answer: "Yes, we buy gold jewelry at fair market prices based on current gold rates. You can bring your gold items to our store and we'll evaluate them."
-        },
-        {
-          question: "What payment methods do you accept?",
-          answer: "We accept cash, bank cards, and bank transfers. For expensive purchases, we can arrange payment plans."
-        },
-        {
-          question: "Do you make custom jewelry?",
-          answer: "Yes! We specialize in custom jewelry design. You can describe what you want or bring a photo, and we'll create a unique piece just for you."
-        },
-        {
-          question: "Can you repair my broken jewelry?",
-          answer: "Yes, we offer professional jewelry repair services including ring resizing, chain repair, and clasp replacement. Bring your jewelry to our store for assessment."
-        }
-      ],
-      aiSettings: {
-        tone: "friendly",
-        language: "auto",
-        responseLength: "medium"
+        services: [
+          {
+            name: "Gold Jewelry Collection",
+            description: "Wide selection of gold rings, necklaces, bracelets, and earrings. All pieces are hallmarked. Prices based on current gold market rates and design complexity.",
+            price: "Market rate",
+            duration: 30
+          },
+          {
+            name: "Custom Jewelry Design",
+            description: "We create unique custom jewelry pieces according to your preferences",
+            price: "Consultation required",
+            duration: 45
+          },
+          {
+            name: "Jewelry Repair & Resizing",
+            description: "Professional jewelry repair, ring resizing, chain repair, and clasp replacement",
+            price: "Starting from 1,500 сом",
+            duration: 20
+          },
+          {
+            name: "Gold Buying Service",
+            description: "We buy gold jewelry at fair market prices based on current gold rates",
+            price: "Current market rate",
+            duration: 15
+          }
+        ],
+        faqs: [
+          {
+            question: "Do you have gold rings?",
+            answer: "Yes! We have a beautiful selection of gold rings in various designs. The price depends on the weight of the gold and current market rates. Our rings typically range from 10,000 to 100,000 сом. I'd recommend visiting us to see our collection and get exact pricing."
+          },
+          {
+            question: "Do you buy gold?",
+            answer: "Yes, we buy gold jewelry at fair market prices based on current gold rates. You can bring your gold items to our store and we'll evaluate them."
+          },
+          {
+            question: "What payment methods do you accept?",
+            answer: "We accept cash, bank cards, and bank transfers. For expensive purchases, we can arrange payment plans."
+          },
+          {
+            question: "Do you make custom jewelry?",
+            answer: "Yes! We specialize in custom jewelry design. You can describe what you want or bring a photo, and we'll create a unique piece just for you."
+          },
+          {
+            question: "Can you repair my broken jewelry?",
+            answer: "Yes, we offer professional jewelry repair services including ring resizing, chain repair, and clasp replacement. Bring your jewelry to our store for assessment."
+          },
+          {
+            question: "Are you open on Monday?",
+            answer: "No, we are closed on Mondays. We work Tuesday-Friday 9:00-18:00, Saturday-Sunday 10:00-17:00."
+          }
+        ],
+        serviceDuration: 30
       }
     };
     

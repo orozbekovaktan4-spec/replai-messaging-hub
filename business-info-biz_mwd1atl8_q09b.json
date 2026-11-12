@@ -1,106 +1,80 @@
 {
-  "businessName": "White Gold",
-  "description": "Luxury jewelry store specializing in gold jewelry, custom designs, and professional repair services. Prices based on current gold market rates.",
-  "industry": "Jewelry",
-  "ownerName": "Business Owner",
-  "contact": {
-    "phone": "+996 555 001 001",
-    "email": "claudeformac12@gmail.co",
-    "address": "Bishkek, Kyrgyzstan",
-    "website": ""
-  },
-  "hours": {
-    "monday": {
-      "open": "09:00",
-      "close": "18:00",
-      "closed": true
+  "business": {
+    "name": "White Gold",
+    "description": "Luxury jewelry store specializing in gold jewelry, custom designs, and professional repair services. Prices based on current gold market rates.",
+    "industry": "Jewelry",
+    "ownerName": "Business Owner",
+    "contact": {
+      "phone": "+996 555 001 001",
+      "email": "claudeformac12@gmail.co",
+      "address": "Bishkek, Kyrgyzstan",
+      "website": ""
     },
-    "tuesday": {
-      "open": "09:00",
-      "close": "18:00",
-      "closed": false
+    "hours": {
+      "monday": "Closed",
+      "tuesday": "09:00-18:00",
+      "wednesday": "09:00-18:00",
+      "thursday": "09:00-18:00",
+      "friday": "09:00-18:00",
+      "saturday": "10:00-17:00",
+      "sunday": "10:00-17:00"
     },
-    "wednesday": {
-      "open": "09:00",
-      "close": "18:00",
-      "closed": false
-    },
-    "thursday": {
-      "open": "09:00",
-      "close": "18:00",
-      "closed": false
-    },
-    "friday": {
-      "open": "09:00",
-      "close": "18:00",
-      "closed": false
-    },
-    "saturday": {
-      "open": "10:00",
-      "close": "17:00",
-      "closed": false
-    },
-    "sunday": {
-      "open": "10:00",
-      "close": "17:00",
-      "closed": true
-    }
-  },
-  "services": [
-    {
-      "name": "Gold Jewelry Collection",
-      "description": "Wide selection of gold rings, necklaces, bracelets, and earrings. All pieces are hallmarked. Prices based on current gold market rates and design complexity.",
-      "price": "Market rate"
-    },
-    {
-      "name": "Custom Jewelry Design",
-      "description": "Create your unique piece with our expert jewelers. We work with gold, diamonds, and precious stones.",
-      "price": "Consultation required"
-    },
-    {
-      "name": "Jewelry Repair & Resizing",
-      "description": "Professional repair and restoration services. Ring resizing, chain repair, stone replacement.",
-      "price": "Starting from 1,500 сом"
-    },
-    {
-      "name": "Gold Buying Service",
-      "description": "We buy gold jewelry at competitive market rates. Bring your items for free evaluation.",
-      "price": "Current market rate"
-    }
-  ],
-  "faqs": [
-    {
-      "question": "Do you buy gold jewelry?",
-      "answer": "Yes! We buy gold jewelry at current market rates. The price depends on gold weight, purity (585, 750), and current gold market price. Bring your items for free evaluation."
-    },
-    {
-      "question": "Why do prices change?",
-      "answer": "Gold jewelry prices depend on the current market price of gold, which changes daily. We always offer competitive rates based on the latest market data."
-    },
-    {
-      "question": "Are you open on Monday?",
-      "answer": "No, we are closed on Mondays. We work Tuesday-Friday 9:00-18:00, Saturday-Sunday 10:00-17:00."
-    },
-    {
-      "question": "Do you offer warranties?",
-      "answer": "Yes, all our jewelry comes with warranty. Terms depend on the type of work - ask our staff for specific details."
-    },
-    {
-      "question": "Can I trade in my old jewelry?",
-      "answer": "Absolutely! We accept gold jewelry as trade-in. The value depends on weight, purity, and condition."
-    },
-    {
-      "question": "How long does custom design take?",
-      "answer": "Custom jewelry design typically takes 2-4 weeks depending on complexity. We'll provide exact timeline during consultation."
-    },
-    {
-      "question": "What purity of gold do you work with?",
-      "answer": "We primarily work with 585 (14k) and 750 (18k) gold. We can also source higher purity gold upon request."
-    }
-  ],
-  "aiConfig": {
-    "tone": "professional",
-    "language": "auto",
-    "responseLength": "medium"
+    "services": [
+      {
+        "name": "Gold Jewelry Collection",
+        "description": "Wide selection of gold rings, necklaces, bracelets, and earrings. All pieces are hallmarked. Prices based on current gold market rates and design complexity.",
+        "price": "Market rate",
+        "duration": 30
+      },
+      {
+        "name": "Custom Jewelry Design",
+        "description": "Create your unique piece with our expert jewelers. We work with gold, diamonds, and precious stones.",
+        "price": "Consultation required",
+        "duration": 45
+      },
+      {
+        "name": "Jewelry Repair & Resizing",
+        "description": "Professional repair and restoration services. Ring resizing, chain repair, stone replacement.",
+        "price": "Starting from 1,500 сом",
+        "duration": 20
+      },
+      {
+        "name": "Gold Buying Service",
+        "description": "We buy gold jewelry at competitive market rates. Bring your items for free evaluation.",
+        "price": "Current market rate",
+        "duration": 15
+      }
+    ],
+    "faqs": [
+      {
+        "question": "Do you buy gold jewelry?",
+        "answer": "Yes! We buy gold jewelry at current market rates. The price depends on gold weight, purity (585, 750), and current gold market price. Bring your items for free evaluation."
+      },
+      {
+        "question": "Why do prices change?",
+        "answer": "Gold jewelry prices depend on the current market price of gold, which changes daily. We always offer competitive rates based on the latest market data."
+      },
+      {
+        "question": "Are you open on Monday?",
+        "answer": "No, we are closed on Mondays. We work Tuesday-Friday 9:00-18:00, Saturday-Sunday 10:00-17:00."
+      },
+      {
+        "question": "Do you offer warranties?",
+        "answer": "Yes, all our jewelry comes with warranty. Terms depend on the type of work - ask our staff for specific details."
+      },
+      {
+        "question": "Can I trade in my old jewelry?",
+        "answer": "Absolutely! We accept gold jewelry as trade-in. The value depends on weight, purity, and condition."
+      },
+      {
+        "question": "How long does custom design take?",
+        "answer": "Custom jewelry design typically takes 2-4 weeks depending on complexity. We'll provide exact timeline during consultation."
+      },
+      {
+        "question": "What purity of gold do you work with?",
+        "answer": "We primarily work with 585 (14k) and 750 (18k) gold. We can also source higher purity gold upon request."
+      }
+    ],
+    "serviceDuration": 30
   }
 }
