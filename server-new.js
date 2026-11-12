@@ -6955,14 +6955,14 @@ app.get('/api/admin/setup-white-gold', async (req, res) => {
     console.log('[Setup] Setting up White Gold business with Instagram...');
     
     // Find White Gold business by email
-    const business = await db.business.findUnique({
-      where: { email: 'claudeformac12@gmail.com' }
-    });
+    const businesses = await db.getAllBusinesses();
+    const business = businesses.find(b => b.email === 'claudeformac12@gmail.com');
 
     if (!business) {
       return res.status(404).json({
         success: false,
-        error: 'White Gold business not found. Please create it first in the admin panel.'
+        error: 'White Gold business not found. Please create it first in the admin panel.',
+        availableBusinesses: businesses.map(b => ({ name: b.name, email: b.email }))
       });
     }
 
@@ -7062,11 +7062,8 @@ app.get('/api/admin/setup-white-gold', async (req, res) => {
       }
     };
 
-    await db.business.update({
-      where: { id: business.id },
-      data: {
-        instagram: JSON.stringify(instagramConfig)
-      }
+    await db.updateBusiness(business.id, {
+      instagram: JSON.stringify(instagramConfig)
     });
 
     console.log('[Setup] Instagram configured for business:', business.name);
