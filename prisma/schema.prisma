@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -62,13 +62,19 @@ model Business {
   industry                String?
   ownerName               String?
   password                String
-  whatsapp                String?   @db.Text
-  instagram               String?   @db.Text
-  telegram                String?   @db.Text
+  whatsapp                String?   
+  instagram               String?   
+  telegram                String?   
   plan                    String    @default("free")
   subscriptionEnd         DateTime?
   messageCount            Int       @default(0)
   status                  String    @default("active")
+  
+  // AI Training Fields
+  profileLinks            String?   // JSON: { instagram, youtube, tiktok, facebook, website }
+  aiTrainingData          String?   // JSON: { brandVoice, keyTopics, samplePosts, analyzedAt, dataQuality }
+  scrapedContent          String?   // JSON: { instagram: {...}, youtube: {...}, website: {...} }
+  
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
   Message                 Message[]
@@ -84,7 +90,7 @@ model Message {
   userId     String
   platform   String
   direction  String
-  content    String   @db.Text
+  content    String
   status     String   @default("sent")
   messageId  String?
   createdAt  DateTime @default(now())
@@ -110,7 +116,7 @@ model Session {
   businessId String
   userId     String
   platform   String
-  history    String   @db.Text @default("[]")
+  history    String   @default("[]")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   Business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)

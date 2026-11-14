@@ -1,0 +1,548 @@
+I need you to implement a Social Media Profile Analysis feature for REPLAI chatbot platform.
+
+PROJECT: /Users/ak/replai
+
+ALREADY DONE:
+✅ Database schema updated (profileLinks, aiTrainingData, scrapedContent fields added)
+✅ Prisma generated and pushed
+✅ Packages installed (axios, cheerio, node-cron)
+✅ Folders created (scrapers/, services/)
+✅ Instagram scraper created (scrapers/instagram-scraper.js)
+✅ Website scraper created (scrapers/website-scraper.js)
+✅ Profile orchestrator created (scrapers/profile-scraper.js)
+✅ AI analyzer created (services/ai-analyzer.js)
+
+NOW DO THIS:
+
+PHASE 1: ADD API ENDPOINTS TO server-new.js
+Add these 4 endpoints after line 7150 (after the Instagram connection endpoint):
+
+```javascript
+// ============================================
+// AI TRAINING - PROFILE ANALYSIS ENDPOINTS
+// ============================================
+
+// Save profile links
+app.post('/api/admin/business/:businessId/profile-links', async (req, res) => {
+  try {
+    const { businessId } = req.params;
+    const { instagram, youtube, tiktok, facebook, website } = req.body;
+    
+    const profileLinks = { instagram, youtube, tiktok, facebook, website };
+    
+    await prisma.business.update({
+      where: { id: businessId },
+      data: { profileLinks: JSON.stringify(profileLinks) }
+    });
+    
+    res.json({ success: true, profileLinks });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get profile links
+app.get('/api/admin/business/:businessId/profile-links', async (req, res) => {
+  try {
+    const { businessId } = req.params;
+    
+    const business = await prisma.business.findUnique({
+      where: { id: businessId }
+    });
+    
+    const profileLinks = business?.profileLinks ? JSON.parse(business.profileLinks) : {};
+    
+    res.json({ profileLinks });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Trigger profile analysis (async)
+app.post('/api/admin/business/:businessId/analyze-profiles', async (req, res) => {
+  try {
+    const { businessId } = req.params;
+    
+    // Import scraper (add at top of file)
+    const { scrapeAndAnalyzeProfiles } = await import('./scrapers/profile-scraper.js');
+    
+    // Start async (don't wait)
+    scrapeAndAnalyzeProfiles(businessId).catch(err => {
+      console.error('[Admin] Profile analysis error:', err);
+    });
+    
+    res.json({ 
+      success: true, 
+      message: 'Analysis started. This may take 2-3 minutes.' 
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get AI training data
+app.get('/api/admin/business/:businessId/ai-training-data', async (req, res) => {
+  try {
+    const { businessId } = req.params;
+    
+    const business = await prisma.business.findUnique({
+      where: { id: businessId }
+    });
+    
+    const aiTrainingData = business?.aiTrainingData ? JSON.parse(business.aiTrainingData) : null;
+    const profileLinks = business?.profileLinks ? JSON.parse(business.profileLinks) : {};
+    const scrapedContent = business?.scrapedContent ? JSON.parse(business.scrapedContent) : null;
+    
+    res.json({ 
+      aiTrainingData,
+      profileLinks,
+      lastScrapedAt: scrapedContent?.scrapedAt || null
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+```
+
+PHASE 2: ENHANCE AI CONTEXT IN ai-engine-free.js
+Find the `getAIResponse` function and add this after loading business info (around line 50-100):
+
+```javascript
+// Load AI training data for enhanced context
+if (businessId) {
+  try {
+    const business = await prisma.business.findUnique({
+      where: { id: businessId }
+    });
+    
+    const aiTrainingData = business?.aiTrainingData ? JSON.parse(business.aiTrainingData) : null;
+    
+    if (aiTrainingData && aiTrainingData.brandVoice) {
+      systemPrompt += `\n\n--- BRAND VOICE & STYLE ---
+Brand Voice: ${aiTrainingData.brandVoice}
+Key Topics: ${aiTrainingData.keyTopics.join(', ')}
+
+Communication Style - Match these examples from our social media:
+${aiTrainingData.samplePosts.slice(0, 5).map((post, i) => `${i + 1}. ${post}`).join('\n')}
+
+Important: Respond in a style consistent with these examples. Use similar tone, vocabulary, and emoji usage.
+---\n`;
+    }
+  } catch (error) {
+    console.error('[AI Engine] Error loading training data:', error);
+  }
+}
+```
+
+PHASE 3: CREATE ADMIN PANEL UI IN admin-super.html
+Find the tabs section and add new "AI Training" tab. Then add the complete UI with two-column layout.
+
+Add after the existing tabs (around line 200):
+
+```html
+<!-- AI Training Tab -->
+<button class="tab" data-tab="ai-training" onclick="showTab('ai-training')">
+  🤖 AI Training
+</button>
+```
+
+Add the tab content (around line 500, after other tab contents):
+
+```html
+<!-- AI Training Tab Content -->
+<div class="tab-content" id="ai-training-content" style="display: none;">
+  <div class="settings-section">
+    <h2>🤖 AI Training & Profile Analysis</h2>
+    <p class="subtitle">Connect your social media profiles so the AI can learn your brand voice and style.</p>
+    
+    <div class="ai-training-grid">
+      <!-- Left Column: Profile Links -->
+      <div class="card">
+        <h3>📱 Social Media Profiles</h3>
+        
+        <div class="form-group">
+          <label>📷 Instagram Profile URL</label>
+          <input type="url" id="instagram-url" placeholder="https://instagram.com/your_username" class="input">
+        </div>
+        
+        <div class="form-group">
+          <label>🎥 YouTube Channel URL</label>
+          <input type="url" id="youtube-url" placeholder="https://youtube.com/@your_channel" class="input">
+        </div>
+        
+        <div class="form-group">
+          <label>🎵 TikTok Profile URL</label>
+          <input type="url" id="tiktok-url" placeholder="https://tiktok.com/@your_username" class="input">
+        </div>
+        
+        <div class="form-group">
+          <label>🌐 Website URL</label>
+          <input type="url" id="website-url" placeholder="https://your-website.com" class="input">
+        </div>
+        
+        <div class="button-group">
+          <button class="btn btn-primary" onclick="saveProfileLinks()">💾 Save Links</button>
+        </div>
+      </div>
+      
+      <!-- Right Column: Analysis Results -->
+      <div class="card">
+        <h3>📊 AI Analysis Results</h3>
+        
+        <div id="analysis-loading" style="display: none; text-align: center; padding: 40px;">
+          <div class="loader"></div>
+          <p>Analyzing your profiles... This may take 2-3 minutes.</p>
+        </div>
+        
+        <div id="analysis-results">
+          <div class="analysis-item">
+            <label>Brand Voice</label>
+            <div class="badge-group" id="brand-voice">
+              <span class="badge">Not analyzed yet</span>
+            </div>
+          </div>
+          
+          <div class="analysis-item">
+            <label>Key Topics</label>
+            <div class="badge-group" id="key-topics">
+              <span class="badge">Not analyzed yet</span>
+            </div>
+          </div>
+          
+          <div class="analysis-item">
+            <label>Data Quality Score</label>
+            <div class="progress-bar">
+              <div class="progress-fill" id="quality-score" style="width: 0%"></div>
+              <span class="progress-text" id="quality-text">0%</span>
+            </div>
+          </div>
+          
+          <div class="analysis-item">
+            <label>Last Updated</label>
+            <p id="last-updated" class="text-muted">Not analyzed yet</p>
+          </div>
+          
+          <button class="btn btn-primary" onclick="analyzeProfiles()">
+            🔄 Analyze Profiles
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+PHASE 4: ADD CSS STYLES TO admin-super.html
+Add these styles in the <style> section:
+
+```css
+/* AI Training Styles */
+.ai-training-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-top: 20px;
+}
+
+@media (max-width: 1400px) {
+  .ai-training-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.card h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 20px;
+  color: #1f2937;
+}
+
+.analysis-item {
+  margin-bottom: 25px;
+}
+
+.analysis-item label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+}
+
+.badge-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 6px 14px;
+  background: #e0e7ff;
+  color: #4338ca;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.progress-bar {
+  position: relative;
+  width: 100%;
+  height: 32px;
+  background: #f3f4f6;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #059669);
+  transition: width 0.5s ease;
+  border-radius: 16px;
+}
+
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 14px;
+  z-index: 1;
+}
+
+.loader {
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #6366f1;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.text-muted {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* Widen admin container */
+.admin-container {
+  max-width: 1600px !important; /* was 1200px */
+}
+```
+
+PHASE 5: ADD JAVASCRIPT FUNCTIONS TO admin-super.html
+Add these functions in the <script> section at the bottom:
+
+```javascript
+// AI Training Functions
+let currentBusinessId = null; // Set this when business is selected
+
+async function saveProfileLinks() {
+  const profileLinks = {
+    instagram: document.getElementById('instagram-url').value,
+    youtube: document.getElementById('youtube-url').value,
+    tiktok: document.getElementById('tiktok-url').value,
+    website: document.getElementById('website-url').value
+  };
+  
+  try {
+    const response = await fetch(`/api/admin/business/${currentBusinessId}/profile-links`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(profileLinks)
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      alert('✅ Profile links saved successfully!');
+    } else {
+      alert('❌ Error: ' + data.error);
+    }
+  } catch (error) {
+    alert('❌ Error saving profile links');
+  }
+}
+
+async function analyzeProfiles() {
+  document.getElementById('analysis-loading').style.display = 'block';
+  document.getElementById('analysis-results').style.display = 'none';
+  
+  try {
+    const response = await fetch(`/api/admin/business/${currentBusinessId}/analyze-profiles`, {
+      method: 'POST'
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      alert('✅ Analysis started! Results will appear in 2-3 minutes.');
+      
+      // Poll for results every 10 seconds
+      const pollInterval = setInterval(async () => {
+        await loadAITrainingData();
+        
+        const quality = document.getElementById('quality-score').style.width;
+        if (quality !== '0%') {
+          clearInterval(pollInterval);
+          document.getElementById('analysis-loading').style.display = 'none';
+          document.getElementById('analysis-results').style.display = 'block';
+        }
+      }, 10000);
+    }
+  } catch (error) {
+    alert('❌ Error starting analysis');
+    document.getElementById('analysis-loading').style.display = 'none';
+    document.getElementById('analysis-results').style.display = 'block';
+  }
+}
+
+async function loadProfileLinks() {
+  try {
+    const response = await fetch(`/api/admin/business/${currentBusinessId}/profile-links`);
+    const data = await response.json();
+    
+    if (data.profileLinks) {
+      document.getElementById('instagram-url').value = data.profileLinks.instagram || '';
+      document.getElementById('youtube-url').value = data.profileLinks.youtube || '';
+      document.getElementById('tiktok-url').value = data.profileLinks.tiktok || '';
+      document.getElementById('website-url').value = data.profileLinks.website || '';
+    }
+  } catch (error) {
+    console.error('Error loading profile links:', error);
+  }
+}
+
+async function loadAITrainingData() {
+  try {
+    const response = await fetch(`/api/admin/business/${currentBusinessId}/ai-training-data`);
+    const data = await response.json();
+    
+    if (data.aiTrainingData) {
+      const training = data.aiTrainingData;
+      
+      // Update brand voice
+      const brandVoiceEl = document.getElementById('brand-voice');
+      brandVoiceEl.innerHTML = training.brandVoice.split(',').map(voice => 
+        `<span class="badge">${voice.trim()}</span>`
+      ).join('');
+      
+      // Update key topics
+      const topicsEl = document.getElementById('key-topics');
+      topicsEl.innerHTML = training.keyTopics.map(topic => 
+        `<span class="badge">${topic}</span>`
+      ).join('');
+      
+      // Update quality score
+      document.getElementById('quality-score').style.width = `${training.dataQuality}%`;
+      document.getElementById('quality-text').textContent = `${training.dataQuality}%`;
+      
+      // Update last updated
+      const date = new Date(training.analyzedAt);
+      document.getElementById('last-updated').textContent = date.toLocaleString();
+    }
+  } catch (error) {
+    console.error('Error loading AI training data:', error);
+  }
+}
+
+function showTab(tabName) {
+  // Hide all tab contents
+  document.querySelectorAll('.tab-content').forEach(tab => {
+    tab.style.display = 'none';
+  });
+  
+  // Remove active class from all tabs
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  
+  // Show selected tab
+  const content = document.getElementById(tabName + '-content');
+  if (content) {
+    content.style.display = 'block';
+  }
+  
+  // Add active class to clicked tab
+  event.target.classList.add('active');
+  
+  // Load data when AI Training tab is opened
+  if (tabName === 'ai-training') {
+    loadProfileLinks();
+    loadAITrainingData();
+  }
+}
+```
+
+PHASE 6: ADD CRON JOB FOR AUTO RE-SCRAPING
+Create services/scraping-scheduler.js:
+
+```javascript
+import cron from 'node-cron';
+import { prisma } from '../db.js';
+import { scrapeAndAnalyzeProfiles } from '../scrapers/profile-scraper.js';
+
+// Run every Sunday at 3 AM
+cron.schedule('0 3 * * 0', async () => {
+  console.log('[Scraping Scheduler] Starting weekly re-scraping...');
+  
+  try {
+    const businesses = await prisma.business.findMany({
+      where: {
+        profileLinks: { not: null }
+      }
+    });
+    
+    console.log(`[Scraping Scheduler] Found ${businesses.length} businesses to re-scrape`);
+    
+    for (const business of businesses) {
+      try {
+        console.log(`[Scraping Scheduler] Re-scraping ${business.name}...`);
+        await scrapeAndAnalyzeProfiles(business.id);
+        await new Promise(resolve => setTimeout(resolve, 30000)); // 30 sec delay
+      } catch (error) {
+        console.error(`[Scraping Scheduler] Error for ${business.name}:`, error.message);
+      }
+    }
+    
+    console.log('[Scraping Scheduler] Weekly re-scraping complete!');
+  } catch (error) {
+    console.error('[Scraping Scheduler] Fatal error:', error);
+  }
+});
+
+console.log('[Scraping Scheduler] ✓ Scheduled weekly re-scraping (Sundays at 3 AM)');
+```
+
+Then add to server-new.js at the top:
+```javascript
+import './services/scraping-scheduler.js';
+```
+
+THAT'S IT! TEST THE FEATURE:
+1. Restart server: node server-new.js
+2. Open admin panel
+3. Go to AI Training tab
+4. Add Instagram URL: https://instagram.com/white.gold.kg
+5. Click "Save Links"
+6. Click "Analyze Profiles"
+7. Wait 2-3 minutes
+8. Refresh to see results: brand voice, topics, quality score
+9. Send test DM to bot - responses should match Instagram tone
+
+DONE! 🎉

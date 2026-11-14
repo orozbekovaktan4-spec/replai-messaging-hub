@@ -1767,6 +1767,10 @@
                         <i data-lucide="credit-card" style="width: 18px; height: 18px;"></i>
                         <span data-i18n="settings_payments">Payments</span>
                     </div>
+                    <div class="settings-nav-item" onclick="showSettingsTab('ai-training')">
+                        <i data-lucide="brain" style="width: 18px; height: 18px;"></i>
+                        <span data-i18n="settings_ai_training">AI Training</span>
+                    </div>
                 </div>
 
                 <!-- Settings Content -->
@@ -2547,6 +2551,83 @@
                                     <i data-lucide="check" style="width: 20px; height: 20px;"></i>
                                     <span>Save Payment Settings</span>
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AI Training Tab -->
+                    <div id="settings-ai-training" class="settings-tab">
+                        <h2 style="margin-bottom: 8px;">🤖 AI Training & Profile Analysis</h2>
+                        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 32px;">Connect social media profiles for AI to learn your brand voice and style.</p>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                            <!-- Left: Input -->
+                            <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; border: 1px solid var(--border-color);">
+                                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 20px;">📱 Social Media Profiles</h3>
+
+                                <div style="margin-bottom: 20px;">
+                                    <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;">📷 Instagram URL</label>
+                                    <input type="url" id="instagram-url" placeholder="https://instagram.com/your_username" style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); font-size: 14px;">
+                                </div>
+
+                                <div style="margin-bottom: 20px;">
+                                    <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;">🎥 YouTube URL</label>
+                                    <input type="url" id="youtube-url" placeholder="https://youtube.com/@channel" style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); font-size: 14px;">
+                                </div>
+
+                                <div style="margin-bottom: 20px;">
+                                    <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;">🌐 Website URL</label>
+                                    <input type="url" id="website-url" placeholder="https://your-website.com" style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); font-size: 14px;">
+                                </div>
+
+                                <button class="btn-primary-large" onclick="saveProfileLinks()" style="width: 100%; margin-top: 10px;">
+                                    <i data-lucide="save" style="width: 20px; height: 20px;"></i>
+                                    <span>Save Links</span>
+                                </button>
+                            </div>
+
+                            <!-- Right: Results -->
+                            <div style="background: var(--bg-secondary); padding: 30px; border-radius: 12px; border: 1px solid var(--border-color);">
+                                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 20px;">📊 Analysis Results</h3>
+
+                                <div id="analysis-loading" style="display: none; text-align: center; padding: 40px;">
+                                    <div style="border: 4px solid var(--border-color); border-top: 4px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+                                    <p style="margin-top: 20px; color: var(--text-secondary);">Analyzing... This may take 2-3 minutes.</p>
+                                </div>
+
+                                <div id="analysis-results">
+                                    <div style="margin-bottom: 25px;">
+                                        <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 10px;">🎭 Brand Voice</label>
+                                        <div id="brand-voice" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                            <span style="padding: 6px 14px; background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-secondary); border-radius: 20px; font-size: 13px; font-weight: 500;">Not analyzed</span>
+                                        </div>
+                                    </div>
+
+                                    <div style="margin-bottom: 25px;">
+                                        <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 10px;">📝 Key Topics</label>
+                                        <div id="key-topics" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                            <span style="padding: 6px 14px; background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-secondary); border-radius: 20px; font-size: 13px; font-weight: 500;">Not analyzed</span>
+                                        </div>
+                                    </div>
+
+                                    <div style="margin-bottom: 25px;">
+                                        <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 10px;">📈 Quality Score</label>
+                                        <div style="position: relative; width: 100%; height: 32px; background: var(--bg-primary); border-radius: 16px; overflow: hidden; border: 1px solid var(--border-color);">
+                                            <div id="quality-score" style="height: 100%; background: linear-gradient(90deg, #10b981, #059669); transition: width 0.5s ease; width: 0%;"></div>
+                                            <span id="quality-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: 600; color: var(--text-primary); font-size: 14px;">0%</span>
+                                        </div>
+                                    </div>
+
+                                    <div style="margin-bottom: 25px;">
+                                        <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 10px;">🕐 Last Updated</label>
+                                        <p id="last-updated" style="color: var(--text-secondary); font-size: 14px;">Not analyzed</p>
+                                    </div>
+
+                                    <button class="btn-primary-large" onclick="analyzeProfiles()" style="width: 100%; margin-top: 20px;">
+                                        <i data-lucide="refresh-cw" style="width: 20px; height: 20px;"></i>
+                                        <span>Analyze Profiles</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -4224,6 +4305,12 @@
             // Load AI provider keys when API tab is shown
             if (tabName === 'api') {
                 loadAIProviderKeys();
+            }
+
+            // Load AI Training data when AI Training tab is shown
+            if (tabName === 'ai-training') {
+                loadProfileLinks();
+                loadAITrainingData();
             }
 
             lucide.createIcons();
@@ -7058,9 +7145,141 @@
                 invoicePrefix: document.getElementById('invoice-prefix').value,
                 invoiceFooter: document.getElementById('invoice-footer').value
             };
-            
+
             console.log('Saving payment settings:', paymentSettings);
             showToast('Payment settings saved!', 'success');
+        }
+
+        // ============================================
+        // AI TRAINING FUNCTIONS
+        // ============================================
+
+        function getCurrentBusinessId() {
+            return new URLSearchParams(window.location.search).get('businessId') || 'default-business-id';
+        }
+
+        async function saveProfileLinks() {
+            const businessId = getCurrentBusinessId();
+            const profileLinks = {
+                instagram: document.getElementById('instagram-url').value.trim(),
+                youtube: document.getElementById('youtube-url').value.trim(),
+                website: document.getElementById('website-url').value.trim()
+            };
+
+            if (!Object.values(profileLinks).some(url => url)) {
+                showToast('⚠️ Please enter at least one URL', 'info');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/business/${businessId}/profile-links`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(profileLinks)
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showToast('✅ Profile links saved!', 'success');
+                } else {
+                    showToast('❌ Error: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showToast('❌ Error saving links', 'error');
+            }
+        }
+
+        async function loadProfileLinks() {
+            const businessId = getCurrentBusinessId();
+            try {
+                const response = await fetch(`/api/admin/business/${businessId}/profile-links`);
+                const data = await response.json();
+                if (data.profileLinks) {
+                    document.getElementById('instagram-url').value = data.profileLinks.instagram || '';
+                    document.getElementById('youtube-url').value = data.profileLinks.youtube || '';
+                    document.getElementById('website-url').value = data.profileLinks.website || '';
+                }
+            } catch (error) {
+                console.error('Error loading profile links:', error);
+            }
+        }
+
+        async function analyzeProfiles() {
+            const businessId = getCurrentBusinessId();
+            if (!confirm('Start profile analysis? This will take 2-3 minutes.')) return;
+
+            document.getElementById('analysis-loading').style.display = 'block';
+            document.getElementById('analysis-results').style.display = 'none';
+
+            try {
+                const response = await fetch(`/api/admin/business/${businessId}/analyze-profiles`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showToast('✅ Analysis started! Refreshing results...', 'success');
+
+                    // Poll for results every 10 seconds
+                    const pollInterval = setInterval(async () => {
+                        await loadAITrainingData();
+                        if (document.getElementById('quality-score').style.width !== '0%') {
+                            clearInterval(pollInterval);
+                            document.getElementById('analysis-loading').style.display = 'none';
+                            document.getElementById('analysis-results').style.display = 'block';
+                            showToast('🎉 Analysis complete!', 'success');
+                        }
+                    }, 10000); // Check every 10 seconds
+
+                    // Timeout after 5 minutes
+                    setTimeout(() => {
+                        clearInterval(pollInterval);
+                        document.getElementById('analysis-loading').style.display = 'none';
+                        document.getElementById('analysis-results').style.display = 'block';
+                    }, 300000);
+                } else {
+                    showToast('❌ Error: ' + data.error, 'error');
+                    document.getElementById('analysis-loading').style.display = 'none';
+                    document.getElementById('analysis-results').style.display = 'block';
+                }
+            } catch (error) {
+                showToast('❌ Error: ' + error.message, 'error');
+                document.getElementById('analysis-loading').style.display = 'none';
+                document.getElementById('analysis-results').style.display = 'block';
+            }
+        }
+
+        async function loadAITrainingData() {
+            const businessId = getCurrentBusinessId();
+            try {
+                const response = await fetch(`/api/admin/business/${businessId}/ai-training-data`);
+                const data = await response.json();
+                if (data.aiTrainingData) {
+                    const training = data.aiTrainingData;
+
+                    // Update brand voice
+                    const brandVoiceEl = document.getElementById('brand-voice');
+                    brandVoiceEl.innerHTML = training.brandVoice.split(',').map(v =>
+                        `<span style="padding: 6px 14px; background: var(--primary-light); color: var(--primary); border-radius: 20px; font-size: 13px; font-weight: 500;">${v.trim()}</span>`
+                    ).join('');
+
+                    // Update key topics
+                    const topicsEl = document.getElementById('key-topics');
+                    topicsEl.innerHTML = training.keyTopics.map(t =>
+                        `<span style="padding: 6px 14px; background: var(--primary-light); color: var(--primary); border-radius: 20px; font-size: 13px; font-weight: 500;">${t}</span>`
+                    ).join('');
+
+                    // Update quality score
+                    document.getElementById('quality-score').style.width = `${training.dataQuality}%`;
+                    document.getElementById('quality-text').textContent = `${training.dataQuality}%`;
+
+                    // Update last updated time
+                    if (training.analyzedAt) {
+                        const date = new Date(training.analyzedAt);
+                        document.getElementById('last-updated').textContent = date.toLocaleString();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading AI training data:', error);
+            }
         }
 
         // Initialize on page load

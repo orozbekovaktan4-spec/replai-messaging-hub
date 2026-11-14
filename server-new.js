@@ -10,6 +10,8 @@ import crypto from 'crypto';
 import { getAIResponse } from './ai-engine-free.js';
 import { connectionManager } from './connection-manager.js';
 import { analyticsManager } from './analytics-manager.js';
+import { scrapeAndAnalyzeProfiles } from './scrapers/profile-scraper.js';
+import './services/scraping-scheduler.js';
 // Database imports (Prisma)
 import * as db from './db.js';
 import { prisma } from './db.js';
@@ -3987,18 +3989,20 @@ app.get('/api/instagram/webhook', (req, res) => {
 
   console.log('[Instagram Webhook] GET verification request');
   console.log('  Mode:', mode);
-  console.log('  Token provided:', token ? 'Yes' : 'No');
+  console.log('  Token provided:', token ? `"${token}"` : 'No');
   console.log('  Challenge:', challenge);
 
   const verifyToken = process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN || 'replai_instagram_webhook_2024';
+  console.log('  Expected token:', `"${verifyToken}"`);
 
   if (mode === 'subscribe' && token === verifyToken) {
     console.log('[Instagram Webhook] ✅ Verification successful');
     res.status(200).send(challenge);
   } else {
     console.error('[Instagram Webhook] ❌ Verification failed');
-    console.error('  Expected token:', verifyToken);
-    console.error('  Received token:', token);
+    console.error('  Expected:', `"${verifyToken}"`);
+    console.error('  Received:', `"${token}"`);
+    console.error('  Match:', token === verifyToken);
     res.sendStatus(403);
   }
 });
@@ -7503,6 +7507,121 @@ app.get('/api/admin/test-instagram-token', async (req, res) => {
   }
 });
 
+
+// ============================================
+// AI TRAINING - PROFILE ANALYSIS API
+// ============================================
+
+// Save profile links
+app.post('/api/admin/business/:businessId/profile-links', async (req, res) => {
+  try {
+    const { businessId } = req.params;
+    const { instagram, youtube, tiktok, facebook, website } = req.body;
+
+    console.log(`[AI Training] Saving profile links for business ${businessId}`);
+
+    const profileLinks = {
+      instagram: instagram || null,
+      youtube: youtube || null,
+      tiktok: tiktok || null,
+      facebook: facebook || null,
+      website: website || null
+    };
+
+    await prisma.business.update({
+      where: { id: businessId },
+      data: { profileLinks: JSON.stringify(profileLinks) }
+    });
+
+    res.json({ success: true, profileLinks });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get profile links
+app.get('/api/admin/business/:businessId/profile-links', async (req, res) => {
+  try {
+    const { businessId } = req.params;
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { profileLinks: true }
+    });
+
+    const profileLinks = business?.profileLinks
+      ? JSON.parse(business.profileLinks)
+      : { instagram: null, youtube: null, tiktok: null, facebook: null, website: null };
+
+    res.json({ profileLinks });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Trigger profile analysis
+app.post('/api/admin/business/:businessId/analyze-profiles', async (req, res) => {
+  try {
+    const { businessId } = req.params;
+
+    const business = await prisma.business.findUnique({
+      where: { id: businessId }
+    });
+
+    if (!business) {
+      return res.status(404).json({ success: false, error: 'Business not found' });
+    }
+
+    const profileLinks = business.profileLinks ? JSON.parse(business.profileLinks) : {};
+
+    if (!profileLinks.instagram && !profileLinks.website) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please add at least Instagram or Website URL before analyzing'
+      });
+    }
+
+    // Start async analysis
+    scrapeAndAnalyzeProfiles(businessId).catch(err => {
+      console.error(`[AI Training] Error: ${err.message}`);
+    });
+
+    res.json({
+      success: true,
+      message: 'Analysis started. This will take 2-3 minutes. Refresh to see results.'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get AI training data
+app.get('/api/admin/business/:businessId/ai-training-data', async (req, res) => {
+  try {
+    const { businessId } = req.params;
+
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { aiTrainingData: true, profileLinks: true, scrapedContent: true }
+    });
+
+    if (!business) {
+      return res.status(404).json({ success: false, error: 'Business not found' });
+    }
+
+    const aiTrainingData = business.aiTrainingData ? JSON.parse(business.aiTrainingData) : null;
+    const profileLinks = business.profileLinks ? JSON.parse(business.profileLinks) : {};
+    const scrapedContent = business.scrapedContent ? JSON.parse(business.scrapedContent) : null;
+
+    res.json({
+      aiTrainingData,
+      profileLinks,
+      lastScrapedAt: scrapedContent?.scrapedAt || null,
+      hasData: !!aiTrainingData
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // Initialize API keys file from environment variables
 app.post('/api/admin/init-api-keys', async (req, res) => {

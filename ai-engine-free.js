@@ -102,13 +102,13 @@ function getFallbackMessages(businessInfo) {
 const conversationHistory = new Map();
 
 // Create system prompt with business context
-function createSystemPrompt(language = readSavedLanguage(), userId = null, businessId = null) {
+async function createSystemPrompt(language = readSavedLanguage(), userId = null, businessId = null) {
   const businessInfo = loadBusinessInfo(businessId);
   const { business } = businessInfo;
   const responseLanguage = languageNames[language] || languageNames.auto;
   const bookingContext = createBookingContext(userId);
 
-  return `You are an AI customer service assistant for ${business.name}. ${business.description}
+  let systemPrompt = `You are an AI customer service assistant for ${business.name}. ${business.description}
 
 YOUR ROLE:
 You help customers by providing accurate information about our business, products, services, hours, and pricing. You are professional, helpful, and efficient.
@@ -156,13 +156,47 @@ RESPONSE GUIDELINES:
 10. For booking requests, collect the required details and follow BOOKING INSTRUCTIONS instead of redirecting them
 
 TONE: Professional, helpful, efficient, and friendly - like a well-trained customer service representative.`;
+
+  // Enhanced AI context with training data
+  if (businessId) {
+    try {
+      const { prisma } = await import('./db.js');
+      const business = await prisma.business.findUnique({
+        where: { id: businessId },
+        select: { aiTrainingData: true }
+      });
+
+      if (business?.aiTrainingData) {
+        const trainingData = JSON.parse(business.aiTrainingData);
+
+        if (trainingData.brandVoice && trainingData.keyTopics && trainingData.samplePosts) {
+          systemPrompt += `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BRAND VOICE & COMMUNICATION STYLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Brand Voice: ${trainingData.brandVoice}
+Key Topics: ${trainingData.keyTopics.join(', ')}
+
+Reference Posts (match this style):
+${trainingData.samplePosts.slice(0, 5).map((post, i) => `${i + 1}. ${post}`).join('\n')}
+
+IMPORTANT: Respond in a style that matches these examples.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        }
+      }
+    } catch (error) {
+      console.error('[AI Engine] Training data error:', error.message);
+    }
+  }
+
+  return systemPrompt;
 }
 
 // Option 1: Groq API (FREE, very fast, Llama models)
 async function getGroqResponse(userMessage, history, language, userId, businessId = null) {
   try {
     const messages = [
-      { role: 'system', content: createSystemPrompt(language, userId, businessId) },
+      { role: 'system', content: await createSystemPrompt(language, userId, businessId) },
       ...history
     ];
 
@@ -205,7 +239,7 @@ async function getGroqResponse(userMessage, history, language, userId, businessI
 // Option 2: Hugging Face Inference API (FREE)
 async function getHuggingFaceResponse(userMessage, history, language, userId, businessId = null, apiKey = null) {
   try {
-    const prompt = createSystemPrompt(language, userId, businessId) + '\n\n' +
+    const prompt = await createSystemPrompt(language, userId, businessId) + '\n\n' +
                    history.map(h => `${h.role}: ${h.content}`).join('\n') +
                    `\nuser: ${userMessage}\nassistant:`;
 
@@ -239,7 +273,7 @@ async function getHuggingFaceResponse(userMessage, history, language, userId, bu
 async function getOpenRouterResponse(userMessage, history, language, userId, businessId = null) {
   try {
     const messages = [
-      { role: 'system', content: createSystemPrompt(language, userId, businessId) },
+      { role: 'system', content: await createSystemPrompt(language, userId, businessId) },
       ...history
     ];
 
@@ -270,7 +304,7 @@ async function getOpenRouterResponse(userMessage, history, language, userId, bus
 async function getTogetherResponse(userMessage, history, language, userId, businessId = null) {
   try {
     const messages = [
-      { role: 'system', content: createSystemPrompt(language, userId, businessId) },
+      { role: 'system', content: await createSystemPrompt(language, userId, businessId) },
       ...history
     ];
 
