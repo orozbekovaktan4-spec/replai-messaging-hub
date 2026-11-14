@@ -83,10 +83,9 @@ export async function createBusiness(data) {
       whatsapp: data.whatsapp ? JSON.stringify(data.whatsapp) : null,
       instagram: data.instagram ? JSON.stringify(data.instagram) : null,
       telegram: data.telegram ? JSON.stringify(data.telegram) : null,
-      // AI Training fields temporarily disabled
-      // profileLinks: data.profileLinks ? JSON.stringify(data.profileLinks) : null,
-      // aiTrainingData: data.aiTrainingData ? JSON.stringify(data.aiTrainingData) : null,
-      // scrapedContent: data.scrapedContent ? JSON.stringify(data.scrapedContent) : null,
+      profileLinks: data.profileLinks ? JSON.stringify(data.profileLinks) : null,
+      aiTrainingData: data.aiTrainingData ? JSON.stringify(data.aiTrainingData) : null,
+      scrapedContent: data.scrapedContent ? JSON.stringify(data.scrapedContent) : null,
     },
   });
 
@@ -106,10 +105,9 @@ export async function updateBusiness(id, data) {
   if (data.whatsapp) updateData.whatsapp = JSON.stringify(data.whatsapp);
   if (data.instagram) updateData.instagram = JSON.stringify(data.instagram);
   if (data.telegram) updateData.telegram = JSON.stringify(data.telegram);
-  // AI Training fields temporarily disabled
-  // if (data.profileLinks) updateData.profileLinks = JSON.stringify(data.profileLinks);
-  // if (data.aiTrainingData) updateData.aiTrainingData = JSON.stringify(data.aiTrainingData);
-  // if (data.scrapedContent) updateData.scrapedContent = JSON.stringify(data.scrapedContent);
+  if (data.profileLinks) updateData.profileLinks = JSON.stringify(data.profileLinks);
+  if (data.aiTrainingData) updateData.aiTrainingData = JSON.stringify(data.aiTrainingData);
+  if (data.scrapedContent) updateData.scrapedContent = JSON.stringify(data.scrapedContent);
 
   const business = await prisma.business.update({
     where: { id },
@@ -421,10 +419,9 @@ function parseBusiness(business) {
     whatsapp: safeParseJSON(business.whatsapp, 'business.whatsapp'),
     instagram: safeParseJSON(business.instagram, 'business.instagram'),
     telegram: safeParseJSON(business.telegram, 'business.telegram'),
-    // AI Training fields temporarily disabled until migration is applied
-    // profileLinks: safeParseJSON(business.profileLinks, 'business.profileLinks'),
-    // aiTrainingData: safeParseJSON(business.aiTrainingData, 'business.aiTrainingData'),
-    // scrapedContent: safeParseJSON(business.scrapedContent, 'business.scrapedContent'),
+    profileLinks: safeParseJSON(business.profileLinks, 'business.profileLinks'),
+    aiTrainingData: safeParseJSON(business.aiTrainingData, 'business.aiTrainingData'),
+    scrapedContent: safeParseJSON(business.scrapedContent, 'business.scrapedContent'),
   };
 }
 

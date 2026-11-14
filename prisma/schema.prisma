@@ -70,10 +70,10 @@ model Business {
   messageCount            Int       @default(0)
   status                  String    @default("active")
   
-  // AI Training Fields (pending migration - temporarily commented out)
-  // profileLinks            String?   // JSON: { instagram, youtube, tiktok, facebook, website }
-  // aiTrainingData          String?   // JSON: { brandVoice, keyTopics, samplePosts, analyzedAt, dataQuality }
-  // scrapedContent          String?   // JSON: { instagram: {...}, youtube: {...}, website: {...} }
+  // AI Training Fields
+  profileLinks            String?   // JSON: { instagram, youtube, tiktok, facebook, website }
+  aiTrainingData          String?   // JSON: { brandVoice, keyTopics, samplePosts, analyzedAt, dataQuality }
+  scrapedContent          String?   // JSON: { instagram: {...}, youtube: {...}, website: {...} }
   
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
