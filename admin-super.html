@@ -2220,7 +2220,7 @@
                                 </div>
 
                                 <div style="display: flex; gap: 12px; margin-top: 20px;">
-                                    <button id="btn-connect-instagram" class="btn-primary-large" onclick="connectInstagram()">
+                                    <button id="btn-connect-instagram" class="btn-primary-large" onclick="initiateInstagramOAuth()">
                                         <i data-lucide="link" style="width: 20px; height: 20px;"></i>
                                         <span>Connect Instagram</span>
                                     </button>
@@ -7003,7 +7003,7 @@
         // INSTAGRAM OAUTH - FUSION-STYLE POPUP FLOW
         // ============================================
 
-        async function connectInstagram() {
+        async function initiateInstagramOAuth() {
             console.log('[Instagram] Starting OAuth flow...');
 
             try {
