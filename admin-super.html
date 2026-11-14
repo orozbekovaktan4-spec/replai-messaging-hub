@@ -6999,45 +6999,159 @@
         // INTEGRATION FUNCTIONS
         // ============================================
         
-        function connectInstagram() {
-            const pageId = document.getElementById('instagram-page-id').value;
-            const token = document.getElementById('instagram-token').value;
-            
-            if (!pageId || !token) {
-                const config = document.getElementById('instagram-config');
-                config.style.display = 'block';
-                showToast('Please enter Instagram credentials', 'info');
-                return;
+        // ============================================
+        // INSTAGRAM OAUTH - FUSION-STYLE POPUP FLOW
+        // ============================================
+
+        async function connectInstagram() {
+            console.log('[Instagram] Starting OAuth flow...');
+
+            try {
+                // Get OAuth URL from backend
+                const response = await fetch('/api/admin/instagram/oauth/start');
+                const data = await response.json();
+
+                if (!data.success || !data.authUrl) {
+                    showToast('Failed to generate Instagram OAuth URL', 'error');
+                    console.error('[Instagram] OAuth URL error:', data.error);
+                    return;
+                }
+
+                console.log('[Instagram] Opening OAuth popup...');
+
+                // Open popup window (like Fusion)
+                const width = 600;
+                const height = 700;
+                const left = (window.innerWidth - width) / 2;
+                const top = (window.innerHeight - height) / 2;
+
+                const popup = window.open(
+                    data.authUrl,
+                    'InstagramOAuth',
+                    `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+                );
+
+                if (!popup) {
+                    showToast('Please allow popups for this website', 'error');
+                    return;
+                }
+
+                // Listen for OAuth success message from popup
+                const messageHandler = (event) => {
+                    if (event.data && event.data.type === 'instagram_oauth_success') {
+                        console.log('[Instagram] ✅ OAuth success received from popup');
+                        window.removeEventListener('message', messageHandler);
+
+                        // Update UI with connected account
+                        if (event.data.data && event.data.data.username) {
+                            updateInstagramUI(true, event.data.data.username);
+                            showToast('✅ Instagram connected: @' + event.data.data.username, 'success');
+                        } else {
+                            // Fallback: check status from server
+                            setTimeout(() => checkInstagramConnectionStatus(), 1000);
+                        }
+                    } else if (event.data && event.data.type === 'instagram_oauth_error') {
+                        console.error('[Instagram] OAuth error:', event.data.error);
+                        window.removeEventListener('message', messageHandler);
+                        showToast('❌ Instagram connection failed: ' + event.data.error, 'error');
+                    }
+                };
+
+                window.addEventListener('message', messageHandler);
+
+                // Monitor popup closure as fallback
+                const monitorPopup = setInterval(() => {
+                    if (popup.closed) {
+                        clearInterval(monitorPopup);
+                        console.log('[Instagram] Popup closed, checking connection...');
+
+                        // Remove message handler after timeout
+                        setTimeout(() => {
+                            window.removeEventListener('message', messageHandler);
+                        }, 5000);
+
+                        // Check connection status from server
+                        setTimeout(() => {
+                            checkInstagramConnectionStatus();
+                        }, 1500);
+                    }
+                }, 500);
+
+            } catch (error) {
+                console.error('[Instagram OAuth] Error:', error);
+                showToast('Error: ' + error.message, 'error');
             }
-            
-            console.log('Connecting Instagram:', { pageId, token: '***' });
-            showToast('Instagram connected successfully!', 'success');
-            
-            // Update UI
-            document.getElementById('instagram-status-badge').innerHTML = `
-                <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--success);"></span>
-                Connected
-            `;
-            document.getElementById('instagram-status-badge').style.background = 'var(--success-light)';
-            document.getElementById('instagram-status-badge').style.color = 'var(--success)';
-            document.getElementById('btn-connect-instagram').style.display = 'none';
-            document.getElementById('btn-disconnect-instagram').style.display = 'inline-flex';
         }
 
-        function disconnectInstagram() {
-            if (confirm('Are you sure you want to disconnect Instagram?')) {
-                console.log('Disconnecting Instagram');
-                showToast('Instagram disconnected', 'info');
-                
-                // Update UI
-                document.getElementById('instagram-status-badge').innerHTML = `
-                    <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--danger);"></span>
-                    Not Connected
+        async function checkInstagramConnectionStatus() {
+            try {
+                const res = await fetch('/api/admin/instagram/bot-status');
+                const data = await res.json();
+
+                if (data.enabled && data.connected) {
+                    console.log('[Instagram] ✅ Connected and enabled');
+                    const username = data.username || 'Unknown';
+                    updateInstagramUI(true, username);
+                    showToast('✅ Instagram connected successfully!', 'success');
+                } else {
+                    console.log('[Instagram] Status check: not connected');
+                }
+            } catch (error) {
+                console.error('[Instagram] Error checking status:', error);
+            }
+        }
+
+        function updateInstagramUI(connected, username) {
+            const badge = document.getElementById('instagram-status-badge');
+            const connectBtn = document.getElementById('btn-connect-instagram');
+            const disconnectBtn = document.getElementById('btn-disconnect-instagram');
+
+            if (connected) {
+                // Show connected state
+                badge.innerHTML = `
+                    <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--success);"></span>
+                    <span>Connected ${username ? '@' + username : ''}</span>
                 `;
-                document.getElementById('instagram-status-badge').style.background = 'var(--danger-light)';
-                document.getElementById('instagram-status-badge').style.color = 'var(--danger)';
-                document.getElementById('btn-connect-instagram').style.display = 'inline-flex';
-                document.getElementById('btn-disconnect-instagram').style.display = 'none';
+                badge.style.background = 'var(--success-light)';
+                badge.style.color = 'var(--success)';
+
+                connectBtn.style.display = 'none';
+                disconnectBtn.style.display = 'inline-flex';
+            } else {
+                // Show disconnected state
+                badge.innerHTML = `
+                    <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--danger);"></span>
+                    <span>Not Connected</span>
+                `;
+                badge.style.background = 'var(--danger-light)';
+                badge.style.color = 'var(--danger)';
+
+                connectBtn.style.display = 'inline-flex';
+                disconnectBtn.style.display = 'none';
+            }
+        }
+
+        async function disconnectInstagram() {
+            if (!confirm('Are you sure you want to disconnect Instagram?')) {
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/admin/instagram/disconnect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    updateInstagramUI(false, null);
+                    showToast('Instagram disconnected', 'success');
+                } else {
+                    showToast('Error disconnecting: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('[Instagram] Disconnect error:', error);
+                showToast('Error: ' + error.message, 'error');
             }
         }
 
@@ -7313,6 +7427,9 @@
         document.addEventListener('DOMContentLoaded', function() {
             setupBusinessHoursListeners();
             setupGeneralSettingsListeners();
+
+            // Check Instagram connection status on page load
+            checkInstagramConnectionStatus();
         });
 
     </script>
