@@ -14,12 +14,23 @@ const prisma = new PrismaClient();
  * @returns {Promise<Array>} Array of businesses
  */
 export async function getAllBusinesses() {
-  const businesses = await prisma.business.findMany({
-    orderBy: { createdAt: 'desc' },
-  });
+  try {
+    const businesses = await prisma.business.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
 
-  // Parse JSON fields for each business
-  return businesses.map(parseBusiness);
+    // Parse JSON fields for each business
+    return businesses.map(parseBusiness);
+  } catch (error) {
+    // If query fails due to missing columns, it might be a schema migration issue
+    // Try with a simpler query that doesn't include the new fields
+    if (error.message && error.message.includes('does not exist')) {
+      console.warn('[DB] Schema migration pending - querying without new columns');
+      // This will fail gracefully and let the admin panel eventually load
+      throw new Error('Database schema not yet migrated. Please wait for deployment to complete.');
+    }
+    throw error;
+  }
 }
 
 /**
@@ -72,9 +83,10 @@ export async function createBusiness(data) {
       whatsapp: data.whatsapp ? JSON.stringify(data.whatsapp) : null,
       instagram: data.instagram ? JSON.stringify(data.instagram) : null,
       telegram: data.telegram ? JSON.stringify(data.telegram) : null,
-      profileLinks: data.profileLinks ? JSON.stringify(data.profileLinks) : null,
-      aiTrainingData: data.aiTrainingData ? JSON.stringify(data.aiTrainingData) : null,
-      scrapedContent: data.scrapedContent ? JSON.stringify(data.scrapedContent) : null,
+      // AI Training fields temporarily disabled
+      // profileLinks: data.profileLinks ? JSON.stringify(data.profileLinks) : null,
+      // aiTrainingData: data.aiTrainingData ? JSON.stringify(data.aiTrainingData) : null,
+      // scrapedContent: data.scrapedContent ? JSON.stringify(data.scrapedContent) : null,
     },
   });
 
@@ -94,9 +106,10 @@ export async function updateBusiness(id, data) {
   if (data.whatsapp) updateData.whatsapp = JSON.stringify(data.whatsapp);
   if (data.instagram) updateData.instagram = JSON.stringify(data.instagram);
   if (data.telegram) updateData.telegram = JSON.stringify(data.telegram);
-  if (data.profileLinks) updateData.profileLinks = JSON.stringify(data.profileLinks);
-  if (data.aiTrainingData) updateData.aiTrainingData = JSON.stringify(data.aiTrainingData);
-  if (data.scrapedContent) updateData.scrapedContent = JSON.stringify(data.scrapedContent);
+  // AI Training fields temporarily disabled
+  // if (data.profileLinks) updateData.profileLinks = JSON.stringify(data.profileLinks);
+  // if (data.aiTrainingData) updateData.aiTrainingData = JSON.stringify(data.aiTrainingData);
+  // if (data.scrapedContent) updateData.scrapedContent = JSON.stringify(data.scrapedContent);
 
   const business = await prisma.business.update({
     where: { id },
@@ -408,9 +421,10 @@ function parseBusiness(business) {
     whatsapp: safeParseJSON(business.whatsapp, 'business.whatsapp'),
     instagram: safeParseJSON(business.instagram, 'business.instagram'),
     telegram: safeParseJSON(business.telegram, 'business.telegram'),
-    profileLinks: safeParseJSON(business.profileLinks, 'business.profileLinks'),
-    aiTrainingData: safeParseJSON(business.aiTrainingData, 'business.aiTrainingData'),
-    scrapedContent: safeParseJSON(business.scrapedContent, 'business.scrapedContent'),
+    // AI Training fields temporarily disabled until migration is applied
+    // profileLinks: safeParseJSON(business.profileLinks, 'business.profileLinks'),
+    // aiTrainingData: safeParseJSON(business.aiTrainingData, 'business.aiTrainingData'),
+    // scrapedContent: safeParseJSON(business.scrapedContent, 'business.scrapedContent'),
   };
 }
 
