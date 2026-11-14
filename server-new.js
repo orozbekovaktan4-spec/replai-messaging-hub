@@ -1436,6 +1436,7 @@ app.get('/admin', (req, res) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Last-Modified', new Date().toUTCString());
   res.setHeader('ETag', Date.now().toString());
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
 
   // Read file and inject version tag to bust cache
   const filePath = path.join(__dirname, 'admin-super.html');
