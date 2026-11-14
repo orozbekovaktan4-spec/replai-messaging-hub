@@ -7512,116 +7512,25 @@ app.get('/api/admin/test-instagram-token', async (req, res) => {
 // AI TRAINING - PROFILE ANALYSIS API
 // ============================================
 
-// Save profile links
+// AI Training endpoints temporarily disabled (columns don't exist in DB yet)
+// Will re-enable after migration is applied
+/*
 app.post('/api/admin/business/:businessId/profile-links', async (req, res) => {
-  try {
-    const { businessId } = req.params;
-    const { instagram, youtube, tiktok, facebook, website } = req.body;
-
-    console.log(`[AI Training] Saving profile links for business ${businessId}`);
-
-    const profileLinks = {
-      instagram: instagram || null,
-      youtube: youtube || null,
-      tiktok: tiktok || null,
-      facebook: facebook || null,
-      website: website || null
-    };
-
-    await prisma.business.update({
-      where: { id: businessId },
-      data: { profileLinks: JSON.stringify(profileLinks) }
-    });
-
-    res.json({ success: true, profileLinks });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
+  // ... commented out temporarily
 });
 
-// Get profile links
 app.get('/api/admin/business/:businessId/profile-links', async (req, res) => {
-  try {
-    const { businessId } = req.params;
-    const business = await prisma.business.findUnique({
-      where: { id: businessId },
-      select: { profileLinks: true }
-    });
-
-    const profileLinks = business?.profileLinks
-      ? JSON.parse(business.profileLinks)
-      : { instagram: null, youtube: null, tiktok: null, facebook: null, website: null };
-
-    res.json({ profileLinks });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
+  // ... commented out temporarily
 });
 
-// Trigger profile analysis
 app.post('/api/admin/business/:businessId/analyze-profiles', async (req, res) => {
-  try {
-    const { businessId } = req.params;
-
-    const business = await prisma.business.findUnique({
-      where: { id: businessId }
-    });
-
-    if (!business) {
-      return res.status(404).json({ success: false, error: 'Business not found' });
-    }
-
-    const profileLinks = business.profileLinks ? JSON.parse(business.profileLinks) : {};
-
-    if (!profileLinks.instagram && !profileLinks.website) {
-      return res.status(400).json({
-        success: false,
-        error: 'Please add at least Instagram or Website URL before analyzing'
-      });
-    }
-
-    // Start async analysis
-    scrapeAndAnalyzeProfiles(businessId).catch(err => {
-      console.error(`[AI Training] Error: ${err.message}`);
-    });
-
-    res.json({
-      success: true,
-      message: 'Analysis started. This will take 2-3 minutes. Refresh to see results.'
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
+  // ... commented out temporarily
 });
 
-// Get AI training data
 app.get('/api/admin/business/:businessId/ai-training-data', async (req, res) => {
-  try {
-    const { businessId } = req.params;
-
-    const business = await prisma.business.findUnique({
-      where: { id: businessId },
-      select: { aiTrainingData: true, profileLinks: true, scrapedContent: true }
-    });
-
-    if (!business) {
-      return res.status(404).json({ success: false, error: 'Business not found' });
-    }
-
-    const aiTrainingData = business.aiTrainingData ? JSON.parse(business.aiTrainingData) : null;
-    const profileLinks = business.profileLinks ? JSON.parse(business.profileLinks) : {};
-    const scrapedContent = business.scrapedContent ? JSON.parse(business.scrapedContent) : null;
-
-    res.json({
-      aiTrainingData,
-      profileLinks,
-      lastScrapedAt: scrapedContent?.scrapedAt || null,
-      hasData: !!aiTrainingData
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
+  // ... commented out temporarily
 });
+*/
 
 // Initialize API keys file from environment variables
 app.post('/api/admin/init-api-keys', async (req, res) => {
