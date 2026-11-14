@@ -14,23 +14,12 @@ const prisma = new PrismaClient();
  * @returns {Promise<Array>} Array of businesses
  */
 export async function getAllBusinesses() {
-  try {
-    const businesses = await prisma.business.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+  const businesses = await prisma.business.findMany({
+    orderBy: { createdAt: 'desc' },
+  });
 
-    // Parse JSON fields for each business
-    return businesses.map(parseBusiness);
-  } catch (error) {
-    // If query fails due to missing columns, it might be a schema migration issue
-    // Try with a simpler query that doesn't include the new fields
-    if (error.message && error.message.includes('does not exist')) {
-      console.warn('[DB] Schema migration pending - querying without new columns');
-      // This will fail gracefully and let the admin panel eventually load
-      throw new Error('Database schema not yet migrated. Please wait for deployment to complete.');
-    }
-    throw error;
-  }
+  // Parse JSON fields for each business
+  return businesses.map(parseBusiness);
 }
 
 /**
