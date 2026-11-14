@@ -474,7 +474,8 @@ export class InstagramConnector extends PlatformConnector {
   }
 
   /**
-   * Get Instagram OAuth URL
+   * Get Instagram OAuth URL - Using Instagram Business Login Flow
+   * This generates the proper OAuth URL that redirects to Instagram's consent page
    */
   getAuthUrl(baseUrl) {
     if (!this.appId) {
@@ -489,15 +490,31 @@ export class InstagramConnector extends PlatformConnector {
       initiatedAt: new Date().toISOString()
     });
 
-    const params = new URLSearchParams({
+    // Use Instagram Business Login OAuth flow - matches the working example
+    const scopes = [
+      'instagram_business_basic',
+      'instagram_business_manage_comments',
+      'instagram_business_manage_messages'
+    ];
+
+    const paramsJson = {
       client_id: this.appId,
       redirect_uri: redirectUri,
-      state: state,
       response_type: 'code',
-      scope: 'instagram_basic,instagram_manage_messages,instagram_manage_comments,pages_show_list,pages_messaging'
+      state: state,
+      scope: scopes.join(','),
+      logger_id: this.generateStateToken(),
+      app_id: this.appId,
+      platform_app_id: this.appId
+    };
+
+    const params = new URLSearchParams({
+      flow: 'ig_biz_login_oauth',
+      params_json: JSON.stringify(paramsJson),
+      source: 'oauth_permissions_page_www'
     });
 
-    return `https://www.facebook.com/v21.0/dialog/oauth?${params.toString()}`;
+    return `https://www.instagram.com/oauth/authorize?${params.toString()}`;
   }
 
   /**
