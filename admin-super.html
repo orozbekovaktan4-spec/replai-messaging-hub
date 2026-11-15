@@ -6878,6 +6878,12 @@
         async function initiateInstagramOAuth() {
             console.log('[Instagram] Starting OAuth flow...');
 
+            // Detect if user is on mobile device
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+                             (window.innerWidth < 768);
+
+            console.log('[Instagram] Device type:', isMobile ? 'Mobile' : 'Desktop');
+
             try {
                 // Get OAuth URL from backend
                 const response = await fetch('/api/admin/instagram/oauth/start');
@@ -6889,65 +6895,78 @@
                     return;
                 }
 
-                console.log('[Instagram] Opening OAuth popup...');
+                if (isMobile) {
+                    // ============================================
+                    // MOBILE FLOW: Full page redirect
+                    // ============================================
+                    console.log('[Instagram] Using mobile redirect flow...');
+                    showToast('Redirecting to Instagram...', 'info');
 
-                // Open popup window (like Fusion)
-                const width = 600;
-                const height = 700;
-                const left = (window.innerWidth - width) / 2;
-                const top = (window.innerHeight - height) / 2;
+                    // Store that we're in OAuth flow (to show message on return)
+                    sessionStorage.setItem('instagram_oauth_pending', 'true');
 
-                const popup = window.open(
-                    data.authUrl,
-                    'InstagramOAuth',
-                    `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
-                );
+                    // Redirect full page to Instagram
+                    window.location.href = data.authUrl;
 
-                if (!popup) {
-                    showToast('Please allow popups for this website', 'error');
-                    return;
-                }
+                } else {
+                    // ============================================
+                    // DESKTOP FLOW: Popup window (existing code)
+                    // ============================================
+                    console.log('[Instagram] Using desktop popup flow...');
 
-                // Listen for OAuth success message from popup
-                const messageHandler = (event) => {
-                    if (event.data && event.data.type === 'instagram_oauth_success') {
-                        console.log('[Instagram] ✅ OAuth success received from popup');
-                        window.removeEventListener('message', messageHandler);
+                    const width = 600;
+                    const height = 700;
+                    const left = (window.innerWidth - width) / 2;
+                    const top = (window.innerHeight - height) / 2;
 
-                        // Update UI with connected account
-                        if (event.data.data && event.data.data.username) {
-                            updateInstagramUI(true, event.data.data.username);
-                            showToast('✅ Instagram connected: @' + event.data.data.username, 'success');
-                        } else {
-                            // Fallback: check status from server
-                            setTimeout(() => checkInstagramConnectionStatus(), 1000);
-                        }
-                    } else if (event.data && event.data.type === 'instagram_oauth_error') {
-                        console.error('[Instagram] OAuth error:', event.data.error);
-                        window.removeEventListener('message', messageHandler);
-                        showToast('❌ Instagram connection failed: ' + event.data.error, 'error');
+                    const popup = window.open(
+                        data.authUrl,
+                        'InstagramOAuth',
+                        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+                    );
+
+                    if (!popup) {
+                        showToast('Please allow popups for this website', 'error');
+                        return;
                     }
-                };
 
-                window.addEventListener('message', messageHandler);
-
-                // Monitor popup closure as fallback
-                const monitorPopup = setInterval(() => {
-                    if (popup.closed) {
-                        clearInterval(monitorPopup);
-                        console.log('[Instagram] Popup closed, checking connection...');
-
-                        // Remove message handler after timeout
-                        setTimeout(() => {
+                    // Listen for OAuth success message from popup
+                    const messageHandler = (event) => {
+                        if (event.data && event.data.type === 'instagram_oauth_success') {
+                            console.log('[Instagram] ✅ OAuth success received from popup');
                             window.removeEventListener('message', messageHandler);
-                        }, 5000);
 
-                        // Check connection status from server
-                        setTimeout(() => {
-                            checkInstagramConnectionStatus();
-                        }, 1500);
-                    }
-                }, 500);
+                            if (event.data.data && event.data.data.username) {
+                                updateInstagramUI(true, event.data.data.username);
+                                showToast('✅ Instagram connected: @' + event.data.data.username, 'success');
+                            } else {
+                                setTimeout(() => checkInstagramConnectionStatus(), 1000);
+                            }
+                        } else if (event.data && event.data.type === 'instagram_oauth_error') {
+                            console.error('[Instagram] OAuth error:', event.data.error);
+                            window.removeEventListener('message', messageHandler);
+                            showToast('❌ Instagram connection failed: ' + event.data.error, 'error');
+                        }
+                    };
+
+                    window.addEventListener('message', messageHandler);
+
+                    // Monitor popup closure
+                    const monitorPopup = setInterval(() => {
+                        if (popup.closed) {
+                            clearInterval(monitorPopup);
+                            console.log('[Instagram] Popup closed, checking connection...');
+
+                            setTimeout(() => {
+                                window.removeEventListener('message', messageHandler);
+                            }, 5000);
+
+                            setTimeout(() => {
+                                checkInstagramConnectionStatus();
+                            }, 1500);
+                        }
+                    }, 500);
+                }
 
             } catch (error) {
                 console.error('[Instagram OAuth] Error:', error);
@@ -7288,12 +7307,53 @@
         }
 
         // Initialize on page load
+        // Handle return from mobile OAuth flow
+        function handleMobileOAuthReturn() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const instagramStatus = urlParams.get('instagram');
+            const username = urlParams.get('username');
+
+            // Check if returning from OAuth
+            if (instagramStatus === 'connected' && username) {
+                console.log('[Instagram] Returned from mobile OAuth:', username);
+
+                // Update UI
+                updateInstagramUI(true, username);
+                showToast('✅ Instagram connected: @' + username, 'success');
+
+                // Clean up URL (remove parameters without reload)
+                const cleanUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, cleanUrl);
+
+                // Clear pending flag
+                sessionStorage.removeItem('instagram_oauth_pending');
+
+            } else if (instagramStatus === 'error') {
+                const errorMsg = urlParams.get('error') || 'Unknown error';
+                console.error('[Instagram] OAuth error:', errorMsg);
+                showToast('❌ Instagram connection failed: ' + errorMsg, 'error');
+
+                // Clean up URL
+                const cleanUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, cleanUrl);
+
+                sessionStorage.removeItem('instagram_oauth_pending');
+            } else if (sessionStorage.getItem('instagram_oauth_pending') === 'true') {
+                // User returned but no success/error parameter (might have cancelled)
+                console.log('[Instagram] OAuth flow cancelled or failed');
+                sessionStorage.removeItem('instagram_oauth_pending');
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             setupBusinessHoursListeners();
             setupGeneralSettingsListeners();
 
             // Check Instagram connection status on page load
             checkInstagramConnectionStatus();
+
+            // Handle mobile OAuth return
+            handleMobileOAuthReturn();
         });
 
     </script>

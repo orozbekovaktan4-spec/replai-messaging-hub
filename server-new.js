@@ -2569,96 +2569,96 @@ app.get('/api/admin/instagram/oauth/auth-url', (req, res) => {
 app.get('/api/admin/instagram/oauth/callback', async (req, res) => {
   try {
     const { code, state, error, error_description } = req.query;
-    
+
+    // Detect if request is from mobile
+    const userAgent = req.headers['user-agent'] || '';
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent);
+
     console.log('[Instagram OAuth Callback] Received callback');
-    
+    console.log('[Instagram OAuth] Device type:', isMobile ? 'Mobile' : 'Desktop');
+    console.log('[Instagram OAuth] Code:', code ? 'present' : 'missing');
+    console.log('[Instagram OAuth] Error:', error || 'none');
+
     // Handle OAuth errors
     if (error) {
       console.error('[Instagram OAuth] Error:', error, error_description);
-      return res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Instagram Connection Failed</title>
-          <style>
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              min-height: 100vh;
-              margin: 0;
-              background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            }
-            .container {
-              background: white;
-              padding: 48px;
-              border-radius: 16px;
-              box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-              text-align: center;
-              max-width: 500px;
-            }
-            .icon { font-size: 64px; margin-bottom: 24px; }
-            h1 { color: #ef4444; margin: 0 0 16px 0; font-size: 28px; }
-            p { color: #64748b; line-height: 1.6; margin-bottom: 24px; }
-            .error-code {
-              background: #fee;
-              padding: 12px;
-              border-radius: 8px;
-              font-family: monospace;
-              font-size: 14px;
-              color: #dc2626;
-              margin-bottom: 24px;
-            }
-            button {
-              background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-              color: white;
-              border: none;
-              padding: 14px 32px;
-              border-radius: 12px;
-              font-size: 16px;
-              font-weight: 600;
-              cursor: pointer;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="icon">❌</div>
-            <h1>Connection Failed</h1>
-            <p>Instagram authorization was not successful.</p>
-            <div class="error-code">${error}: ${error_description || 'Unknown error'}</div>
-            <button onclick="window.close()">Close Window</button>
-          </div>
-          <script>
-            setTimeout(() => {
+
+      if (isMobile) {
+        // Mobile: redirect back to admin with error
+        return res.redirect(`/admin-super.html?instagram=error&error=${encodeURIComponent(error_description || error)}`);
+      } else {
+        // Desktop: show error page and send message to parent
+        return res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Instagram Connection Failed</title>
+            <style>
+              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                     display: flex; justify-content: center; align-items: center;
+                     height: 100vh; margin: 0; background: #f5f5f5; }
+              .container { text-align: center; padding: 40px; background: white;
+                         border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+              .error { color: #e74c3c; font-size: 48px; margin-bottom: 20px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="error">✗</div>
+              <h2>Connection Failed</h2>
+              <p>${error_description || error}</p>
+              <p style="color: #888; margin-top: 20px;">This window will close automatically...</p>
+            </div>
+            <script>
               if (window.opener) {
-                window.opener.postMessage({ 
-                  type: 'instagram_oauth_error', 
-                  error: '${error}',
-                  description: '${error_description || ''}' 
+                window.opener.postMessage({
+                  type: 'instagram_oauth_error',
+                  error: '${error_description || error}'
                 }, '*');
               }
-              window.close();
-            }, 5000);
-          </script>
-        </body>
-        </html>
-      `);
+              setTimeout(() => window.close(), 3000);
+            </script>
+          </body>
+          </html>
+        `);
+      }
     }
-    
+
     if (!code || !state) {
-      return res.status(400).send('<h1>Invalid callback</h1><p>Missing code or state</p>');
+      console.error('[Instagram OAuth] No authorization code received');
+
+      if (isMobile) {
+        return res.redirect('/admin-super.html?instagram=error&error=No authorization code received');
+      } else {
+        return res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head><title>Error</title></head>
+          <body>
+            <h2>Error: No authorization code received</h2>
+            <script>
+              if (window.opener) {
+                window.opener.postMessage({
+                  type: 'instagram_oauth_error',
+                  error: 'No authorization code received'
+                }, '*');
+              }
+              setTimeout(() => window.close(), 3000);
+            </script>
+          </body>
+          </html>
+        `);
+      }
     }
-    
+
     // Exchange code for tokens using connection manager
     console.log('[Instagram OAuth] Exchanging authorization code...');
     const connector = connectionManager.getConnector('instagram');
     const connectionState = await connector.handleCallback(code, state);
-    
+
     console.log('[Instagram OAuth] ✓ Connection successful');
     console.log('[Instagram OAuth] Username: @' + connectionState.metadata.username);
-    
+
     // Update in-memory platform connections
     platformConnections.instagram = {
       connected: true,
@@ -2667,93 +2667,126 @@ app.get('/api/admin/instagram/oauth/callback', async (req, res) => {
       userId: connectionState.metadata.instagramId,
       expiresAt: connectionState.expiresAt
     };
-    
-    // Send success page
-    res.send(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Instagram Connected!</title>
-        <style>
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-          }
-          .container {
-            background: white;
-            padding: 48px;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            text-align: center;
-            max-width: 500px;
-            animation: slideIn 0.4s ease;
-          }
-          @keyframes slideIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          .icon { font-size: 64px; margin-bottom: 24px; }
-          h1 { color: #10b981; margin: 0 0 16px 0; font-size: 28px; }
-          p { color: #64748b; line-height: 1.6; }
-          .details {
-            background: #f8fafc;
-            padding: 16px;
-            border-radius: 12px;
-            margin: 24px 0;
-            text-align: left;
-          }
-          .details-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #e2e8f0;
-          }
-          .details-row:last-child { border-bottom: none; }
-          .label { font-weight: 600; color: #475569; }
-          .value { color: #f5576c; font-weight: 600; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="icon">✅</div>
-          <h1>Instagram Connected!</h1>
-          <p>Your Instagram Business account has been successfully connected.</p>
-          <div class="details">
-            <div class="details-row">
-              <span class="label">Username:</span>
-              <span class="value">@${connectionState.metadata.username}</span>
-            </div>
-            <div class="details-row">
-              <span class="label">Followers:</span>
-              <span class="value">${connectionState.metadata.followersCount || 'N/A'}</span>
-            </div>
-            <div class="details-row">
-              <span class="label">Token Expires:</span>
-              <span class="value">${new Date(connectionState.expiresAt).toLocaleDateString()}</span>
-            </div>
+
+    const username = connectionState.metadata.username || 'Unknown';
+
+    if (isMobile) {
+      // ============================================
+      // MOBILE: Redirect back to admin panel
+      // ============================================
+      return res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Instagram Connected</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                   display: flex; justify-content: center; align-items: center;
+                   height: 100vh; margin: 0;
+                   background: linear-gradient(135deg, #E1306C 0%, #C13584 50%, #833AB4 100%);
+                   color: white; }
+            .container { text-align: center; padding: 40px; }
+            .success { font-size: 64px; margin-bottom: 20px; animation: bounce 0.5s; }
+            @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+            h2 { margin: 0; font-size: 24px; }
+            p { margin: 10px 0; opacity: 0.9; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="success">✓</div>
+            <h2>Instagram Connected!</h2>
+            <p>@${username}</p>
+            <p style="margin-top: 30px; font-size: 14px;">Redirecting back to admin panel...</p>
           </div>
-          <p style="color: #94a3b8; font-size: 14px;">This window will close automatically...</p>
-        </div>
-        <script>
-          if (window.opener) {
-            window.opener.postMessage({
-              type: 'instagram_oauth_success',
-              data: ${JSON.stringify(connectionState.metadata)}
-            }, '*');
-          }
-          setTimeout(() => window.close(), 3000);
-        </script>
-      </body>
-      </html>
-    `);
-    
+          <script>
+            setTimeout(() => {
+              window.location.href = '/admin-super.html?instagram=connected&username=${encodeURIComponent(username)}';
+            }, 2000);
+          </script>
+        </body>
+        </html>
+      `);
+
+    } else {
+      // ============================================
+      // DESKTOP: Show success and auto-close popup
+      // ============================================
+      return res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Instagram Connected</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                   display: flex; justify-content: center; align-items: center;
+                   height: 100vh; margin: 0;
+                   background: linear-gradient(135deg, #E1306C 0%, #C13584 50%, #833AB4 100%);
+                   color: white; }
+            .container { text-align: center; padding: 40px; }
+            .success { font-size: 64px; margin-bottom: 20px; animation: bounce 0.5s; }
+            @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+            h2 { margin: 0; font-size: 24px; }
+            p { margin: 10px 0; opacity: 0.9; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="success">✓</div>
+            <h2>Instagram Connected!</h2>
+            <p>@${username}</p>
+            <p style="margin-top: 30px; font-size: 14px;">This window will close automatically...</p>
+          </div>
+          <script>
+            // Send success message to parent window
+            if (window.opener) {
+              window.opener.postMessage({
+                type: 'instagram_oauth_success',
+                data: { username: '${username}' }
+              }, '*');
+            }
+
+            // Auto-close after 2 seconds
+            setTimeout(() => {
+              window.close();
+            }, 2000);
+          </script>
+        </body>
+        </html>
+      `);
+    }
+
   } catch (error) {
     console.error('[Instagram OAuth Callback] Error:', error.message);
+
+    const userAgent = req.headers['user-agent'] || '';
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent);
+
+    if (isMobile) {
+      return res.redirect(`/admin-super.html?instagram=error&error=${encodeURIComponent(error.message)}`);
+    } else {
+      return res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head><title>Connection Error</title></head>
+        <body>
+          <h2>Error: ${error.message}</h2>
+          <script>
+            if (window.opener) {
+              window.opener.postMessage({
+                type: 'instagram_oauth_error',
+                error: '${error.message}'
+              }, '*');
+            }
+            setTimeout(() => window.close(), 3000);
+          </script>
+        </body>
+        </html>
+      `);
+    }
+  }
+});
     
     // Send detailed error page
     res.status(500).send(`
