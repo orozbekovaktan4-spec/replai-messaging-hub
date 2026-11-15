@@ -2,7 +2,7 @@
 <html lang="ru" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>REPLAI - Enterprise Admin</title>
     <meta name="build-version" content="v2024.09.22.001">
     
@@ -1470,6 +1470,129 @@
         .last-updated {
             font-size: 12px;
             color: var(--text-secondary);
+        }
+
+        /* ============================================
+           MOBILE RESPONSIVE STYLES
+           ============================================ */
+
+        /* Base box-sizing for all elements */
+        * {
+            box-sizing: border-box;
+        }
+
+        /* Ensure body doesn't overflow on mobile */
+        body {
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Mobile styles for screens up to 768px */
+        @media screen and (max-width: 768px) {
+            /* Instagram card adjustments */
+            .instagram-connection-card {
+                padding: 16px !important;
+                margin: 12px 0 !important;
+                border-radius: 10px !important;
+            }
+
+            /* Stack buttons vertically on mobile */
+            .instagram-button-group {
+                flex-direction: column !important;
+                gap: 10px !important;
+            }
+
+            /* Full-width buttons on mobile */
+            .instagram-button-group button {
+                width: 100% !important;
+                min-width: unset !important;
+                flex: none !important;
+            }
+
+            /* Adjust text sizes for mobile readability */
+            .instagram-connection-card h3 {
+                font-size: 18px !important;
+            }
+
+            .instagram-connection-card p {
+                font-size: 13px !important;
+            }
+
+            /* Status badge adjustments */
+            #instagram-status-badge {
+                font-size: 13px !important;
+                padding: 8px 14px !important;
+            }
+
+            /* Ensure touch-friendly tap targets */
+            button, .btn-primary-large, .btn-secondary {
+                min-height: 48px !important;
+                font-size: 16px !important;
+                padding: 14px 20px !important;
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+            }
+
+            /* Icon adjustments for mobile */
+            .instagram-connection-card i[data-lucide="instagram"] {
+                width: 28px !important;
+                height: 28px !important;
+            }
+
+            /* Prevent text selection on buttons */
+            button {
+                -webkit-user-select: none;
+                user-select: none;
+            }
+
+            /* Better spacing on mobile */
+            .instagram-connection-card > div {
+                margin-bottom: 14px !important;
+            }
+        }
+
+        /* Extra small screens (iPhone SE, etc.) */
+        @media screen and (max-width: 375px) {
+            .instagram-connection-card {
+                padding: 14px !important;
+                margin: 10px 0 !important;
+            }
+
+            .instagram-connection-card h3 {
+                font-size: 16px !important;
+            }
+
+            .instagram-button-group button {
+                font-size: 15px !important;
+                padding: 12px 16px !important;
+            }
+        }
+
+        /* Hover effects (desktop only) */
+        @media (hover: hover) {
+            .instagram-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
+
+            #btn-connect-instagram:hover {
+                background: #f8f8f8 !important;
+            }
+
+            #btn-disconnect-instagram:hover {
+                background: rgba(255,255,255,0.3) !important;
+            }
+        }
+
+        /* Active/pressed state for touch devices */
+        .instagram-btn:active {
+            transform: scale(0.98);
+            opacity: 0.9;
+        }
+
+        /* Ensure lucide icons render properly on all screens */
+        i[data-lucide] {
+            flex-shrink: 0;
         }
     </style>
 </head>
@@ -3103,32 +3226,90 @@
                         <span>Назад к платформам</span>
                     </button>
 
-                <!-- Instagram Connection Panel - Clean OAuth Design -->
-                <div style="background: linear-gradient(135deg, #E1306C 0%, #C13584 50%, #833AB4 100%); padding: 24px; border-radius: 12px; color: white;">
-                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
-                        <i data-lucide="instagram" style="width: 32px; height: 32px;"></i>
-                        <div>
-                            <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: white;">Instagram Business</h3>
-                            <p style="margin: 4px 0 0 0; font-size: 14px; opacity: 0.9;">Connect your Instagram Business account</p>
+                <!-- Instagram Connection Panel - Mobile Optimized -->
+                <div class="instagram-connection-card" style="
+                    background: linear-gradient(135deg, #E1306C 0%, #C13584 50%, #833AB4 100%);
+                    padding: 24px;
+                    border-radius: 12px;
+                    color: white;
+                    box-sizing: border-box;
+                    margin-bottom: 20px;">
+
+                    <!-- Header -->
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;">
+                        <i data-lucide="instagram" style="width: 32px; height: 32px; flex-shrink: 0;"></i>
+                        <div style="flex: 1; min-width: 0;">
+                            <h3 style="margin: 0; font-size: 20px; font-weight: 600; line-height: 1.3; color: white;">Instagram Business</h3>
+                            <p style="margin: 4px 0 0 0; font-size: 14px; opacity: 0.9; line-height: 1.4;">Connect your Instagram Business account</p>
                         </div>
                     </div>
 
                     <!-- Connection Status Badge -->
-                    <div id="instagram-status-badge" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 20px; font-size: 14px; margin-bottom: 20px;">
-                        <span id="instagram-status-icon">○</span>
+                    <div id="instagram-status-badge" style="
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 8px;
+                        padding: 10px 16px;
+                        background: rgba(255,255,255,0.2);
+                        border-radius: 20px;
+                        font-size: 14px;
+                        margin-bottom: 20px;
+                        min-height: 40px;">
+                        <span id="instagram-status-icon" style="font-weight: bold;">○</span>
                         <span id="instagram-status-text">Not Connected</span>
                     </div>
 
                     <!-- Action Buttons -->
-                    <div style="display: flex; gap: 12px; margin-top: 20px;">
-                        <!-- Connect Button (shown when disconnected) -->
-                        <button id="btn-connect-instagram" class="btn-primary-large" onclick="initiateInstagramOAuth()" style="background: white; color: #C13584; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <div class="instagram-button-group" style="display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap;">
+                        <!-- Connect Button -->
+                        <button
+                            id="btn-connect-instagram"
+                            class="btn-primary-large instagram-btn"
+                            onclick="initiateInstagramOAuth()"
+                            style="
+                                flex: 1;
+                                min-width: 200px;
+                                min-height: 48px;
+                                background: white;
+                                color: #C13584;
+                                border: none;
+                                padding: 14px 24px;
+                                border-radius: 8px;
+                                font-weight: 600;
+                                cursor: pointer;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                gap: 8px;
+                                font-size: 16px;
+                                transition: all 0.2s ease;
+                                box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                             <i data-lucide="link" style="width: 20px; height: 20px;"></i>
                             <span>Connect Instagram</span>
                         </button>
 
-                        <!-- Disconnect Button (shown when connected, hidden by default) -->
-                        <button id="btn-disconnect-instagram" class="btn-secondary" onclick="disconnectInstagram()" style="display: none; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        <!-- Disconnect Button -->
+                        <button
+                            id="btn-disconnect-instagram"
+                            class="btn-secondary instagram-btn"
+                            onclick="disconnectInstagram()"
+                            style="
+                                flex: 1;
+                                min-width: 200px;
+                                min-height: 48px;
+                                display: none;
+                                background: rgba(255,255,255,0.2);
+                                color: white;
+                                border: 1px solid rgba(255,255,255,0.4);
+                                padding: 14px 24px;
+                                border-radius: 8px;
+                                font-weight: 600;
+                                cursor: pointer;
+                                align-items: center;
+                                justify-content: center;
+                                gap: 8px;
+                                font-size: 16px;
+                                transition: all 0.2s ease;">
                             <i data-lucide="unlink" style="width: 20px; height: 20px;"></i>
                             <span>Disconnect</span>
                         </button>
@@ -4640,10 +4821,29 @@
         // Toast Notifications
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
+            const isMobile = window.innerWidth < 768;
+
             toast.className = `toast toast-${type}`;
+
+            // Add mobile-specific styling
+            if (isMobile) {
+                toast.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    max-width: 90%;
+                    z-index: 10000;
+                    padding: 14px 20px;
+                    font-size: 14px;
+                    text-align: center;
+                    word-wrap: break-word;
+                `;
+            }
+
             toast.innerHTML = `
                 <div class="toast-icon">
-                    <i data-lucide="${type === 'success' ? 'check-circle' : 'alert-circle'}" style="width: 20px; height: 20px;"></i>
+                    <i data-lucide="${type === 'success' ? 'check-circle' : type === 'error' ? 'x-circle' : 'alert-circle'}" style="width: 20px; height: 20px;"></i>
                 </div>
                 <div class="toast-message">${message}</div>
             `;
@@ -6871,6 +7071,38 @@
         // INTEGRATION FUNCTIONS
         // ============================================
         
+        // ============================================
+        // MOBILE DEVICE HELPERS
+        // ============================================
+
+        // Helper: Detect if device is mobile
+        function isMobileDevice() {
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            const isMobileUA = /iPhone|iPad|iPod|Android/i.test(userAgent);
+            const isSmallScreen = window.innerWidth < 768;
+            const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+            return isMobileUA || (isSmallScreen && hasTouchScreen);
+        }
+
+        // Helper: Prevent double-tap zoom on buttons (iOS)
+        function preventDoubleTapZoom() {
+            let lastTouchEnd = 0;
+            document.addEventListener('touchend', function(event) {
+                const now = Date.now();
+                if (now - lastTouchEnd <= 300) {
+                    event.preventDefault();
+                }
+                lastTouchEnd = now;
+            }, false);
+        }
+
+        // Initialize mobile helpers on page load
+        if (isMobileDevice()) {
+            console.log('[Mobile] Mobile device detected, applying optimizations...');
+            preventDoubleTapZoom();
+        }
+
         // ============================================
         // INSTAGRAM OAUTH - FUSION-STYLE POPUP FLOW
         // ============================================
