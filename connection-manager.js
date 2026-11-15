@@ -468,8 +468,8 @@ export class WhatsAppConnector extends PlatformConnector {
 export class InstagramConnector extends PlatformConnector {
   constructor() {
     super('instagram');
-    this.appId = process.env.FACEBOOK_APP_ID;
-    this.appSecret = process.env.FACEBOOK_APP_SECRET;
+    this.appId = process.env.INSTAGRAM_APP_ID;
+    this.appSecret = process.env.INSTAGRAM_APP_SECRET;
     this.redirectUri = process.env.INSTAGRAM_REDIRECT_URI || 'http://localhost:3000/api/admin/instagram/oauth/callback';
   }
 
@@ -479,42 +479,26 @@ export class InstagramConnector extends PlatformConnector {
    */
   getAuthUrl(baseUrl) {
     if (!this.appId) {
-      throw new Error('FACEBOOK_APP_ID not configured');
+      throw new Error('INSTAGRAM_APP_ID not configured');
     }
 
     const state = this.generateStateToken();
-    const redirectUri = baseUrl ? `${baseUrl}/api/admin/instagram/oauth/callback` : this.redirectUri;
+    const redirectUri = process.env.INSTAGRAM_REDIRECT_URI || (baseUrl ? `${baseUrl}/api/admin/instagram/oauth/callback` : this.redirectUri);
 
     this.storeOAuthState(state, {
       redirectUri,
       initiatedAt: new Date().toISOString()
     });
 
-    // Use Instagram Business Login OAuth flow - matches the working example
-    const scopes = [
-      'instagram_business_basic',
-      'instagram_business_manage_comments',
-      'instagram_business_manage_messages'
-    ];
-
-    const paramsJson = {
+    const params = new URLSearchParams({
       client_id: this.appId,
       redirect_uri: redirectUri,
+      scope: 'instagram_business_basic,instagram_business_manage_comments,instagram_business_manage_messages',
       response_type: 'code',
-      state: state,
-      scope: scopes.join(','),
-      logger_id: this.generateStateToken(),
-      app_id: this.appId,
-      platform_app_id: this.appId
-    };
-
-    const params = new URLSearchParams({
-      flow: 'ig_biz_login_oauth',
-      params_json: JSON.stringify(paramsJson),
-      source: 'oauth_permissions_page_www'
+      state
     });
 
-    return `https://www.instagram.com/oauth/authorize?${params.toString()}`;
+    return `https://api.instagram.com/oauth/authorize?${params.toString()}`;
   }
 
   /**
@@ -526,45 +510,32 @@ export class InstagramConnector extends PlatformConnector {
       throw new Error('Invalid or expired OAuth state');
     }
 
-    // Exchange code for access token
-    const tokenUrl = 'https://graph.facebook.com/v21.0/oauth/access_token';
-    const params = new URLSearchParams({
-      client_id: this.appId,
-      client_secret: this.appSecret,
-      redirect_uri: stateData.data.redirectUri,
-      code: code
+    if (!this.appSecret) {
+      throw new Error('INSTAGRAM_APP_SECRET not configured');
+    }
+    const tokenResponse = await fetch('https://api.instagram.com/oauth/access_token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: this.appId,
+        client_secret: this.appSecret,
+        grant_type: 'authorization_code',
+        redirect_uri: stateData.data.redirectUri,
+        code
+      })
     });
-
-    const response = await fetch(`${tokenUrl}?${params.toString()}`);
-    const data = await response.json();
-
-    if (data.error) {
-      throw new Error(`Instagram OAuth error: ${data.error.message}`);
+    const tokenData = await tokenResponse.json();
+    if (!tokenResponse.ok || !tokenData.access_token) {
+      throw new Error(`Instagram token exchange failed: ${tokenData.error_message || tokenData.error?.message || 'Unknown error'}`);
     }
 
-    // Get user's Facebook pages
-    const pages = await this.getPages(data.access_token);
-    
-    if (!pages || pages.length === 0) {
-      throw new Error('No Facebook Pages found. Please connect a Facebook Page with Instagram first.');
+    const longLivedToken = await this.exchangeForLongLivedToken(tokenData.access_token);
+    const profileParams = new URLSearchParams({ fields: 'id,username,name,profile_picture_url,followers_count', access_token: longLivedToken.access_token });
+    const profileResponse = await fetch(`https://graph.instagram.com/me?${profileParams}`);
+    const instagramAccount = await profileResponse.json();
+    if (!profileResponse.ok || !instagramAccount.id) {
+      throw new Error(`Instagram profile fetch failed: ${instagramAccount.error?.message || 'Unknown error'}`);
     }
-
-    // Get Instagram accounts connected to pages
-    let instagramAccount = null;
-    for (const page of pages) {
-      const igAccount = await this.getInstagramAccount(page.id, page.access_token);
-      if (igAccount) {
-        instagramAccount = { ...igAccount, pageId: page.id, pageAccessToken: page.access_token };
-        break;
-      }
-    }
-
-    if (!instagramAccount) {
-      throw new Error('No Instagram Business Account found. Please convert your Instagram account to Business and connect it to a Facebook Page.');
-    }
-
-    // Exchange short-lived token for long-lived token
-    const longLivedToken = await this.exchangeForLongLivedToken(data.access_token);
 
     const connectionState = this.updateConnectionState({
       connected: true,
@@ -578,7 +549,7 @@ export class InstagramConnector extends PlatformConnector {
         name: instagramAccount.name,
         profilePictureUrl: instagramAccount.profile_picture_url,
         followersCount: instagramAccount.followers_count,
-        pageId: instagramAccount.pageId
+        loginType: 'instagram'
       }
     });
 
@@ -632,19 +603,15 @@ export class InstagramConnector extends PlatformConnector {
    * Exchange short-lived token for long-lived token
    */
   async exchangeForLongLivedToken(shortLivedToken) {
-    const url = 'https://graph.facebook.com/v21.0/oauth/access_token';
     const params = new URLSearchParams({
-      grant_type: 'fb_exchange_token',
-      client_id: this.appId,
+      grant_type: 'ig_exchange_token',
       client_secret: this.appSecret,
-      fb_exchange_token: shortLivedToken
+      access_token: shortLivedToken
     });
-
-    const response = await fetch(`${url}?${params.toString()}`);
+    const response = await fetch(`https://graph.instagram.com/access_token?${params}`);
     const data = await response.json();
-
-    if (data.error) {
-      throw new Error(`Failed to exchange token: ${data.error.message}`);
+    if (!response.ok || !data.access_token || !data.expires_in) {
+      throw new Error(`Failed to exchange token: ${data.error?.message || 'Unknown error'}`);
     }
 
     return data;
@@ -666,7 +633,8 @@ export class InstagramConnector extends PlatformConnector {
     }
 
     try {
-      const url = `https://graph.facebook.com/v21.0/${state.metadata.instagramId}?fields=username,followers_count&access_token=${state.accessToken}`;
+      const host = state.metadata.loginType === 'instagram' ? 'graph.instagram.com' : 'graph.facebook.com';
+      const url = `https://${host}/v21.0/${state.metadata.instagramId}?fields=username,followers_count&access_token=${state.accessToken}`;
       const response = await fetch(url);
       const data = await response.json();
 
@@ -696,12 +664,13 @@ export class InstagramConnector extends PlatformConnector {
       throw new Error('No connection to refresh');
     }
 
-    const url = 'https://graph.facebook.com/v21.0/oauth/access_token';
-    const params = new URLSearchParams({
-      grant_type: 'fb_exchange_token',
-      client_id: this.appId,
-      client_secret: this.appSecret,
-      fb_exchange_token: state.accessToken
+    const isInstagramLogin = state.metadata.loginType === 'instagram';
+    const url = isInstagramLogin ? 'https://graph.instagram.com/refresh_access_token' : 'https://graph.facebook.com/v21.0/oauth/access_token';
+    const params = new URLSearchParams(isInstagramLogin ? {
+      grant_type: 'ig_refresh_token', access_token: state.accessToken
+    } : {
+      grant_type: 'fb_exchange_token', client_id: process.env.FACEBOOK_APP_ID,
+      client_secret: process.env.FACEBOOK_APP_SECRET, fb_exchange_token: state.accessToken
     });
 
     const response = await fetch(`${url}?${params.toString()}`);

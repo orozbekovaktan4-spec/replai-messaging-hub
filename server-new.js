@@ -2542,8 +2542,8 @@ app.get('/api/admin/instagram/oauth/start', (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message,
-      hint: error.message.includes('FACEBOOK_APP_ID') ? 
-        'Please configure FACEBOOK_APP_ID in your .env file' : 
+      hint: error.message.includes('INSTAGRAM_APP_ID') ? 
+        'Please configure INSTAGRAM_APP_ID in your .env file' : 
         'Please check your Instagram configuration'
     });
   }
