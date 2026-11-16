@@ -634,13 +634,14 @@ export class InstagramConnector extends PlatformConnector {
       access_token: shortLivedToken
     });
 
-    // FIXED: Instagram API requires POST (not GET) for ig_exchange_token
-    const response = await fetch('https://graph.instagram.com/access_token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: params.toString()
+    // Instagram API requires GET with parameters in URL query string for ig_exchange_token
+    const longLivedUrl = `https://graph.instagram.com/access_token?${params.toString()}`;
+
+    console.log('[Instagram OAuth] Long-lived token request URL:',
+      longLivedUrl.replace(this.appSecret, '***SECRET***').replace(shortLivedToken, '***TOKEN***'));
+
+    const response = await fetch(longLivedUrl, {
+      method: 'GET'
     });
 
     const data = await response.json();
