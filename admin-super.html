@@ -1852,6 +1852,154 @@
             display: inline-block !important;
         }
 
+        /* ============================================
+           ADMIN DASHBOARD MOBILE OPTIMIZATION
+           ============================================ */
+
+        /* Responsive Business Table */
+        .table-responsive-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 20px 0;
+            border-radius: 12px;
+        }
+
+        .datatable {
+            width: 100%;
+            min-width: 900px; /* Minimum width to prevent crushing */
+            border-collapse: collapse;
+        }
+
+        /* Mobile optimization for dashboard */
+        @media screen and (max-width: 768px) {
+            /* Table wrapper extends to edges on mobile */
+            .table-responsive-wrapper {
+                margin: 12px -12px;
+                padding: 0 12px;
+                border-radius: 0;
+            }
+
+            .datatable {
+                font-size: 14px;
+            }
+
+            .datatable th,
+            .datatable td {
+                padding: 10px 8px !important;
+                font-size: 13px !important;
+            }
+
+            /* Show scroll hint for table */
+            .table-responsive-wrapper::after {
+                content: '← Swipe to see more →';
+                display: block;
+                text-align: center;
+                font-size: 12px;
+                color: var(--text-secondary);
+                padding: 8px;
+                margin-top: 8px;
+                opacity: 0.7;
+            }
+
+            /* Stats cards: stack vertically on mobile */
+            .stats-grid {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+                margin-bottom: 20px !important;
+            }
+
+            .stat-card {
+                padding: 16px !important;
+            }
+
+            /* Main content area responsive */
+            .main-content,
+            .dashboard-content,
+            .content-section {
+                padding: 12px !important;
+            }
+
+            /* Headers */
+            h1, h2, h3 {
+                font-size: clamp(16px, 5vw, 24px) !important;
+                margin-bottom: 12px !important;
+            }
+
+            /* Buttons touch-friendly */
+            button,
+            .btn,
+            .action-btn {
+                min-height: 44px !important;
+                padding: 12px 16px !important;
+                font-size: 15px !important;
+            }
+
+            /* Form inputs */
+            input,
+            select,
+            textarea {
+                min-height: 44px !important;
+                font-size: 16px !important; /* Prevents iOS zoom */
+                padding: 10px 14px !important;
+            }
+
+            /* Search bars */
+            input[type="search"],
+            .search-input {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin-bottom: 12px !important;
+            }
+
+            /* Action buttons container */
+            .actions,
+            .button-group,
+            .filters {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 8px !important;
+                width: 100% !important;
+            }
+
+            /* Status badges */
+            .badge,
+            .status-badge {
+                font-size: 11px !important;
+                padding: 4px 8px !important;
+                white-space: nowrap !important;
+            }
+
+            /* Modal dialogs */
+            .modal,
+            .dialog {
+                width: 95vw !important;
+                max-width: 95vw !important;
+                margin: 20px auto !important;
+                max-height: 90vh !important;
+                overflow-y: auto !important;
+            }
+
+            /* Sidebar navigation */
+            .sidebar {
+                width: 100% !important;
+                position: relative !important;
+            }
+
+            .nav-item {
+                padding: 14px 16px !important;
+                font-size: 16px !important;
+                min-height: 48px !important;
+            }
+        }
+
+        /* Tablet: 2 columns for stats */
+        @media screen and (min-width: 481px) and (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+        }
+
         /* Hover effects (desktop only) */
         @media (hover: hover) {
             .instagram-btn:hover {
@@ -2036,7 +2184,7 @@
             </div>
 
             <!-- DataTable -->
-            <div class="datatable-container">
+            <div class="datatable-container table-responsive-wrapper">
                 <table class="datatable">
                     <thead>
                         <tr>
@@ -8088,6 +8236,66 @@
             });
 
             console.log('[Mobile Fix] Script loaded and ready');
+        })();
+    </script>
+
+    <!-- ============================================
+         TABLE SCROLL INDICATOR
+         ============================================ -->
+    <script>
+        // Add scroll indicator for business table
+        (function() {
+            'use strict';
+
+            function initTableScrollIndicator() {
+                const wrapper = document.querySelector('.table-responsive-wrapper');
+                if (!wrapper) {
+                    console.log('[Table Scroll] Wrapper not found, will retry...');
+                    return;
+                }
+
+                const table = wrapper.querySelector('table');
+                if (!table) {
+                    console.log('[Table Scroll] Table not found');
+                    return;
+                }
+
+                console.log('[Table Scroll] Initializing scroll indicator...');
+
+                // Check if table needs scrolling
+                function checkScroll() {
+                    const needsScroll = table.scrollWidth > wrapper.clientWidth;
+
+                    if (needsScroll && window.innerWidth < 768) {
+                        wrapper.classList.add('scrollable');
+                        console.log('[Table Scroll] Table is scrollable on mobile');
+
+                        // Remove hint after first scroll
+                        wrapper.addEventListener('scroll', function() {
+                            const hint = wrapper.querySelector('.table-responsive-wrapper::after');
+                            if (hint) {
+                                wrapper.style.setProperty('--scroll-hint-opacity', '0');
+                            }
+                        }, { once: true });
+                    } else {
+                        console.log('[Table Scroll] Table fits on screen or desktop view');
+                    }
+                }
+
+                checkScroll();
+                window.addEventListener('resize', checkScroll);
+                console.log('[Table Scroll] ✅ Scroll indicator ready');
+            }
+
+            // Try to initialize after DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initTableScrollIndicator);
+            } else {
+                initTableScrollIndicator();
+            }
+
+            // Also retry after a delay in case table loads dynamically
+            setTimeout(initTableScrollIndicator, 1000);
         })();
     </script>
 
