@@ -8299,5 +8299,346 @@
         })();
     </script>
 
+    <!-- ============================================
+         FORCE MOBILE LAYOUT WITH JAVASCRIPT
+         NO DEPENDENCY ON CSS MEDIA QUERIES
+         ============================================ -->
+    <script>
+        (function forceMobileLayout() {
+            'use strict';
+
+            console.log('[Mobile Layout] Initializing forced mobile layout...');
+            console.log('[Mobile Layout] Screen width:', window.innerWidth);
+            console.log('[Mobile Layout] Screen height:', window.innerHeight);
+            console.log('[Mobile Layout] User agent:', navigator.userAgent);
+
+            // Detect if mobile
+            const isMobile = window.innerWidth < 768;
+
+            if (!isMobile) {
+                console.log('[Mobile Layout] Desktop detected, no mobile layout needed');
+                return;
+            }
+
+            console.log('[Mobile Layout] 🚨 MOBILE DETECTED! Forcing mobile layout...');
+
+            // ============================================
+            // 1. FORCE STATS CARDS TO STACK VERTICALLY
+            // ============================================
+
+            function fixStatsCards() {
+                console.log('[Mobile Layout] Fixing stats cards...');
+
+                // Find stats containers by various methods
+                const statsSelectors = [
+                    '.stats-grid',
+                    '[class*="stats"]',
+                    '[style*="grid-template-columns"]'
+                ];
+
+                let fixed = false;
+
+                statsSelectors.forEach(selector => {
+                    const containers = document.querySelectorAll(selector);
+
+                    containers.forEach(container => {
+                        const children = container.children;
+
+                        // Check if it looks like a stats container (has 3-4 cards)
+                        if (children.length >= 3 && children.length <= 4) {
+                            console.log('[Mobile Layout] Found stats container with', children.length, 'cards');
+                            console.log('[Mobile Layout] Container class:', container.className);
+
+                            // Force single column layout
+                            container.style.display = 'flex !important';
+                            container.style.flexDirection = 'column !important';
+                            container.style.gap = '12px !important';
+                            container.style.width = '100% !important';
+                            container.style.maxWidth = '100% !important';
+                            container.style.gridTemplateColumns = 'none !important';
+
+                            // Style each card
+                            Array.from(children).forEach((card, index) => {
+                                card.style.width = '100% !important';
+                                card.style.maxWidth = '100% !important';
+                                card.style.marginBottom = '12px !important';
+                                card.style.padding = '16px !important';
+                                card.style.boxSizing = 'border-box !important';
+                                console.log(`[Mobile Layout] ✅ Stat card ${index + 1} styled`);
+                            });
+
+                            console.log('[Mobile Layout] ✅ Stats cards stacked vertically');
+                            fixed = true;
+                        }
+                    });
+                });
+
+                if (!fixed) {
+                    console.log('[Mobile Layout] ⚠️ Stats cards not found, trying alternative method...');
+
+                    // Alternative: Find by stat-card class
+                    const statCards = document.querySelectorAll('.stat-card');
+                    if (statCards.length >= 3) {
+                        console.log('[Mobile Layout] Found', statCards.length, 'stat cards');
+
+                        // Get parent container
+                        const parent = statCards[0].parentElement;
+                        if (parent) {
+                            parent.style.display = 'flex !important';
+                            parent.style.flexDirection = 'column !important';
+                            parent.style.gap = '12px !important';
+
+                            statCards.forEach((card, index) => {
+                                card.style.width = '100% !important';
+                                card.style.maxWidth = '100% !important';
+                                card.style.marginBottom = '12px !important';
+                                console.log(`[Mobile Layout] ✅ Alt stat card ${index + 1} styled`);
+                            });
+
+                            console.log('[Mobile Layout] ✅ Stats cards stacked (alt method)');
+                            fixed = true;
+                        }
+                    }
+                }
+
+                if (!fixed) {
+                    console.log('[Mobile Layout] ⚠️ Could not find stats cards');
+                }
+            }
+
+            // ============================================
+            // 2. MAKE BUSINESS TABLE HORIZONTALLY SCROLLABLE
+            // ============================================
+
+            function fixBusinessTable() {
+                console.log('[Mobile Layout] Fixing business table...');
+
+                // Find the table by various methods
+                const tableSelectors = [
+                    'table',
+                    '.datatable',
+                    '#businesses-table-body',
+                    '[class*="table"]'
+                ];
+
+                let table = null;
+                for (const selector of tableSelectors) {
+                    const el = document.querySelector(selector);
+                    if (el) {
+                        table = el.tagName === 'TABLE' ? el : el.closest('table');
+                        if (table) {
+                            console.log('[Mobile Layout] Found table via selector:', selector);
+                            break;
+                        }
+                    }
+                }
+
+                if (!table) {
+                    console.log('[Mobile Layout] ⚠️ Table not found');
+                    return;
+                }
+
+                console.log('[Mobile Layout] Found table:', table.className || 'unnamed');
+
+                // Get or create wrapper
+                let wrapper = table.parentElement;
+
+                // Check if we need to wrap it
+                if (!wrapper.classList.contains('table-wrapper-mobile')) {
+                    console.log('[Mobile Layout] Creating new wrapper for table...');
+
+                    const newWrapper = document.createElement('div');
+                    newWrapper.className = 'table-wrapper-mobile';
+                    newWrapper.style.cssText = `
+                        width: 100% !important;
+                        overflow-x: auto !important;
+                        -webkit-overflow-scrolling: touch !important;
+                        margin: 12px 0 !important;
+                        border-radius: 8px !important;
+                        background: var(--bg-primary);
+                    `;
+
+                    // Wrap the table
+                    table.parentNode.insertBefore(newWrapper, table);
+                    newWrapper.appendChild(table);
+                    wrapper = newWrapper;
+
+                    console.log('[Mobile Layout] ✅ Table wrapped in scrollable container');
+                } else {
+                    console.log('[Mobile Layout] Table already wrapped');
+                }
+
+                // Force table styling
+                table.style.minWidth = '900px !important';
+                table.style.width = '100% !important';
+                table.style.fontSize = '13px !important';
+                table.style.borderCollapse = 'collapse !important';
+
+                // Style table cells
+                const cells = table.querySelectorAll('th, td');
+                console.log('[Mobile Layout] Styling', cells.length, 'table cells...');
+                cells.forEach(cell => {
+                    cell.style.padding = '10px 8px !important';
+                    cell.style.whiteSpace = 'nowrap !important';
+                    cell.style.fontSize = '13px !important';
+                });
+
+                // Add swipe hint if not already present
+                if (!document.querySelector('.mobile-swipe-hint')) {
+                    const hint = document.createElement('div');
+                    hint.className = 'mobile-swipe-hint';
+                    hint.textContent = '← Swipe to see more →';
+                    hint.style.cssText = `
+                        text-align: center !important;
+                        font-size: 12px !important;
+                        color: rgba(255,255,255,0.5) !important;
+                        padding: 8px !important;
+                        margin-top: 4px !important;
+                        font-weight: 500 !important;
+                    `;
+                    wrapper.parentNode.insertBefore(hint, wrapper.nextSibling);
+                    console.log('[Mobile Layout] ✅ Swipe hint added');
+
+                    // Remove hint after first scroll
+                    wrapper.addEventListener('scroll', () => {
+                        hint.style.transition = 'opacity 0.3s';
+                        hint.style.opacity = '0';
+                        setTimeout(() => hint.remove(), 300);
+                    }, { once: true });
+                }
+
+                console.log('[Mobile Layout] ✅ Table made scrollable');
+            }
+
+            // ============================================
+            // 3. FIX GLOBAL LAYOUT AND CONTAINERS
+            // ============================================
+
+            function fixGlobalLayout() {
+                console.log('[Mobile Layout] Fixing global layout...');
+
+                // Fix body and html
+                document.documentElement.style.overflowX = 'hidden !important';
+                document.documentElement.style.maxWidth = '100vw !important';
+                document.body.style.overflowX = 'hidden !important';
+                document.body.style.maxWidth = '100vw !important';
+                document.body.style.width = '100% !important';
+
+                // Fix all major containers
+                const containers = document.querySelectorAll('.container, .main-content, .content, .content-section, [class*="container"]');
+                console.log('[Mobile Layout] Fixing', containers.length, 'containers...');
+                containers.forEach((container, index) => {
+                    container.style.width = '100% !important';
+                    container.style.maxWidth = '100vw !important';
+                    container.style.padding = '12px !important';
+                    container.style.boxSizing = 'border-box !important';
+                    container.style.overflowX = 'hidden !important';
+                });
+
+                // Fix all buttons
+                const buttons = document.querySelectorAll('button, .btn, [class*="btn"]');
+                console.log('[Mobile Layout] Fixing', buttons.length, 'buttons...');
+                buttons.forEach(btn => {
+                    btn.style.minHeight = '44px !important';
+                    btn.style.padding = '12px 16px !important';
+                    btn.style.fontSize = '15px !important';
+                    btn.style.boxSizing = 'border-box !important';
+                });
+
+                // Fix all inputs
+                const inputs = document.querySelectorAll('input, select, textarea');
+                console.log('[Mobile Layout] Fixing', inputs.length, 'inputs...');
+                inputs.forEach(input => {
+                    input.style.minHeight = '44px !important';
+                    input.style.fontSize = '16px !important'; // Prevents iOS zoom
+                    input.style.padding = '10px 14px !important';
+                    input.style.maxWidth = '100% !important';
+                    input.style.boxSizing = 'border-box !important';
+                });
+
+                console.log('[Mobile Layout] ✅ Global layout fixed');
+            }
+
+            // ============================================
+            // 4. ADD VISIBLE INDICATOR
+            // ============================================
+
+            function addIndicator() {
+                // Remove any existing indicator first
+                const existing = document.getElementById('mobile-layout-indicator');
+                if (existing) existing.remove();
+
+                const indicator = document.createElement('div');
+                indicator.id = 'mobile-layout-indicator';
+                indicator.textContent = '✅ Mobile JS Active';
+                indicator.style.cssText = `
+                    position: fixed !important;
+                    bottom: 10px !important;
+                    right: 10px !important;
+                    background: rgba(46, 213, 115, 0.9) !important;
+                    color: white !important;
+                    padding: 8px 12px !important;
+                    border-radius: 6px !important;
+                    font-size: 12px !important;
+                    font-weight: bold !important;
+                    z-index: 999999 !important;
+                    pointer-events: none !important;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+                `;
+                document.body.appendChild(indicator);
+
+                console.log('[Mobile Layout] ✅ Indicator added');
+
+                // Remove after 5 seconds
+                setTimeout(() => {
+                    indicator.style.transition = 'opacity 0.3s';
+                    indicator.style.opacity = '0';
+                    setTimeout(() => indicator.remove(), 300);
+                }, 5000);
+            }
+
+            // ============================================
+            // EXECUTE ALL FIXES
+            // ============================================
+
+            try {
+                console.log('[Mobile Layout] Starting fixes...');
+
+                fixGlobalLayout();
+                fixStatsCards();
+                fixBusinessTable();
+                addIndicator();
+
+                console.log('[Mobile Layout] 🎉 ALL MOBILE FIXES APPLIED SUCCESSFULLY!');
+                console.log('[Mobile Layout] Summary:');
+                console.log('[Mobile Layout] - Global layout: Fixed');
+                console.log('[Mobile Layout] - Stats cards: Stacked vertically');
+                console.log('[Mobile Layout] - Business table: Horizontally scrollable');
+                console.log('[Mobile Layout] - Visual indicator: Added');
+                console.log('[Mobile Layout] If layout still looks wrong, check elements above');
+
+            } catch (error) {
+                console.error('[Mobile Layout] ❌ ERROR applying mobile fixes:', error);
+                console.error('[Mobile Layout] Stack trace:', error.stack);
+            }
+
+            // Re-run on resize
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    const nowMobile = window.innerWidth < 768;
+                    if (nowMobile && !isMobile) {
+                        console.log('[Mobile Layout] Window resized to mobile, re-applying layout...');
+                        forceMobileLayout();
+                    }
+                }, 250);
+            });
+
+        })();
+
+        console.log('[Mobile Layout] Script loaded and ready');
+    </script>
+
 </body>
 </html>
