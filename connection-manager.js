@@ -634,12 +634,13 @@ export class InstagramConnector extends PlatformConnector {
       access_token: shortLivedToken
     });
 
-    // Note: This endpoint uses GET (not POST) according to Instagram API docs
-    const url = `https://graph.instagram.com/access_token?${params.toString()}`;
-    console.log('[Instagram OAuth] Long-lived token request URL:', url.replace(this.appSecret, '***SECRET***').replace(shortLivedToken, '***TOKEN***'));
-
-    const response = await fetch(url, {
-      method: 'GET'
+    // FIXED: Instagram API requires POST (not GET) for ig_exchange_token
+    const response = await fetch('https://graph.instagram.com/access_token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: params.toString()
     });
 
     const data = await response.json();
@@ -651,6 +652,7 @@ export class InstagramConnector extends PlatformConnector {
     }
 
     console.log('[Instagram OAuth] Long-lived token expires in:', data.expires_in, 'seconds');
+    console.log('[Instagram OAuth] ✅ Long-lived token received');
     return data;
   }
 
