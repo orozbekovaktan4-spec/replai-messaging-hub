@@ -2,7 +2,7 @@
 <html lang="ru" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>REPLAI - Enterprise Admin</title>
     <meta name="build-version" content="v2024.09.22.001">
     
@@ -25,6 +25,60 @@
     </script>
     
     <style>
+        /* ============================================
+           FORCE MOBILE-FRIENDLY BASE STYLES
+           NO MEDIA QUERIES - WORKS ON ALL SCREENS
+           ============================================ */
+
+        /* Force all elements to respect box-sizing */
+        *, *::before, *::after {
+            box-sizing: border-box !important;
+        }
+
+        /* Prevent horizontal overflow on all screens */
+        html {
+            overflow-x: hidden !important;
+            max-width: 100vw !important;
+            width: 100% !important;
+        }
+
+        body {
+            overflow-x: hidden !important;
+            max-width: 100vw !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-overflow-scrolling: touch !important;
+        }
+
+        /* Force all major containers to fit screen */
+        .container, .main-content, .content, .wrapper, [class*="container"] {
+            max-width: 100vw !important;
+            width: 100% !important;
+            overflow-x: hidden !important;
+            box-sizing: border-box !important;
+        }
+
+        /* Prevent images and media from overflowing */
+        img, video, iframe, embed, object {
+            max-width: 100% !important;
+            height: auto !important;
+        }
+
+        /* Prevent tables from overflowing */
+        table {
+            max-width: 100% !important;
+            overflow-x: auto !important;
+            display: block !important;
+        }
+
+        /* Force flexible layout on small screens */
+        @supports (width: 100vw) {
+            * {
+                max-width: 100vw !important;
+            }
+        }
+
         /* REPLAI Messaging Automation - Professional Color System */
         :root[data-theme="light"] {
             /* Primary Brand - Deep Indigo with energy */
@@ -1477,12 +1531,24 @@
            ============================================ */
 
         .instagram-connection-card {
-            background: linear-gradient(135deg, #E1306C 0%, #C13584 50%, #833AB4 100%);
-            padding: 24px;
-            border-radius: 12px;
-            color: white;
-            box-sizing: border-box;
-            margin-bottom: 20px;
+            /* Use flexible width - works on desktop AND mobile */
+            width: 100% !important;
+            max-width: 600px !important; /* Prevents it being too wide on desktop */
+
+            /* Responsive padding based on viewport width */
+            padding: calc(12px + 1vw) !important;
+
+            /* Flexible margin */
+            margin: 16px auto !important;
+
+            /* Background and styling */
+            background: linear-gradient(135deg, #E1306C 0%, #C13584 50%, #833AB4 100%) !important;
+            border-radius: 12px !important;
+            color: white !important;
+            box-sizing: border-box !important;
+
+            /* Prevent overflow */
+            overflow: hidden !important;
         }
 
         .instagram-header {
@@ -1536,28 +1602,43 @@
         }
 
         .instagram-button-group {
-            display: flex;
-            gap: 12px;
-            margin-top: 20px;
-            flex-wrap: wrap;
+            /* Flexible layout - stacks on narrow screens automatically */
+            display: flex !important;
+            flex-direction: column !important; /* Always stack vertically - works everywhere */
+            gap: 12px !important;
+            width: 100% !important;
+            margin-top: 16px !important;
         }
 
         .instagram-btn {
-            flex: 1;
-            min-width: 200px;
-            min-height: 48px;
-            border: none;
-            padding: 14px 24px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-size: 16px;
-            transition: all 0.2s ease;
-            box-sizing: border-box;
+            /* Full width buttons on all screens */
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+
+            /* Flexible height based on viewport */
+            min-height: 48px !important;
+            padding: 14px 20px !important;
+
+            /* Styling */
+            border: none !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+
+            /* Flex for icon + text */
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 8px !important;
+
+            /* Responsive font size */
+            font-size: clamp(14px, 4vw, 16px) !important;
+
+            /* Smooth transitions */
+            transition: all 0.2s ease !important;
+            box-sizing: border-box !important;
+        }
         }
 
         .instagram-btn-connect {
@@ -7884,6 +7965,131 @@
             </div>
         </div>
     </div>
+
+    <!-- ============================================
+         FORCE MOBILE SIZING - RUNS ON PAGE LOAD
+         ============================================ -->
+    <script>
+        (function() {
+            'use strict';
+
+            console.log('[Mobile Fix] Initializing forced mobile sizing...');
+
+            function forceMobileSizing() {
+                const screenWidth = window.innerWidth;
+                console.log('[Mobile Fix] Screen width:', screenWidth);
+
+                // Force mobile-friendly sizing on screens < 768px
+                if (screenWidth < 768) {
+                    console.log('[Mobile Fix] Applying mobile fixes...');
+
+                    // Get all containers
+                    const containers = document.querySelectorAll('.container, .main-content, .content, [class*="container"]');
+                    containers.forEach(el => {
+                        el.style.maxWidth = '100vw';
+                        el.style.width = '100%';
+                        el.style.overflowX = 'hidden';
+                        el.style.padding = '12px';
+                    });
+
+                    // Force Instagram card to fit
+                    const instagramCard = document.querySelector('.instagram-connection-card');
+                    if (instagramCard) {
+                        instagramCard.style.width = '100%';
+                        instagramCard.style.maxWidth = '100%';
+                        instagramCard.style.margin = '12px 0';
+                        instagramCard.style.padding = '16px';
+                        console.log('[Mobile Fix] ✅ Instagram card resized');
+                    }
+
+                    // Force buttons to stack
+                    const buttonGroup = document.querySelector('.instagram-button-group');
+                    if (buttonGroup) {
+                        buttonGroup.style.flexDirection = 'column';
+                        buttonGroup.style.width = '100%';
+                        console.log('[Mobile Fix] ✅ Buttons stacked');
+                    }
+
+                    // Force all buttons to full width
+                    const buttons = document.querySelectorAll('.instagram-btn, button');
+                    buttons.forEach(btn => {
+                        btn.style.width = '100%';
+                        btn.style.maxWidth = '100%';
+                        btn.style.minHeight = '48px';
+                        btn.style.fontSize = '16px';
+                    });
+                    console.log('[Mobile Fix] ✅ Buttons resized');
+
+                    // Force text to be readable
+                    const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+                    headings.forEach(h => {
+                        const currentSize = window.getComputedStyle(h).fontSize;
+                        const size = parseInt(currentSize);
+                        if (size < 16) {
+                            h.style.fontSize = '16px';
+                        }
+                    });
+
+                    const paragraphs = document.querySelectorAll('p');
+                    paragraphs.forEach(p => {
+                        const currentSize = window.getComputedStyle(p).fontSize;
+                        const size = parseInt(currentSize);
+                        if (size < 14) {
+                            p.style.fontSize = '14px';
+                        }
+                    });
+                    console.log('[Mobile Fix] ✅ Text sizes adjusted');
+
+                    // Prevent any horizontal overflow
+                    document.body.style.overflowX = 'hidden';
+                    document.documentElement.style.overflowX = 'hidden';
+                    document.body.style.maxWidth = '100vw';
+                    console.log('[Mobile Fix] ✅ Overflow prevented');
+
+                    // Add visible indicator (temporary - for testing)
+                    const indicator = document.createElement('div');
+                    indicator.textContent = '✅ Mobile JS Active';
+                    indicator.style.cssText = `
+                        position: fixed;
+                        bottom: 10px;
+                        right: 10px;
+                        background: rgba(46, 213, 115, 0.9);
+                        color: white;
+                        padding: 8px 12px;
+                        border-radius: 6px;
+                        font-size: 12px;
+                        font-weight: bold;
+                        z-index: 999999;
+                        pointer-events: none;
+                    `;
+                    document.body.appendChild(indicator);
+
+                    // Remove after 5 seconds
+                    setTimeout(() => indicator.remove(), 5000);
+
+                    console.log('[Mobile Fix] 🎉 All mobile fixes applied!');
+                } else {
+                    console.log('[Mobile Fix] Desktop screen detected, no fixes needed');
+                }
+            }
+
+            // Run on page load
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', forceMobileSizing);
+            } else {
+                forceMobileSizing();
+            }
+
+            // Re-run on window resize
+            let resizeTimeout;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(forceMobileSizing, 250);
+            });
+
+            console.log('[Mobile Fix] Script loaded and ready');
+        })();
+    </script>
 
 </body>
 </html>
