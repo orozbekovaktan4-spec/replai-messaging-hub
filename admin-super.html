@@ -2029,6 +2029,38 @@
     </style>
 </head>
 <body>
+    <!-- Viewport Width Indicator (for testing responsive behavior) -->
+    <div id="viewport-indicator" style="
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: bold;
+        z-index: 999999;
+        font-family: monospace;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    "></div>
+
+    <script>
+    // Update viewport width indicator in real-time
+    (function() {
+        const indicator = document.getElementById('viewport-indicator');
+        function updateIndicator() {
+            const width = window.innerWidth;
+            const isMobile = width < 768;
+            indicator.textContent = `${width}px ${isMobile ? '📱 MOBILE' : '🖥️ DESKTOP'}`;
+            indicator.style.background = isMobile ? 'rgba(46, 213, 115, 0.9)' : 'rgba(0,0,0,0.8)';
+        }
+        updateIndicator();
+        window.addEventListener('resize', updateIndicator);
+        console.log('[Viewport Indicator] Active and monitoring');
+    })();
+    </script>
+
     <!-- Sidebar -->
     <div class="sidebar">
         <div class="sidebar-brand">
@@ -8622,22 +8654,53 @@
                 console.error('[Mobile Layout] Stack trace:', error.stack);
             }
 
-            // Re-run on resize
-            let resizeTimeout;
-            window.addEventListener('resize', () => {
-                clearTimeout(resizeTimeout);
-                resizeTimeout = setTimeout(() => {
-                    const nowMobile = window.innerWidth < 768;
-                    if (nowMobile && !isMobile) {
-                        console.log('[Mobile Layout] Window resized to mobile, re-applying layout...');
-                        forceMobileLayout();
-                    }
-                }, 250);
-            });
+        }
 
-        })();
+        // ============================================
+        // EXECUTE ON LOAD
+        // ============================================
+
+        // Run immediately
+        forceMobileLayout();
+
+        // ============================================
+        // RE-RUN ON RESIZE (AGGRESSIVE)
+        // ============================================
+
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                const width = window.innerWidth;
+                console.log('[Resize] Window resized to:', width, 'px');
+
+                // Re-run mobile layout check
+                forceMobileLayout();
+
+            }, 250);
+        });
+
+        // ============================================
+        // PERIODIC CHECK (FIRST 3 SECONDS)
+        // ============================================
+
+        // Apply periodically for first 3 seconds to catch dynamic content
+        let count = 0;
+        const interval = setInterval(() => {
+            if (window.innerWidth < 768) {
+                forceMobileLayout();
+            }
+            count++;
+            if (count >= 30) {
+                clearInterval(interval);
+                console.log('[Mobile Layout] Periodic checks complete');
+            }
+        }, 100);
 
         console.log('[Mobile Layout] Script loaded and ready');
+        console.log('[Mobile Layout] Resize monitoring: ACTIVE');
+        console.log('[Mobile Layout] Periodic checks: Running for 3 seconds');
+    })();
     </script>
 
 </body>
