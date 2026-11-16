@@ -513,6 +513,12 @@ export class InstagramConnector extends PlatformConnector {
     if (!this.appSecret) {
       throw new Error('INSTAGRAM_APP_SECRET not configured');
     }
+
+    console.log('[Instagram OAuth] Starting token exchange...');
+    console.log('[Instagram OAuth] Using redirect URI:', stateData.data.redirectUri);
+
+    // Step 1: Exchange authorization code for short-lived access token
+    // IMPORTANT: Must use POST with form data
     const tokenResponse = await fetch('https://api.instagram.com/oauth/access_token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -524,18 +530,35 @@ export class InstagramConnector extends PlatformConnector {
         code
       })
     });
+
     const tokenData = await tokenResponse.json();
+    console.log('[Instagram OAuth] Token response status:', tokenResponse.status);
+
     if (!tokenResponse.ok || !tokenData.access_token) {
+      console.error('[Instagram OAuth] Token exchange failed:', tokenData);
       throw new Error(`Instagram token exchange failed: ${tokenData.error_message || tokenData.error?.message || 'Unknown error'}`);
     }
 
+    console.log('[Instagram OAuth] ✅ Short-lived token received');
+
+    // Step 2: Exchange for long-lived token
     const longLivedToken = await this.exchangeForLongLivedToken(tokenData.access_token);
-    const profileParams = new URLSearchParams({ fields: 'id,username,name,profile_picture_url,followers_count', access_token: longLivedToken.access_token });
+    console.log('[Instagram OAuth] ✅ Long-lived token received');
+
+    // Step 3: Fetch profile info
+    const profileParams = new URLSearchParams({
+      fields: 'id,username,name,profile_picture_url,followers_count',
+      access_token: longLivedToken.access_token
+    });
     const profileResponse = await fetch(`https://graph.instagram.com/me?${profileParams}`);
     const instagramAccount = await profileResponse.json();
+
     if (!profileResponse.ok || !instagramAccount.id) {
+      console.error('[Instagram OAuth] Profile fetch failed:', instagramAccount);
       throw new Error(`Instagram profile fetch failed: ${instagramAccount.error?.message || 'Unknown error'}`);
     }
+
+    console.log('[Instagram OAuth] ✅ Profile fetched: @' + instagramAccount.username);
 
     const connectionState = this.updateConnectionState({
       connected: true,
@@ -603,17 +626,31 @@ export class InstagramConnector extends PlatformConnector {
    * Exchange short-lived token for long-lived token
    */
   async exchangeForLongLivedToken(shortLivedToken) {
+    console.log('[Instagram OAuth] Exchanging for long-lived token...');
+
     const params = new URLSearchParams({
       grant_type: 'ig_exchange_token',
       client_secret: this.appSecret,
       access_token: shortLivedToken
     });
-    const response = await fetch(`https://graph.instagram.com/access_token?${params}`);
+
+    // Note: This endpoint uses GET (not POST) according to Instagram API docs
+    const url = `https://graph.instagram.com/access_token?${params.toString()}`;
+    console.log('[Instagram OAuth] Long-lived token request URL:', url.replace(this.appSecret, '***SECRET***').replace(shortLivedToken, '***TOKEN***'));
+
+    const response = await fetch(url, {
+      method: 'GET'
+    });
+
     const data = await response.json();
+    console.log('[Instagram OAuth] Long-lived token response status:', response.status);
+
     if (!response.ok || !data.access_token || !data.expires_in) {
-      throw new Error(`Failed to exchange token: ${data.error?.message || 'Unknown error'}`);
+      console.error('[Instagram OAuth] Long-lived token exchange failed:', data);
+      throw new Error(`Failed to exchange token: ${data.error?.message || data.error_message || 'Unknown error'}`);
     }
 
+    console.log('[Instagram OAuth] Long-lived token expires in:', data.expires_in, 'seconds');
     return data;
   }
 
