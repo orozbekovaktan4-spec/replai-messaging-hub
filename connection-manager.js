@@ -4,10 +4,14 @@
  * Supports: WhatsApp, Instagram, Telegram, Web Widget
  */
 
+import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
+
+// Load environment variables
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -475,7 +479,7 @@ export class InstagramConnector extends PlatformConnector {
 
   /**
    * Get Instagram OAuth URL - Using Instagram Business Login Flow
-   * This generates the proper OAuth URL that redirects to Instagram's consent page
+   * Instagram Business uses Facebook OAuth with Instagram permissions
    */
   getAuthUrl(baseUrl) {
     if (!this.appId) {
@@ -490,15 +494,18 @@ export class InstagramConnector extends PlatformConnector {
       initiatedAt: new Date().toISOString()
     });
 
+    // Instagram Business uses Facebook OAuth endpoint with Instagram permissions
+    // Requires: Facebook Page connected to Instagram Business account
     const params = new URLSearchParams({
       client_id: this.appId,
       redirect_uri: redirectUri,
-      scope: 'instagram_business_basic,instagram_business_manage_comments,instagram_business_manage_messages',
+      scope: 'instagram_basic,instagram_manage_messages,instagram_manage_comments,pages_show_list,pages_read_engagement',
       response_type: 'code',
       state
     });
 
-    return `https://api.instagram.com/oauth/authorize?${params.toString()}`;
+    // Use Facebook OAuth for Instagram Business (not api.instagram.com)
+    return `https://www.facebook.com/v21.0/dialog/oauth?${params.toString()}`;
   }
 
   /**
