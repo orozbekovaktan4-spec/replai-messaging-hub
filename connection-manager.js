@@ -478,8 +478,8 @@ export class InstagramConnector extends PlatformConnector {
   }
 
   /**
-   * Get Instagram OAuth URL - Using Instagram Business Login Flow
-   * Instagram Business uses Facebook OAuth with Instagram permissions
+   * Get Instagram OAuth URL - Fusion-style (instagram.com/consent)
+   * Simple, direct Instagram Business login - exactly like Fusion
    */
   getAuthUrl(baseUrl) {
     if (!this.appId) {
@@ -494,18 +494,17 @@ export class InstagramConnector extends PlatformConnector {
       initiatedAt: new Date().toISOString()
     });
 
-    // Instagram Business uses Facebook OAuth endpoint with Instagram permissions
-    // Requires: Facebook Page connected to Instagram Business account
-    const params = new URLSearchParams({
+    // Use Fusion's exact format: instagram.com/consent with params_json
+    const paramsJson = JSON.stringify({
       client_id: this.appId,
       redirect_uri: redirectUri,
-      scope: 'instagram_basic,instagram_manage_messages,instagram_manage_comments,pages_show_list,pages_read_engagement',
       response_type: 'code',
-      state
+      state: state,
+      scope: 'instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments'
     });
 
-    // Use Facebook OAuth for Instagram Business (not api.instagram.com)
-    return `https://www.facebook.com/v21.0/dialog/oauth?${params.toString()}`;
+    // Fusion's format: flow=ig_biz_login_oauth with JSON params
+    return `https://www.instagram.com/consent/?flow=ig_biz_login_oauth&params_json=${encodeURIComponent(paramsJson)}`;
   }
 
   /**
