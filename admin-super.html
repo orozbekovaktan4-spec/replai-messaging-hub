@@ -315,9 +315,21 @@
         /* Stats */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 16px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
             margin-bottom: 32px;
+        }
+        
+        @media (max-width: 1400px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
         }
         .stat-card {
             background: var(--bg-primary);
@@ -938,28 +950,46 @@
             align-items: flex-end;
             flex-wrap: wrap;
             margin-bottom: 24px;
+            box-shadow: var(--card-shadow);
         }
-        .filter-group { flex: 1; min-width: 150px; }
+        .filter-group { 
+            flex: 1; 
+            min-width: 180px;
+            max-width: 220px;
+        }
         .filter-group label {
             display: block;
             font-size: 12px;
             font-weight: 600;
             color: var(--text-secondary);
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         .filter-group select,
         .filter-group input {
             width: 100%;
-            padding: 10px 14px;
+            padding: 11px 14px;
             border: 1px solid var(--border-color);
             border-radius: 8px;
             background: var(--bg-secondary);
             color: var(--text-primary);
             font-size: 14px;
+            height: 42px;
+            transition: all 0.2s;
         }
-        .search-group { flex: 2; min-width: 250px; }
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: var(--bg-primary);
+            box-shadow: 0 0 0 3px rgba(47,134,255,0.1);
+        }
+        .search-group { 
+            flex: 1.5; 
+            min-width: 200px;
+            max-width: 280px;
+        }
         .filter-actions {
             display: flex;
             gap: 8px;
@@ -1612,9 +1642,9 @@
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label data-i18n="filter_plan">Plan</label>
+                    <label data-i18n="filter_plan">План</label>
                     <select id="filter-plan" onchange="applyFilters()">
-                        <option value="all" data-i18n="filter_all_plans">All Plans</option>
+                        <option value="all" data-i18n="filter_all_plans">Все</option>
                         <option value="free" data-i18n="plan_free">Free</option>
                         <option value="pro" data-i18n="plan_pro">Pro</option>
                     </select>
