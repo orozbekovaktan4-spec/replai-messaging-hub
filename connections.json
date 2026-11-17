@@ -27,5 +27,70 @@
     "lastActivity": "2026-10-06T08:37:58.056Z",
     "metadata": {},
     "apiKey": null
+  },
+  "_oauthStates": {
+    "f88daacfe1d7d5c7365da1750ea824de9f646185e2d627b9e23c9cd3a0de369a": {
+      "platform": "instagram",
+      "data": {
+        "redirectUri": "https://replai-xc95.onrender.com/api/admin/instagram/oauth/callback",
+        "initiatedAt": "2026-11-17T06:41:42.829Z"
+      },
+      "createdAt": 1794897702829,
+      "expiresAt": 1794898302829
+    },
+    "1e8b951c65318b4f0c76a31f7fbd58b7df7d8a343c06265d39e1215100f65bfd": {
+      "platform": "instagram",
+      "data": {
+        "redirectUri": "https://replai-xc95.onrender.com/api/admin/instagram/oauth/callback",
+        "initiatedAt": "2026-11-17T06:44:00.160Z"
+      },
+      "createdAt": 1794897840160,
+      "expiresAt": 1794898440160
+    },
+    "36d3e9c162f6d06408ecd1584a86fc017e80c6cbd7fba7e8f00e3feb7daa574b": {
+      "platform": "instagram",
+      "data": {
+        "redirectUri": "https://replai-xc95.onrender.com/api/admin/instagram/oauth/callback",
+        "initiatedAt": "2026-11-17T06:44:49.494Z"
+      },
+      "createdAt": 1794897889494,
+      "expiresAt": 1794898489494
+    },
+    "e59e24293e2785a6ec1336f01b294cc1460a0176c74b67a7040a030e4a2cba05": {
+      "platform": "instagram",
+      "data": {
+        "redirectUri": "https://replai-xc95.onrender.com/api/admin/instagram/oauth/callback",
+        "initiatedAt": "2026-11-17T07:01:36.467Z"
+      },
+      "createdAt": 1794898896467,
+      "expiresAt": 1794899496467
+    },
+    "88bf426b358c5b1f1ba75f2b6a6c9c099a8e06d5667bc92b39ec3341cea5f24d": {
+      "platform": "instagram",
+      "data": {
+        "redirectUri": "https://replai-xc95.onrender.com/api/admin/instagram/oauth/callback",
+        "initiatedAt": "2026-11-17T07:08:32.585Z"
+      },
+      "createdAt": 1794899312585,
+      "expiresAt": 1794899912585
+    },
+    "cdfa6fa286708d58d77f843d6f2e1a2ace6e3372cd297206aa028984753608fc": {
+      "platform": "instagram",
+      "data": {
+        "redirectUri": "https://replai-xc95.onrender.com/api/admin/instagram/oauth/callback",
+        "initiatedAt": "2026-11-17T07:14:39.286Z"
+      },
+      "createdAt": 1794899679286,
+      "expiresAt": 1794900279286
+    },
+    "57884243d3f8fb7952d4e541512a69af91489ff5a7fdf5a6c689efaade8ddc4d": {
+      "platform": "instagram",
+      "data": {
+        "redirectUri": "https://replai-xc95.onrender.com/api/admin/instagram/oauth/callback",
+        "initiatedAt": "2026-11-17T07:27:28.538Z"
+      },
+      "createdAt": 1794900448538,
+      "expiresAt": 1794901048538
+    }
   }
 }

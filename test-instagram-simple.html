@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram OAuth Test - Simple Link</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #fafafa;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #C13584;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .url-box {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, #E1306C 0%, #C13584 50%, #833AB4 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .info {
+            background: #E3F2FD;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #2196F3;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #C13584;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 Instagram OAuth - Simple Connection</h1>
+        <p class="subtitle">This is the same link Fusion uses - just click and connect!</p>
+
+        <div class="info">
+            <strong>📋 How this works:</strong>
+            <ol>
+                <li>Click "Connect Instagram" below</li>
+                <li>You'll be redirected to Instagram's authorization page</li>
+                <li>Log in and authorize the app</li>
+                <li>You'll be redirected back automatically</li>
+            </ol>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Loading OAuth URL...</p>
+        </div>
+
+        <div id="content" style="display: none;">
+            <h3>Your OAuth URL:</h3>
+            <div class="url-box" id="oauth-url"></div>
+
+            <a href="#" id="connect-btn" class="btn" target="_blank">
+                🔗 Connect Instagram Now
+            </a>
+
+            <div class="info" style="margin-top: 30px;">
+                <strong>🔍 URL Parameters:</strong>
+                <ul id="params-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load OAuth URL from backend
+        async function loadOAuthUrl() {
+            try {
+                document.getElementById('loading').style.display = 'block';
+
+                const response = await fetch('/api/admin/instagram/oauth/start');
+                const data = await response.json();
+
+                if (!data.success || !data.authUrl) {
+                    throw new Error(data.error || 'Failed to generate OAuth URL');
+                }
+
+                const url = data.authUrl;
+
+                // Display URL
+                document.getElementById('oauth-url').textContent = url;
+                document.getElementById('connect-btn').href = url;
+
+                // Parse and display parameters
+                const urlObj = new URL(url);
+                const params = new URLSearchParams(urlObj.search);
+                const paramsList = document.getElementById('params-list');
+
+                params.forEach((value, key) => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<strong>${key}</strong>: ${value}`;
+                    paramsList.appendChild(li);
+                });
+
+                // Show content
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('loading').innerHTML = `
+                    <div style="color: #f44336;">
+                        <strong>❌ Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Load on page load
+        loadOAuthUrl();
+    </script>
+</body>
+</html>

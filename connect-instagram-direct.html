@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect Instagram - Direct Link</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            padding: 48px;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        .instagram-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: linear-gradient(135deg, #E1306C 0%, #C13584 50%, #833AB4 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+        h1 {
+            font-size: 32px;
+            margin-bottom: 12px;
+            color: #1a1a1a;
+        }
+        p {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #E1306C 0%, #C13584 50%, #833AB4 100%);
+            color: white;
+            padding: 18px 48px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(225, 48, 108, 0.4);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(225, 48, 108, 0.6);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .status {
+            margin-top: 24px;
+            padding: 16px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+        }
+        .checkmark {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #C13584;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="instagram-icon">📷</div>
+        <h1>Connect Instagram</h1>
+        <p>Click the button below to connect your Instagram Business account to REPLAI</p>
+        
+        <a href="#" id="connectBtn" class="btn">
+            Connect Instagram Business
+        </a>
+
+        <div class="status">
+            <div class="status-item">
+                <span>Server Status:</span>
+                <span id="serverStatus">Checking...</span>
+            </div>
+            <div class="status-item">
+                <span>OAuth URL:</span>
+                <span id="oauthStatus">Loading...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check server and get OAuth URL
+        async function initialize() {
+            try {
+                console.log('Fetching OAuth URL...');
+                const response = await fetch('/api/admin/instagram/oauth/start');
+                console.log('Response status:', response.status);
+                
+                const data = await response.json();
+                console.log('Response data:', data);
+
+                if (data.success && data.authUrl) {
+                    // Update button with real URL
+                    document.getElementById('connectBtn').href = data.authUrl;
+                    
+                    // Update status
+                    document.getElementById('serverStatus').innerHTML = '<span class="checkmark">✓ Online</span>';
+                    document.getElementById('oauthStatus').innerHTML = '<span class="checkmark">✓ Ready</span>';
+                    
+                    console.log('OAuth URL ready:', data.authUrl);
+                } else {
+                    throw new Error(data.error || 'Failed to get OAuth URL');
+                }
+            } catch (error) {
+                console.error('Initialization error:', error);
+                document.getElementById('serverStatus').innerHTML = '❌ Error';
+                document.getElementById('oauthStatus').innerHTML = '❌ Failed';
+                document.getElementById('connectBtn').innerHTML = 'Error: ' + error.message;
+                document.getElementById('connectBtn').style.background = '#f44336';
+            }
+        }
+
+        // Run on page load
+        initialize();
+
+        // Add click handler for debugging
+        document.getElementById('connectBtn').addEventListener('click', function(e) {
+            console.log('Button clicked, redirecting to:', this.href);
+        });
+    </script>
+</body>
+</html>
