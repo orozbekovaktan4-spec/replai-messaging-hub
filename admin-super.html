@@ -318,9 +318,19 @@
             grid-template-columns: repeat(4, 1fr);
             gap: 16px;
             margin-bottom: 32px;
+            width: 100%;
+            overflow: visible;
         }
         
-        @media (max-width: 1400px) {
+        /* Force 4 columns even on medium screens */
+        @media (min-width: 1201px) {
+            .stats-grid {
+                grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            }
+        }
+        
+        /* 2 columns on smaller screens */
+        @media (max-width: 1200px) {
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
