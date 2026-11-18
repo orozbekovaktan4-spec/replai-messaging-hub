@@ -564,6 +564,22 @@ const platformConnections = {
 
 updateInstagramConnectionFromEnv();
 
+// Check for Telegram state synchronization on startup
+try {
+  const telegramConnector = connectionManager.getConnector('telegram');
+  const persistentState = telegramConnector.getConnectionState();
+  
+  if (platformConnections.telegram.connected && !persistentState.connected) {
+    console.warn('\n⚠️  [Telegram] State desynchronization detected on startup:');
+    console.warn('    In-memory state: connected=true (from .env)');
+    console.warn('    Persistent state: connected=false (from connections.json)');
+    console.warn('    Recommendation: Reconnect via admin UI to synchronize states');
+    console.warn('    Message flow will work, but admin UI may show incorrect status\n');
+  }
+} catch (syncCheckError) {
+  console.warn('[Telegram] Could not check state synchronization:', syncCheckError.message);
+}
+
 
 
 // --- INSTAGRAM OAUTH 2.0 (Official Meta Graph API) ---
@@ -2422,7 +2438,13 @@ app.post('/api/admin/telegram/disconnect', async (req, res) => {
     const connector = connectionManager.getConnector('telegram');
     await connector.disconnect();
     
-    platformConnections.telegram = { connected: false };
+    // Clear all fields to ensure complete state reset
+    platformConnections.telegram = {
+      connected: false,
+      token: null,
+      botUsername: null,
+      botName: null
+    };
     
     console.log('[Telegram] Disconnected');
     
@@ -3763,6 +3785,175 @@ app.get('/api/telegram/webhook-info', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/admin/telegram/webhook-status
+ * Admin-friendly webhook status endpoint
+ * Returns structured webhook information for admin dashboard
+ */
+app.get('/api/admin/telegram/webhook-status', async (req, res) => {
+  try {
+    const token = platformConnections.telegram.token || process.env.TELEGRAM_BOT_TOKEN;
+    
+    if (!token) {
+      return res.json({
+        configured: false,
+        webhook: {
+          registered: false,
+          url: null,
+          pendingUpdates: 0,
+          lastError: null
+        },
+        status: 'not_configured',
+        message: 'Telegram bot token is not configured'
+      });
+    }
+
+    // Call Telegram API to get webhook info
+    const response = await fetch(`https://api.telegram.org/bot${token}/getWebhookInfo`);
+    const data = await response.json();
+
+    if (!response.ok || !data.ok) {
+      return res.status(502).json({
+        configured: true,
+        webhook: {
+          registered: false,
+          url: null,
+          pendingUpdates: 0,
+          lastError: 'Failed to query Telegram API'
+        },
+        status: 'error',
+        message: 'Failed to retrieve webhook status from Telegram'
+      });
+    }
+
+    const webhookInfo = data.result;
+    const hasWebhook = webhookInfo.url && webhookInfo.url.length > 0;
+    const hasErrors = webhookInfo.last_error_date ? true : false;
+
+    return res.json({
+      configured: true,
+      webhook: {
+        registered: hasWebhook,
+        url: webhookInfo.url || null,
+        pendingUpdates: webhookInfo.pending_update_count || 0,
+        lastError: webhookInfo.last_error_message || null,
+        lastErrorDate: webhookInfo.last_error_date || null,
+        maxConnections: webhookInfo.max_connections || null
+      },
+      status: hasWebhook ? (hasErrors ? 'active_with_errors' : 'active') : 'not_registered',
+      message: hasWebhook 
+        ? (hasErrors 
+            ? `Webhook active at ${webhookInfo.url} but has errors` 
+            : `Webhook active at ${webhookInfo.url}`)
+        : 'Webhook not registered'
+    });
+  } catch (error) {
+    console.error('[Telegram Webhook Status] Error:', error.message);
+    res.status(500).json({
+      configured: false,
+      webhook: {
+        registered: false,
+        url: null,
+        pendingUpdates: 0,
+        lastError: error.message
+      },
+      status: 'error',
+      message: 'Error retrieving webhook status'
+    });
+  }
+});
+
+/**
+ * GET /api/admin/telegram/status-debug
+ * Unified debug endpoint showing both in-memory and persistent states
+ * Helps diagnose state synchronization issues
+ */
+app.get('/api/admin/telegram/status-debug', async (req, res) => {
+  try {
+    // Get in-memory state
+    const inMemoryState = {
+      connected: platformConnections.telegram.connected || false,
+      token: platformConnections.telegram.token ? 'present' : 'absent',
+      botUsername: platformConnections.telegram.botUsername || null,
+      botName: platformConnections.telegram.botName || null
+    };
+
+    // Get persistent state from ConnectionManager
+    const connector = connectionManager.getConnector('telegram');
+    const persistentState = connector.getConnectionState();
+
+    // Mask token in persistent state if present
+    const persistentStateSafe = {
+      connected: persistentState.connected || false,
+      platform: persistentState.platform,
+      connectedAt: persistentState.connectedAt || null,
+      lastActivity: persistentState.lastActivity || null,
+      webhookUrl: persistentState.webhookUrl || null,
+      webhookRegisteredAt: persistentState.webhookRegisteredAt || null,
+      metadata: persistentState.metadata || {},
+      botToken: persistentState.botToken ? 'present' : 'absent'
+    };
+
+    // Check synchronization
+    const synchronized = inMemoryState.connected === persistentState.connected;
+    const discrepancies = [];
+
+    if (inMemoryState.connected !== persistentState.connected) {
+      discrepancies.push(`connected status differs (memory: ${inMemoryState.connected}, persistent: ${persistentState.connected})`);
+    }
+
+    if (inMemoryState.token === 'present' && persistentState.botToken === 'absent') {
+      discrepancies.push('token present in memory but not in persistent state');
+    }
+
+    if (inMemoryState.token === 'absent' && persistentState.botToken === 'present') {
+      discrepancies.push('token present in persistent state but not in memory');
+    }
+
+    // Get webhook status if token is available
+    let webhookStatus = null;
+    const token = platformConnections.telegram.token || process.env.TELEGRAM_BOT_TOKEN;
+    
+    if (token) {
+      try {
+        const response = await fetch(`https://api.telegram.org/bot${token}/getWebhookInfo`);
+        const data = await response.json();
+        
+        if (data.ok) {
+          webhookStatus = {
+            registered: data.result.url && data.result.url.length > 0,
+            url: data.result.url || null,
+            pendingUpdates: data.result.pending_update_count || 0,
+            lastError: data.result.last_error_message || null
+          };
+        }
+      } catch (webhookError) {
+        webhookStatus = {
+          error: 'Failed to retrieve webhook info',
+          message: webhookError.message
+        };
+      }
+    }
+
+    res.json({
+      inMemory: inMemoryState,
+      persistent: persistentStateSafe,
+      synchronized: synchronized,
+      discrepancies: discrepancies.length > 0 ? discrepancies : null,
+      webhook: webhookStatus,
+      recommendations: synchronized 
+        ? ['States are synchronized'] 
+        : ['States are not synchronized', 'Reconnect via admin UI to sync states']
+    });
+  } catch (error) {
+    console.error('[Telegram Status Debug] Error:', error.message);
+    res.status(500).json({
+      error: 'Failed to retrieve debug status',
+      message: error.message
+    });
+  }
+});
+
 // ============================================
 // INSTAGRAM PLATFORM API (META OFFICIAL - REAL OAUTH)
 // ============================================
@@ -4340,7 +4531,24 @@ app.post('/api/telegram/set-webhook', async (req, res) => {
     });
     const data = await response.json();
 
-    if (data.ok) platformConnections.telegram = { connected: true, token };
+    // Update both in-memory and persistent state on success
+    if (data.ok) {
+      platformConnections.telegram = { connected: true, token };
+      
+      // Sync with persistent state
+      try {
+        const connector = connectionManager.getConnector('telegram');
+        connector.updateConnectionState({
+          connected: true,
+          webhookUrl: webhookUrl,
+          webhookRegisteredAt: new Date().toISOString()
+        });
+        console.log('[Telegram] Webhook registered and persistent state updated');
+      } catch (syncError) {
+        console.warn('[Telegram] Webhook registered but persistent state update failed:', syncError.message);
+      }
+    }
+    
     res.status(response.ok && data.ok ? 200 : 502).json(data);
   } catch (error) {
     res.status(500).json({ error: 'Error setting Telegram webhook' });
