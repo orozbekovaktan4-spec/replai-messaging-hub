@@ -6843,6 +6843,50 @@ async function syncEnvTokensToDatabase() {
 // Sync tokens on startup
 syncEnvTokensToDatabase().catch(console.error);
 
+// ============================================
+// DATABASE KEEP-ALIVE (Prevents Neon Free Tier Sleep)
+// ============================================
+
+/**
+ * Neon free tier databases sleep after 5 minutes of inactivity.
+ * This keep-alive mechanism pings the database every 4 minutes to prevent sleep.
+ */
+async function databaseKeepAlive() {
+  try {
+    // Simple query to keep connection alive
+    await prisma.$queryRaw`SELECT 1`;
+    console.log('[Keep-Alive] Database ping successful:', new Date().toISOString());
+  } catch (error) {
+    console.error('[Keep-Alive] Database ping failed:', error.message);
+    // Try to reconnect
+    try {
+      await prisma.$connect();
+      console.log('[Keep-Alive] Reconnected to database');
+    } catch (reconnectError) {
+      console.error('[Keep-Alive] Reconnection failed:', reconnectError.message);
+    }
+  }
+}
+
+// Start keep-alive interval (4 minutes = 240000ms)
+// Runs every 4 minutes to prevent 5-minute sleep timeout
+const KEEP_ALIVE_INTERVAL = 4 * 60 * 1000; // 4 minutes
+let keepAliveTimer = null;
+
+function startDatabaseKeepAlive() {
+  if (keepAliveTimer) {
+    clearInterval(keepAliveTimer);
+  }
+
+  console.log('[Keep-Alive] Starting database keep-alive (every 4 minutes)');
+
+  // Run immediately on startup
+  databaseKeepAlive();
+
+  // Then run every 4 minutes
+  keepAliveTimer = setInterval(databaseKeepAlive, KEEP_ALIVE_INTERVAL);
+}
+
 // Start listening engine
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log('🤖 REPLAI Messaging Hub is starting...');
@@ -6865,6 +6909,9 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log('\n🧪 Test endpoint available:');
   console.log('  POST /test-webhook (accepts any data)');
 
+  // Start database keep-alive to prevent Neon free tier sleep
+  startDatabaseKeepAlive();
+
   console.log('\nPress Ctrl+C to stop.');
 });
 
@@ -6876,22 +6923,40 @@ server.on('error', (error) => {
 // Save sessions on shutdown
 process.on('SIGINT', () => {
   console.log('\n\n🛑 Shutting down...');
+
+  // Clear keep-alive timer
+  if (keepAliveTimer) {
+    clearInterval(keepAliveTimer);
+    console.log('✓ Keep-alive stopped');
+  }
+
   saveSessions();
   console.log('✓ Sessions saved');
-  process.exit(0);
+
+  // Disconnect Prisma
+  prisma.$disconnect().then(() => {
+    console.log('✓ Database disconnected');
+    process.exit(0);
+  });
 });
 
 process.on('SIGTERM', () => {
   console.log('\n\n🛑 Shutting down...');
+
+  // Clear keep-alive timer
+  if (keepAliveTimer) {
+    clearInterval(keepAliveTimer);
+    console.log('✓ Keep-alive stopped');
+  }
+
   saveSessions();
   console.log('✓ Sessions saved');
-  process.exit(0);
-});
 
-// Graceful shutdown
-process.on('SIGINT', () => {
-  console.log('\n👋 Shutting down server...');
-  process.exit(0);
+  // Disconnect Prisma
+  prisma.$disconnect().then(() => {
+    console.log('✓ Database disconnected');
+    process.exit(0);
+  });
 });
 
 
