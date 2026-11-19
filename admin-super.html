@@ -2305,11 +2305,17 @@
                                 </div>
 
                                 <div style="display: flex; gap: 12px; margin-top: 20px;">
-                                    <button id="btn-connect-whatsapp" class="btn-primary-large" onclick="connectWhatsApp()">
-                                        <i data-lucide="link" style="width: 20px; height: 20px;"></i>
-                                        <span>Connect WhatsApp</span>
+                                    <button id="btn-connect-whatsapp-oauth" class="btn-primary-large" onclick="connectWhatsAppOAuth()" style="flex: 1;">
+                                        <i data-lucide="qr-code" style="width: 20px; height: 20px;"></i>
+                                        <span>Connect via QR Code</span>
                                     </button>
-                                    <button id="btn-disconnect-whatsapp" class="btn-secondary" onclick="disconnectWhatsApp()" style="display: none;">
+                                    <button id="btn-connect-whatsapp" class="btn-secondary" onclick="connectWhatsApp()" style="flex: 1;">
+                                        <i data-lucide="key" style="width: 20px; height: 20px;"></i>
+                                        <span>Manual Setup</span>
+                                    </button>
+                                </div>
+                                <div style="display: flex; gap: 12px; margin-top: 12px;">
+                                    <button id="btn-disconnect-whatsapp" class="btn-secondary" onclick="disconnectWhatsApp()" style="display: none; width: 100%;">
                                         <i data-lucide="unlink" style="width: 18px; height: 18px;"></i>
                                         <span>Disconnect</span>
                                     </button>
@@ -7080,16 +7086,91 @@
             }
         }
 
+        // WhatsApp OAuth connection with QR code
+        async function connectWhatsAppOAuth() {
+            try {
+                showToast('Initializing WhatsApp connection...', 'info');
+
+                // Get OAuth URL from backend
+                const response = await fetch('/api/admin/whatsapp/oauth/start');
+                const data = await response.json();
+
+                if (!data.success) {
+                    showToast('Failed to start OAuth: ' + data.error, 'error');
+                    return;
+                }
+
+                // Open popup window for OAuth flow
+                const width = 600;
+                const height = 700;
+                const left = (screen.width - width) / 2;
+                const top = (screen.height - height) / 2;
+
+                const popup = window.open(
+                    data.authUrl,
+                    'WhatsApp OAuth',
+                    `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes`
+                );
+
+                if (!popup) {
+                    showToast('Please allow popups to connect WhatsApp', 'error');
+                    return;
+                }
+
+                showToast('Scan QR code with your WhatsApp app', 'info');
+
+                // Listen for OAuth completion message
+                window.addEventListener('message', function handleOAuthMessage(event) {
+                    if (event.data.type === 'whatsapp_oauth_success') {
+                        window.removeEventListener('message', handleOAuthMessage);
+                        showToast('✅ WhatsApp connected successfully!', 'success');
+
+                        // Update UI
+                        document.getElementById('whatsapp-status-badge').innerHTML = `
+                            <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--success);"></span>
+                            Connected
+                        `;
+                        document.getElementById('whatsapp-status-badge').style.background = 'var(--success-light)';
+                        document.getElementById('whatsapp-status-badge').style.color = 'var(--success)';
+                        document.getElementById('btn-connect-whatsapp-oauth').style.display = 'none';
+                        document.getElementById('btn-connect-whatsapp').style.display = 'none';
+                        document.getElementById('btn-disconnect-whatsapp').style.display = 'block';
+                        document.getElementById('whatsapp-config').style.display = 'none';
+
+                        // Refresh dashboard
+                        if (typeof loadBusinessesDashboard === 'function') {
+                            loadBusinessesDashboard();
+                        }
+                    } else if (event.data.type === 'whatsapp_oauth_error') {
+                        window.removeEventListener('message', handleOAuthMessage);
+                        showToast('OAuth failed: ' + event.data.error, 'error');
+                    }
+                });
+
+                // Check if popup was closed without completing
+                const checkClosed = setInterval(() => {
+                    if (popup.closed) {
+                        clearInterval(checkClosed);
+                        console.log('[WhatsApp OAuth] Popup closed');
+                    }
+                }, 500);
+
+            } catch (error) {
+                console.error('[WhatsApp OAuth] Error:', error);
+                showToast('Connection error: ' + error.message, 'error');
+            }
+        }
+
         function connectWhatsApp() {
             const phoneId = document.getElementById('whatsapp-phone-id').value;
             const token = document.getElementById('whatsapp-token').value;
-            
+
             if (!phoneId || !token) {
                 document.getElementById('whatsapp-config').style.display = 'block';
                 showToast('Please enter WhatsApp credentials', 'info');
                 return;
             }
-            
+
             console.log('Connecting WhatsApp');
             showToast('WhatsApp connected successfully!', 'success');
         }
