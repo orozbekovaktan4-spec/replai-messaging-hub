@@ -970,6 +970,54 @@ function upsertEnvValues(values) {
 
 // --- CORE WEB INTERFACE ROUTES ---
 
+// Health check endpoint for database connectivity diagnosis
+app.get('/api/health', async (req, res) => {
+  try {
+    const health = {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      database: 'checking...',
+      prisma: 'checking...',
+      businesses: 'checking...'
+    };
+
+    // Test database connection
+    try {
+      await prisma.$connect();
+      health.database = 'connected';
+    } catch (dbError) {
+      health.database = `error: ${dbError.message}`;
+      health.status = 'error';
+    }
+
+    // Test Prisma query
+    try {
+      const count = await prisma.business.count();
+      health.prisma = `ok (${count} businesses)`;
+      health.businesses = count;
+    } catch (prismaError) {
+      health.prisma = `error: ${prismaError.message}`;
+      health.status = 'error';
+    }
+
+    // Environment check
+    health.env = {
+      DATABASE_URL: process.env.DATABASE_URL ? 'configured' : 'missing',
+      NODE_ENV: process.env.NODE_ENV || 'development',
+      PORT: process.env.PORT || 3000
+    };
+
+    const statusCode = health.status === 'ok' ? 200 : 503;
+    res.status(statusCode).json(health);
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Serve public landing page as main page (for Meta verification)
 // Serve new landing page as main page
 app.get('/', (req, res) => {
@@ -5597,8 +5645,21 @@ app.post('/api/business/settings', requireBusinessAuth, async (req, res) => {
 app.get('/api/admin/businesses', optionalAuth, async (req, res) => {
   try {
     // ⚠️ Using optionalAuth for testing - change to requireAdminAuth for production
+    console.log('[Admin] GET /api/admin/businesses - Starting request');
+    console.log('[Admin] DATABASE_URL configured:', !!process.env.DATABASE_URL);
+
+    // Test database connection first
+    try {
+      await prisma.$connect();
+      console.log('[Admin] Database connection successful');
+    } catch (dbError) {
+      console.error('[Admin] Database connection failed:', dbError.message);
+      throw new Error(`Database connection failed: ${dbError.message}`);
+    }
 
     const businesses = await db.getAllBusinesses();
+    console.log('[Admin] Retrieved businesses count:', businesses.length);
+
     const limit = parseInt(req.query.limit) || 1000;
 
     // Get real stats from database
