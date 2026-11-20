@@ -1,1023 +1,895 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>REPLAI Admin - Enterprise Dashboard</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <style>
-    /* CSS Variables from globals.css */
-    :root {
-      color-scheme: light;
-      --brand-from: #60efff;
-      --brand-to: #0061ff;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --enterprise: #8b5cf6;
-      --instagram: #e1306c;
-      --whatsapp: #25d366;
-      --telegram: #0088cc;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REPLAI Admin - Enterprise Dashboard</title>
 
-      --background: #f6f7f9;
-      --surface: #ffffff;
-      --foreground: #0b0d12;
-      --card: #ffffff;
-      --card-foreground: #0b0d12;
-      --popover: #ffffff;
-      --popover-foreground: #0b0d12;
-      --primary: #0061ff;
-      --primary-foreground: #ffffff;
-      --secondary: #eef0f4;
-      --secondary-foreground: #0b0d12;
-      --muted: #eef0f4;
-      --muted-foreground: #5b6270;
-      --accent: #e8f0ff;
-      --accent-foreground: #0045b8;
-      --destructive: #ef4444;
-      --border: #e3e6ec;
-      --input: #dcdfe6;
-      --ring: #0061ff;
-      --chart-1: #0061ff;
-      --chart-2: #60efff;
-      --chart-3: #10b981;
-      --chart-4: #f59e0b;
-      --chart-5: #ef4444;
-      --radius: 0.625rem;
-      --sidebar: #ffffff;
-      --sidebar-foreground: #0b0d12;
-      --sidebar-primary: #0061ff;
-      --sidebar-primary-foreground: #ffffff;
-      --sidebar-accent: #e8f0ff;
-      --sidebar-accent-foreground: #0045b8;
-      --sidebar-border: #e3e6ec;
-      --sidebar-ring: #0061ff;
-    }
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
-    .dark {
-      color-scheme: dark;
-      --background: #08090c;
-      --surface: #0e1015;
-      --foreground: #eceef2;
-      --card: #0e1015;
-      --card-foreground: #eceef2;
-      --popover: #12141a;
-      --popover-foreground: #eceef2;
-      --primary: #2f86ff;
-      --primary-foreground: #ffffff;
-      --secondary: #171a21;
-      --secondary-foreground: #eceef2;
-      --muted: #151820;
-      --muted-foreground: #8a919f;
-      --accent: #0f1b33;
-      --accent-foreground: #8cc4ff;
-      --destructive: #ef4444;
-      --border: #1d2129;
-      --input: #252a34;
-      --ring: #2f86ff;
-      --sidebar: #0b0c10;
-      --sidebar-foreground: #eceef2;
-      --sidebar-primary: #2f86ff;
-      --sidebar-primary-foreground: #ffffff;
-      --sidebar-accent: #0f1b33;
-      --sidebar-accent-foreground: #8cc4ff;
-      --sidebar-border: #1d2129;
-      --sidebar-ring: #2f86ff;
-    }
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 
-    * {
-      border-color: var(--border);
-      outline-color: color-mix(in srgb, var(--ring) 50%, transparent);
-    }
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    body {
-      background-color: var(--background);
-      color: var(--foreground);
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    }
-
-    html {
-      transition: background-color 0.3s ease;
-    }
-
-    .bg-brand-gradient {
-      background-image: linear-gradient(135deg, var(--brand-from) 0%, var(--brand-to) 100%);
-    }
-
-    .text-brand-gradient {
-      background-image: linear-gradient(135deg, var(--brand-from) 0%, var(--brand-to) 100%);
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
-    }
-
-    .bg-success-gradient {
-      background-image: linear-gradient(135deg, #34d399 0%, var(--success) 100%);
-    }
-
-    @keyframes fade-in {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes ping {
-      75%, 100% { transform: scale(2); opacity: 0; }
-    }
-
-    .animate-fade-in {
-      animation: fade-in 0.3s ease-out both;
-    }
-
-    .animate-ping {
-      animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
-    }
-
-    /* Lucide Icons */
-    .lucide {
-      width: 1em;
-      height: 1em;
-      display: inline-block;
-      stroke: currentColor;
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      fill: none;
-    }
-  </style>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            background: 'var(--background)',
-            foreground: 'var(--foreground)',
-            card: 'var(--card)',
-            'card-foreground': 'var(--card-foreground)',
-            popover: 'var(--popover)',
-            'popover-foreground': 'var(--popover-foreground)',
-            primary: 'var(--primary)',
-            'primary-foreground': 'var(--primary-foreground)',
-            secondary: 'var(--secondary)',
-            'secondary-foreground': 'var(--secondary-foreground)',
-            muted: 'var(--muted)',
-            'muted-foreground': 'var(--muted-foreground)',
-            accent: 'var(--accent)',
-            'accent-foreground': 'var(--accent-foreground)',
-            destructive: 'var(--destructive)',
-            border: 'var(--border)',
-            input: 'var(--input)',
-            ring: 'var(--ring)',
-            success: 'var(--success)',
-            warning: 'var(--warning)',
-            danger: 'var(--danger)',
-            enterprise: 'var(--enterprise)',
-            instagram: 'var(--instagram)',
-            whatsapp: 'var(--whatsapp)',
-            telegram: 'var(--telegram)',
-            surface: 'var(--surface)',
-            sidebar: 'var(--sidebar)',
-            'sidebar-foreground': 'var(--sidebar-foreground)',
-            'sidebar-primary': 'var(--sidebar-primary)',
-            'sidebar-border': 'var(--sidebar-border)',
-          }
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-from': '#60efff',
+                        'brand-to': '#0061ff',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                        enterprise: '#8b5cf6',
+                        instagram: '#e1306c',
+                        whatsapp: '#25d366',
+                        telegram: '#0088cc',
+                        background: 'var(--background)',
+                        foreground: 'var(--foreground)',
+                        card: 'var(--card)',
+                        'card-foreground': 'var(--card-foreground)',
+                        primary: 'var(--primary)',
+                        'primary-foreground': 'var(--primary-foreground)',
+                        secondary: 'var(--secondary)',
+                        'secondary-foreground': 'var(--secondary-foreground)',
+                        muted: 'var(--muted)',
+                        'muted-foreground': 'var(--muted-foreground)',
+                        accent: 'var(--accent)',
+                        'accent-foreground': 'var(--accent-foreground)',
+                        border: 'var(--border)',
+                        input: 'var(--input)',
+                        ring: 'var(--ring)',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'ping': 'ping 1s cubic-bezier(0, 0, 0.2, 1) infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            from: { opacity: '0', transform: 'translateY(6px)' },
+                            to: { opacity: '1', transform: 'translateY(0)' },
+                        },
+                    },
+                }
+            }
         }
-      }
-    }
-  </script>
+    </script>
+
+    <style>
+        :root {
+            color-scheme: light;
+            --brand-from: #60efff;
+            --brand-to: #0061ff;
+            --background: #f6f7f9;
+            --foreground: #0b0d12;
+            --card: #ffffff;
+            --card-foreground: #0b0d12;
+            --primary: #0061ff;
+            --primary-foreground: #ffffff;
+            --secondary: #eef0f4;
+            --secondary-foreground: #0b0d12;
+            --muted: #eef0f4;
+            --muted-foreground: #5b6270;
+            --accent: #e8f0ff;
+            --accent-foreground: #0045b8;
+            --border: #e3e6ec;
+            --input: #dcdfe6;
+            --ring: #0061ff;
+        }
+
+        .dark {
+            color-scheme: dark;
+            --background: #08090c;
+            --foreground: #eceef2;
+            --card: #0e1015;
+            --card-foreground: #eceef2;
+            --primary: #2f86ff;
+            --secondary: #171a21;
+            --secondary-foreground: #eceef2;
+            --muted: #151820;
+            --muted-foreground: #8a919f;
+            --accent: #0f1b33;
+            --accent-foreground: #8cc4ff;
+            --border: #1d2129;
+            --input: #252a34;
+            --ring: #2f86ff;
+        }
+
+        html {
+            transition: background-color 0.3s ease;
+        }
+
+        .bg-brand-gradient {
+            background-image: linear-gradient(135deg, #60efff 0%, #0061ff 100%);
+        }
+
+        .text-brand-gradient {
+            background-image: linear-gradient(135deg, #60efff 0%, #0061ff 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--muted);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--muted-foreground);
+        }
+    </style>
 </head>
-<body>
-  <!-- Desktop Only Warning (shown on mobile) -->
-  <div id="mobile-warning" class="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center md:hidden">
-    <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-      <svg class="lucide h-7 w-7" viewBox="0 0 24 24">
-        <rect width="20" height="14" x="2" y="3" rx="2"/>
-        <line x1="8" x2="16" y1="21" y2="21"/>
-        <line x1="12" x2="12" y1="17" y2="21"/>
-      </svg>
+<body class="bg-background text-foreground font-sans antialiased">
+
+    <!-- Mobile Notice -->
+    <div class="flex md:hidden min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
+        <div class="flex size-14 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+            <i data-lucide="monitor" class="size-7"></i>
+        </div>
+        <h1 class="text-xl font-semibold text-foreground">Desktop Only</h1>
+        <p class="max-w-xs text-sm leading-relaxed text-muted-foreground">
+            The REPLAI admin panel is designed for larger screens. Please open it on a tablet or desktop device.
+        </p>
     </div>
-    <h1 class="text-xl font-semibold text-foreground">Desktop Only</h1>
-    <p class="max-w-xs text-sm leading-relaxed text-muted-foreground">
-      The REPLAI admin panel is designed for larger screens. Please open it on a tablet or desktop device.
-    </p>
-  </div>
 
-  <!-- Main Admin Interface (hidden on mobile) -->
-  <div class="hidden min-h-screen md:block">
-    <!-- Header -->
-    <header class="fixed inset-x-0 top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-xl">
-      <div class="flex w-[260px] items-center">
-        <span class="text-xl font-bold tracking-tight">
-          <span class="text-foreground">REPL</span>
-          <span class="text-brand-gradient">AI</span>
-        </span>
-      </div>
-      <p class="absolute left-1/2 -translate-x-1/2 text-sm font-medium text-muted-foreground" id="section-title">
-        Businesses Management
-      </p>
-      <div class="flex items-center gap-2">
-        <div class="mr-2 flex items-center gap-3">
-          <div class="flex h-9 w-9 items-center justify-center rounded-full bg-brand-gradient text-xs font-semibold text-primary-foreground">
-            SA
-          </div>
-          <span class="hidden text-sm font-medium text-foreground lg:inline">Super Admin</span>
-        </div>
-        <button
-          type="button"
-          id="theme-toggle"
-          aria-label="Toggle theme"
-          class="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-all duration-200 hover:bg-secondary hover:text-foreground"
-        >
-          <svg class="lucide h-4 w-4 dark:hidden" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="4"/>
-            <path d="M12 2v2"/>
-            <path d="M12 20v2"/>
-            <path d="m4.93 4.93 1.41 1.41"/>
-            <path d="m17.66 17.66 1.41 1.41"/>
-            <path d="M2 12h2"/>
-            <path d="M20 12h2"/>
-            <path d="m6.34 17.66-1.41 1.41"/>
-            <path d="m19.07 4.93-1.41 1.41"/>
-          </svg>
-          <svg class="lucide hidden h-4 w-4 dark:block" viewBox="0 0 24 24">
-            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
-          </svg>
-        </button>
-        <button
-          type="button"
-          id="logout-btn"
-          class="flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-sm text-muted-foreground transition-all duration-200 hover:border-danger/40 hover:bg-danger/10 hover:text-danger"
-        >
-          <svg class="lucide h-4 w-4" viewBox="0 0 24 24">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <polyline points="16 17 21 12 16 7"/>
-            <line x1="21" x2="9" y1="12" y2="12"/>
-          </svg>
-          <span class="hidden lg:inline">Logout</span>
-        </button>
-      </div>
-    </header>
-
-    <!-- Sidebar -->
-    <aside class="fixed bottom-0 left-0 top-16 z-30 flex w-[72px] flex-col border-r border-sidebar-border bg-sidebar lg:w-[260px]">
-      <div class="flex items-center gap-3 border-b border-sidebar-border p-4 lg:px-6">
-        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-gradient text-primary-foreground">
-          <svg class="lucide h-5 w-5" viewBox="0 0 24 24">
-            <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
-            <path d="M20 3v4"/>
-            <path d="M22 5h-4"/>
-            <path d="M4 17v2"/>
-            <path d="M5 18H3"/>
-          </svg>
-        </div>
-        <div class="hidden min-w-0 lg:block">
-          <p class="truncate text-sm font-semibold text-sidebar-foreground">REPLAI Inc.</p>
-          <p class="truncate text-xs text-muted-foreground">AI Messaging Hub</p>
-        </div>
-      </div>
-
-      <nav aria-label="Main" class="flex flex-1 flex-col gap-6 p-3 lg:p-4">
-        <!-- Management Group -->
-        <div class="flex flex-col gap-1">
-          <p class="hidden px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground lg:block">
-            Management
-          </p>
-          <div class="mx-auto h-px w-6 bg-sidebar-border lg:hidden"></div>
-          
-          <button
-            type="button"
-            data-section="businesses"
-            class="nav-item flex items-center justify-center gap-3 rounded-[10px] p-3 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/30 lg:justify-start bg-brand-gradient text-primary-foreground shadow-lg shadow-brand-to/30"
-            title="Businesses Management"
-          >
-            <svg class="lucide h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24">
-              <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/>
-              <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/>
-              <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/>
-              <path d="M10 6h4"/>
-              <path d="M10 10h4"/>
-              <path d="M10 14h4"/>
-              <path d="M10 18h4"/>
-            </svg>
-            <span class="hidden truncate lg:inline">Businesses Management</span>
-          </button>
-
-          <button
-            type="button"
-            data-section="analytics"
-            class="nav-item flex items-center justify-center gap-3 rounded-[10px] p-3 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/30 lg:justify-start text-muted-foreground hover:translate-x-1 hover:bg-primary/10 hover:text-sidebar-foreground"
-            title="Platform Analytics"
-          >
-            <svg class="lucide h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24">
-              <path d="M3 3v18h18"/>
-              <path d="m19 9-5 5-4-4-3 3"/>
-            </svg>
-            <span class="hidden truncate lg:inline">Platform Analytics</span>
-          </button>
-        </div>
-
-        <!-- Configuration Group -->
-        <div class="flex flex-col gap-1">
-          <p class="hidden px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground lg:block">
-            Configuration
-          </p>
-          <div class="mx-auto h-px w-6 bg-sidebar-border lg:hidden"></div>
-          
-          <button
-            type="button"
-            data-section="settings"
-            class="nav-item flex items-center justify-center gap-3 rounded-[10px] p-3 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/30 lg:justify-start text-muted-foreground hover:translate-x-1 hover:bg-primary/10 hover:text-sidebar-foreground"
-            title="System Settings"
-          >
-            <svg class="lucide h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24">
-              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
-              <circle cx="12" cy="12" r="3"/>
-            </svg>
-            <span class="hidden truncate lg:inline">System Settings</span>
-          </button>
-        </div>
-      </nav>
-
-      <div class="hidden border-t border-sidebar-border p-4 lg:block">
-        <div class="flex items-center gap-2 rounded-lg bg-success/10 px-3 py-2 text-xs font-medium text-success">
-          <span class="relative flex h-2 w-2">
-            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75"></span>
-            <span class="relative inline-flex h-2 w-2 rounded-full bg-success"></span>
-          </span>
-          All systems operational
-        </div>
-      </div>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="pl-[72px] pt-16 lg:pl-[260px]">
-      <div id="content-area" class="mx-auto max-w-[1440px] animate-fade-in p-8">
-        <!-- Businesses Section (default) -->
-        <div id="businesses-section">
-          <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
-            <div class="flex flex-col gap-1">
-              <h1 class="text-balance text-3xl font-semibold tracking-tight text-foreground">Businesses Management</h1>
-              <p class="text-sm text-muted-foreground">Onboard, monitor, and manage every business on the platform.</p>
+    <!-- Desktop Content -->
+    <div class="hidden md:block min-h-screen">
+        <!-- Header -->
+        <header class="fixed inset-x-0 top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-xl">
+            <div class="flex w-[260px] items-center">
+                <span class="text-xl font-bold tracking-tight">
+                    <span class="text-foreground">REPL</span><span class="text-brand-gradient">AI</span>
+                </span>
             </div>
-            <button
-              type="button"
-              id="add-business-btn"
-              class="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-success-gradient px-6 text-sm font-semibold text-primary-foreground shadow-lg shadow-success/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-success/40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/30 active:translate-y-0"
-            >
-              <svg class="lucide h-5 w-5" viewBox="0 0 24 24">
-                <path d="M5 12h14"/>
-                <path d="M12 5v14"/>
-              </svg>
-              Add New Business
-            </button>
-          </div>
-
-          <!-- Filters Bar -->
-          <div class="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-4 mb-6">
-            <select
-              id="filter-status"
-              class="h-11 w-40 cursor-pointer appearance-none rounded-lg border border-input bg-surface px-3.5 pr-9 text-sm text-foreground transition-all duration-200 hover:border-muted-foreground/40 focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/20"
-            >
-              <option value="all">All statuses</option>
-              <option value="active">Active</option>
-              <option value="trial">Trial</option>
-              <option value="suspended">Suspended</option>
-            </select>
-
-            <select
-              id="filter-plan"
-              class="h-11 w-36 cursor-pointer appearance-none rounded-lg border border-input bg-surface px-3.5 pr-9 text-sm text-foreground transition-all duration-200 hover:border-muted-foreground/40 focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/20"
-            >
-              <option value="all">All plans</option>
-              <option value="free">Free</option>
-              <option value="pro">Pro</option>
-              <option value="enterprise">Enterprise</option>
-            </select>
-
-            <select
-              id="filter-channels"
-              class="h-11 w-40 cursor-pointer appearance-none rounded-lg border border-input bg-surface px-3.5 pr-9 text-sm text-foreground transition-all duration-200 hover:border-muted-foreground/40 focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/20"
-            >
-              <option value="all">All channels</option>
-              <option value="connected">Connected</option>
-              <option value="partial">Partial</option>
-              <option value="none">None</option>
-            </select>
-
-            <div class="relative min-w-56 flex-1">
-              <svg class="lucide pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" viewBox="0 0 24 24">
-                <circle cx="11" cy="11" r="8"/>
-                <path d="m21 21-4.3-4.3"/>
-              </svg>
-              <input
-                id="search-input"
-                type="search"
-                placeholder="Search by name, email, or phone..."
-                class="h-11 w-full rounded-lg border border-input bg-surface px-3.5 pl-10 text-sm text-foreground placeholder:text-muted-foreground/70 transition-all duration-200 hover:border-muted-foreground/40 focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/20"
-              />
-            </div>
-
+            <p class="absolute left-1/2 -translate-x-1/2 text-sm font-medium text-muted-foreground" id="pageTitle">
+                Businesses Management
+            </p>
             <div class="flex items-center gap-2">
-              <button
-                type="button"
-                id="reset-filters-btn"
-                aria-label="Reset filters"
-                class="flex h-11 w-11 items-center justify-center rounded-lg border border-border bg-surface px-0 text-sm font-medium text-foreground transition-all duration-200 hover:bg-secondary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/30 active:scale-[0.98]"
-              >
-                <svg class="lucide h-4 w-4" viewBox="0 0 24 24">
-                  <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                  <path d="M3 3v5h5"/>
-                  <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
-                  <path d="M16 16h5v5"/>
-                </svg>
-              </button>
-              <button
-                type="button"
-                id="export-csv-btn"
-                class="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border bg-surface px-4 text-sm font-medium text-foreground transition-all duration-200 hover:bg-secondary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/30 active:scale-[0.98]"
-              >
-                <svg class="lucide h-4 w-4" viewBox="0 0 24 24">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7 10 12 15 17 10"/>
-                  <line x1="12" x2="12" y1="15" y2="3"/>
-                </svg>
-                Export CSV
-              </button>
-            </div>
-          </div>
-
-          <!-- Stat Cards -->
-          <div class="grid grid-cols-2 gap-4 xl:grid-cols-4 mb-6">
-            <!-- Total Businesses -->
-            <div class="group flex flex-col gap-4 rounded-xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:scale-[1.02] hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5">
-              <div class="flex items-center justify-between">
-                <span class="text-sm font-medium text-muted-foreground">Total Businesses</span>
-                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <svg class="lucide h-5 w-5" viewBox="0 0 24 24">
-                    <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/>
-                    <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/>
-                    <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/>
-                    <path d="M10 6h4"/>
-                    <path d="M10 10h4"/>
-                    <path d="M10 14h4"/>
-                    <path d="M10 18h4"/>
-                  </svg>
+                <div class="mr-2 flex items-center gap-3">
+                    <div class="flex size-9 items-center justify-center rounded-full bg-brand-gradient text-xs font-semibold text-primary-foreground">
+                        SA
+                    </div>
+                    <span class="hidden text-sm font-medium text-foreground lg:inline">Super Admin</span>
                 </div>
-              </div>
-              <p class="text-3xl font-semibold tracking-tight text-foreground tabular-nums" data-stat="businesses">45</p>
-              <p class="flex items-center gap-1 text-xs font-medium text-success">
-                <svg class="lucide h-3.5 w-3.5" viewBox="0 0 24 24">
-                  <path d="M7 7h10v10"/>
-                  <path d="M7 17 17 7"/>
-                </svg>
-                12% vs last month
-              </p>
-            </div>
-
-            <!-- Active Today -->
-            <div class="group flex flex-col gap-4 rounded-xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:scale-[1.02] hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5">
-              <div class="flex items-center justify-between">
-                <span class="text-sm font-medium text-muted-foreground">Active Today</span>
-                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10 text-success">
-                  <svg class="lucide h-5 w-5" viewBox="0 0 24 24">
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                    <circle cx="9" cy="7" r="4"/>
-                    <polyline points="16 11 18 13 22 9"/>
-                  </svg>
-                </div>
-              </div>
-              <p class="text-3xl font-semibold tracking-tight text-foreground tabular-nums">12</p>
-              <p class="flex items-center gap-1 text-xs font-medium text-success">
-                <svg class="lucide h-3.5 w-3.5" viewBox="0 0 24 24">
-                  <path d="M7 7h10v10"/>
-                  <path d="M7 17 17 7"/>
-                </svg>
-                5 more than yesterday
-              </p>
-            </div>
-
-            <!-- Total Messages -->
-            <div class="group flex flex-col gap-4 rounded-xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:scale-[1.02] hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5">
-              <div class="flex items-center justify-between">
-                <span class="text-sm font-medium text-muted-foreground">Total Messages</span>
-                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-warning/10 text-warning">
-                  <svg class="lucide h-5 w-5" viewBox="0 0 24 24">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                  </svg>
-                </div>
-              </div>
-              <p class="text-3xl font-semibold tracking-tight text-foreground tabular-nums" data-stat="messages">5,847</p>
-              <p class="flex items-center gap-1 text-xs font-medium text-success">
-                <svg class="lucide h-3.5 w-3.5" viewBox="0 0 24 24">
-                  <path d="M7 7h10v10"/>
-                  <path d="M7 17 17 7"/>
-                </svg>
-                24% vs last week
-              </p>
-            </div>
-
-            <!-- Platform Health -->
-            <div class="group flex flex-col gap-4 rounded-xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:scale-[1.02] hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5">
-              <div class="flex items-center justify-between">
-                <span class="text-sm font-medium text-muted-foreground">Platform Health</span>
-                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-danger/10 text-danger">
-                  <svg class="lucide h-5 w-5" viewBox="0 0 24 24">
-                    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
-                    <path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/>
-                  </svg>
-                </div>
-              </div>
-              <p class="text-3xl font-semibold tracking-tight text-foreground tabular-nums">92%</p>
-              <p class="flex items-center gap-1 text-xs font-medium text-success">
-                <svg class="lucide h-3.5 w-3.5" viewBox="0 0 24 24">
-                  <path d="M7 7h10v10"/>
-                  <path d="M7 17 17 7"/>
-                </svg>
-                Excellent
-              </p>
-            </div>
-          </div>
-
-          <!-- Business Table -->
-          <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-            <div class="max-h-[640px] overflow-auto">
-              <table class="w-full min-w-[960px] border-collapse text-sm">
-                <thead class="sticky top-0 z-10 bg-card/95 backdrop-blur">
-                  <tr class="border-b border-border">
-                    <th scope="col" class="whitespace-nowrap px-3 py-3 text-left font-semibold">
-                      <button type="button" class="inline-flex items-center gap-1.5 rounded text-[11px] uppercase tracking-wider text-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
-                        Business
-                        <svg class="lucide h-3 w-3" viewBox="0 0 24 24">
-                          <path d="m7 15 5 5 5-5"/>
-                          <path d="m7 9 5-5 5 5"/>
-                        </svg>
-                      </button>
-                    </th>
-                    <th scope="col" class="whitespace-nowrap px-3 py-3 text-left font-semibold">
-                      <button type="button" class="inline-flex items-center gap-1.5 rounded text-[11px] uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
-                        Owner
-                        <svg class="lucide h-3 w-3" viewBox="0 0 24 24">
-                          <path d="m7 15 5 5 5-5"/>
-                          <path d="m7 9 5-5 5 5"/>
-                        </svg>
-                      </button>
-                    </th>
-                    <th scope="col" class="whitespace-nowrap px-3 py-3 text-left font-semibold">
-                      <button type="button" class="inline-flex items-center gap-1.5 rounded text-[11px] uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
-                        Status
-                        <svg class="lucide h-3 w-3" viewBox="0 0 24 24">
-                          <path d="m7 15 5 5 5-5"/>
-                          <path d="m7 9 5-5 5 5"/>
-                        </svg>
-                      </button>
-                    </th>
-                    <th scope="col" class="whitespace-nowrap px-3 py-3 text-left font-semibold">
-                      <button type="button" class="inline-flex items-center gap-1.5 rounded text-[11px] uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
-                        Plan
-                        <svg class="lucide h-3 w-3" viewBox="0 0 24 24">
-                          <path d="m7 15 5 5 5-5"/>
-                          <path d="m7 9 5-5 5 5"/>
-                        </svg>
-                      </button>
-                    </th>
-                    <th scope="col" class="whitespace-nowrap px-3 py-3 text-left font-semibold">
-                      <button type="button" class="inline-flex items-center gap-1.5 rounded text-[11px] uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
-                        Channels
-                        <svg class="lucide h-3 w-3" viewBox="0 0 24 24">
-                          <path d="m7 15 5 5 5-5"/>
-                          <path d="m7 9 5-5 5 5"/>
-                        </svg>
-                      </button>
-                    </th>
-                    <th scope="col" class="whitespace-nowrap px-3 py-3 text-right font-semibold">
-                      <button type="button" class="inline-flex items-center gap-1.5 rounded text-[11px] uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
-                        Messages
-                        <svg class="lucide h-3 w-3" viewBox="0 0 24 24">
-                          <path d="m7 15 5 5 5-5"/>
-                          <path d="m7 9 5-5 5 5"/>
-                        </svg>
-                      </button>
-                    </th>
-                    <th scope="col" class="whitespace-nowrap px-3 py-3 text-left font-semibold">
-                      <button type="button" class="inline-flex items-center gap-1.5 rounded text-[11px] uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
-                        Last Activity
-                        <svg class="lucide h-3 w-3" viewBox="0 0 24 24">
-                          <path d="m7 15 5 5 5-5"/>
-                          <path d="m7 9 5-5 5 5"/>
-                        </svg>
-                      </button>
-                    </th>
-                    <th scope="col" class="whitespace-nowrap px-3 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody id="business-table-body">
-                  <!-- Business rows will be dynamically inserted here -->
-                </tbody>
-              </table>
-            </div>
-            
-            <!-- Pagination -->
-            <div class="flex items-center justify-between border-t border-border px-6 py-4">
-              <p class="text-sm text-muted-foreground">
-                Showing <span id="page-start">1</span>-<span id="page-end">10</span> of <span id="total-businesses">45</span>
-              </p>
-              <div class="flex items-center gap-2">
-                <button
-                  type="button"
-                  id="prev-page"
-                  class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm font-medium text-foreground transition-all duration-200 hover:bg-secondary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/30 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
-                >
-                  <svg class="lucide h-4 w-4" viewBox="0 0 24 24">
-                    <path d="m15 18-6-6 6-6"/>
-                  </svg>
-                  Previous
+                <button id="themeToggle" type="button" class="flex size-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-all duration-200 hover:bg-secondary hover:text-foreground">
+                    <i data-lucide="sun" class="size-4 hidden dark:block"></i>
+                    <i data-lucide="moon" class="size-4 dark:hidden"></i>
                 </button>
-                <button
-                  type="button"
-                  id="next-page"
-                  class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm font-medium text-foreground transition-all duration-200 hover:bg-secondary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/30 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
-                >
-                  Next
-                  <svg class="lucide h-4 w-4" viewBox="0 0 24 24">
-                    <path d="m9 18 6-6-6-6"/>
-                  </svg>
+                <button type="button" onclick="handleLogout()" class="flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-sm text-muted-foreground transition-all duration-200 hover:border-danger/40 hover:bg-danger/10 hover:text-danger">
+                    <i data-lucide="log-out" class="size-4"></i>
+                    <span class="hidden lg:inline">Logout</span>
                 </button>
-              </div>
             </div>
-          </div>
-        </div>
+        </header>
 
-        <!-- Analytics Section (hidden by default) -->
-        <div id="analytics-section" class="hidden">
-          <div class="flex flex-col gap-1 mb-6">
-            <h1 class="text-balance text-3xl font-semibold tracking-tight text-foreground">Platform Analytics</h1>
-            <p class="text-sm text-muted-foreground">Analytics features coming soon...</p>
-          </div>
-        </div>
+        <!-- Sidebar -->
+        <aside class="fixed bottom-0 left-0 top-16 z-30 flex w-[72px] flex-col border-r border-border bg-card lg:w-[260px]">
+            <div class="flex items-center gap-3 border-b border-border p-4 lg:px-6">
+                <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-gradient text-primary-foreground">
+                    <i data-lucide="sparkles" class="size-5"></i>
+                </div>
+                <div class="hidden min-w-0 lg:block">
+                    <p class="truncate text-sm font-semibold text-foreground">REPLAI Inc.</p>
+                    <p class="truncate text-xs text-muted-foreground">AI Messaging Hub</p>
+                </div>
+            </div>
 
-        <!-- Settings Section (hidden by default) -->
-        <div id="settings-section" class="hidden">
-          <div class="flex flex-col gap-1 mb-6">
-            <h1 class="text-balance text-3xl font-semibold tracking-tight text-foreground">System Settings</h1>
-            <p class="text-sm text-muted-foreground">Settings features coming soon...</p>
-          </div>
-        </div>
-      </div>
-    </main>
-  </div>
+            <nav class="flex flex-1 flex-col gap-6 p-3 lg:p-4">
+                <!-- Management Group -->
+                <div class="flex flex-col gap-1">
+                    <p class="hidden px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground lg:block">
+                        Management
+                    </p>
+                    <div class="mx-auto h-px w-6 bg-border lg:hidden"></div>
 
-  <script>
-    // Mock Business Data
-    const mockBusinesses = [
-      {
-        id: 'biz_rs',
-        name: 'Aziz Barber Shop',
-        country: 'Uzbekistan',
-        owner: 'Aziz Karimov',
-        email: 'aziz.karimov@azizbarber.com',
-        phone: '+998 90 700 12 33',
-        status: 'active',
-        plan: 'pro',
-        channels: { instagram: true, whatsapp: true, telegram: false },
-        messages: 234,
-        lastActivityMinutes: 15
-      },
-      {
-        id: 'biz_rt',
-        name: 'Samarkand Grill',
-        country: 'Kazakhstan',
-        owner: 'Dilnoza Rakhimova',
-        email: 'dilnoza.rakhimova@samarkandgri.com',
-        phone: '+998 91 707 13 34',
-        status: 'active',
-        plan: 'free',
-        channels: { instagram: false, whatsapp: true, telegram: true },
-        messages: 127,
-        lastActivityMinutes: 45
-      },
-      {
-        id: 'biz_ru',
-        name: 'Nova Retail',
-        country: 'Turkey',
-        owner: 'Timur Saidov',
-        email: 'timur.saidov@novaretail.com',
-        phone: '+998 92 714 14 35',
-        status: 'trial',
-        plan: 'enterprise',
-        channels: { instagram: true, whatsapp: false, telegram: true },
-        messages: 89,
-        lastActivityMinutes: 120
-      },
-      {
-        id: 'biz_rv',
-        name: 'Luna Beauty Salon',
-        country: 'UAE',
-        owner: 'Madina Yusupova',
-        email: 'madina.yusupova@lunabeautysa.com',
-        phone: '+998 93 721 15 36',
-        status: 'active',
-        plan: 'pro',
-        channels: { instagram: true, whatsapp: true, telegram: true },
-        messages: 456,
-        lastActivityMinutes: 5
-      },
-      {
-        id: 'biz_rw',
-        name: 'MedCare Clinic',
-        country: 'Germany',
-        owner: 'Rustam Aliev',
-        email: 'rustam.aliev@medcareclin.com',
-        phone: '+998 94 728 16 37',
-        status: 'active',
-        plan: 'free',
-        channels: { instagram: false, whatsapp: true, telegram: false },
-        messages: 178,
-        lastActivityMinutes: 320
-      }
-    ];
+                    <button onclick="switchSection('businesses')" class="nav-item active flex items-center justify-center gap-3 rounded-[10px] p-3 text-sm font-medium transition-all duration-200 lg:justify-start" data-section="businesses">
+                        <i data-lucide="building-2" class="size-[18px] shrink-0"></i>
+                        <span class="hidden truncate lg:inline">Businesses Management</span>
+                    </button>
 
-    let allBusinesses = mockBusinesses;
-    let currentPage = 1;
-    const pageSize = 10;
+                    <button onclick="switchSection('analytics')" class="nav-item flex items-center justify-center gap-3 rounded-[10px] p-3 text-sm font-medium transition-all duration-200 lg:justify-start" data-section="analytics">
+                        <i data-lucide="bar-chart-3" class="size-[18px] shrink-0"></i>
+                        <span class="hidden truncate lg:inline">Platform Analytics</span>
+                    </button>
+                </div>
 
-    // Theme Toggle
-    document.getElementById('theme-toggle').addEventListener('click', () => {
-      const html = document.documentElement;
-      html.classList.toggle('dark');
-      localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
-    });
+                <!-- Configuration Group -->
+                <div class="flex flex-col gap-1">
+                    <p class="hidden px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground lg:block">
+                        Configuration
+                    </p>
+                    <div class="mx-auto h-px w-6 bg-border lg:hidden"></div>
 
-    // Load theme from localStorage
-    if (localStorage.getItem('theme') === 'light') {
-      document.documentElement.classList.remove('dark');
-    }
+                    <button onclick="switchSection('settings')" class="nav-item flex items-center justify-center gap-3 rounded-[10px] p-3 text-sm font-medium transition-all duration-200 lg:justify-start" data-section="settings">
+                        <i data-lucide="settings" class="size-[18px] shrink-0"></i>
+                        <span class="hidden truncate lg:inline">System Settings</span>
+                    </button>
+                </div>
+            </nav>
 
-    // Navigation
-    document.querySelectorAll('.nav-item').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const section = e.currentTarget.dataset.section;
-        switchSection(section);
-      });
-    });
+            <div class="hidden border-t border-border p-4 lg:block">
+                <div class="flex items-center gap-2 rounded-lg bg-success/10 px-3 py-2 text-xs font-medium text-success">
+                    <span class="relative flex size-2">
+                        <span class="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-75"></span>
+                        <span class="relative inline-flex size-2 rounded-full bg-success"></span>
+                    </span>
+                    All systems operational
+                </div>
+            </div>
+        </aside>
 
-    function switchSection(section) {
-      // Update active nav item
-      document.querySelectorAll('.nav-item').forEach(btn => {
-        if (btn.dataset.section === section) {
-          btn.className = 'nav-item flex items-center justify-center gap-3 rounded-[10px] p-3 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/30 lg:justify-start bg-brand-gradient text-primary-foreground shadow-lg shadow-brand-to/30';
-        } else {
-          btn.className = 'nav-item flex items-center justify-center gap-3 rounded-[10px] p-3 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/30 lg:justify-start text-muted-foreground hover:translate-x-1 hover:bg-primary/10 hover:text-sidebar-foreground';
+        <!-- Main Content -->
+        <main class="pl-[72px] pt-16 lg:pl-[260px]">
+            <div class="mx-auto max-w-[1440px] p-8 animate-fade-in">
+
+                <!-- Businesses Section -->
+                <div id="businessesSection">
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+                        <!-- Stat Card 1 -->
+                        <div class="group flex flex-col gap-4 rounded-xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:scale-[1.02] hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-muted-foreground">Total Businesses</span>
+                                <div class="flex size-10 items-center justify-center rounded-lg bg-primary/12 text-primary">
+                                    <i data-lucide="building-2" class="size-5"></i>
+                                </div>
+                            </div>
+                            <p class="text-3xl font-semibold tracking-tight text-foreground" id="statTotalBusinesses">0</p>
+                            <p class="flex items-center gap-1 text-xs font-medium text-success">
+                                <i data-lucide="arrow-up-right" class="size-3.5"></i>
+                                12% vs last month
+                            </p>
+                        </div>
+
+                        <!-- Stat Card 2 -->
+                        <div class="group flex flex-col gap-4 rounded-xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:scale-[1.02] hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-muted-foreground">Active Today</span>
+                                <div class="flex size-10 items-center justify-center rounded-lg bg-success/12 text-success">
+                                    <i data-lucide="user-check" class="size-5"></i>
+                                </div>
+                            </div>
+                            <p class="text-3xl font-semibold tracking-tight text-foreground" id="statActiveToday">0</p>
+                            <p class="flex items-center gap-1 text-xs font-medium text-success">
+                                <i data-lucide="arrow-up-right" class="size-3.5"></i>
+                                5 more than yesterday
+                            </p>
+                        </div>
+
+                        <!-- Stat Card 3 -->
+                        <div class="group flex flex-col gap-4 rounded-xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:scale-[1.02] hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-muted-foreground">Total Messages</span>
+                                <div class="flex size-10 items-center justify-center rounded-lg bg-warning/12 text-warning">
+                                    <i data-lucide="messages-square" class="size-5"></i>
+                                </div>
+                            </div>
+                            <p class="text-3xl font-semibold tracking-tight text-foreground" id="statTotalMessages">0</p>
+                            <p class="flex items-center gap-1 text-xs font-medium text-success">
+                                <i data-lucide="arrow-up-right" class="size-3.5"></i>
+                                24% vs last week
+                            </p>
+                        </div>
+
+                        <!-- Stat Card 4 -->
+                        <div class="group flex flex-col gap-4 rounded-xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:scale-[1.02] hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-muted-foreground">Platform Health</span>
+                                <div class="flex size-10 items-center justify-center rounded-lg bg-danger/12 text-danger">
+                                    <i data-lucide="activity" class="size-5"></i>
+                                </div>
+                            </div>
+                            <p class="text-3xl font-semibold tracking-tight text-foreground">92<span class="text-xl">%</span></p>
+                            <p class="flex items-center gap-1 text-xs font-medium text-success">
+                                <i data-lucide="arrow-up-right" class="size-3.5"></i>
+                                Excellent
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Filters Bar -->
+                    <div class="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-4 mb-6">
+                        <select id="filterStatus" class="h-11 w-40 rounded-lg border border-input bg-card px-3 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/50">
+                            <option value="all">All statuses</option>
+                            <option value="active">Active</option>
+                            <option value="trial">Trial</option>
+                            <option value="suspended">Suspended</option>
+                        </select>
+
+                        <select id="filterPlan" class="h-11 w-36 rounded-lg border border-input bg-card px-3 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/50">
+                            <option value="all">All plans</option>
+                            <option value="free">Free</option>
+                            <option value="pro">Pro</option>
+                            <option value="enterprise">Enterprise</option>
+                        </select>
+
+                        <select id="filterChannels" class="h-11 w-40 rounded-lg border border-input bg-card px-3 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/50">
+                            <option value="all">All channels</option>
+                            <option value="connected">Connected</option>
+                            <option value="partial">Partial</option>
+                            <option value="none">None</option>
+                        </select>
+
+                        <div class="relative min-w-56 flex-1">
+                            <i data-lucide="search" class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"></i>
+                            <input id="searchInput" type="search" placeholder="Search by name, email, or phone..." class="h-11 w-full rounded-lg border border-input bg-card pl-10 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/50">
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button onclick="resetFilters()" class="flex h-11 w-11 items-center justify-center rounded-lg border border-border bg-secondary text-secondary-foreground transition-all duration-200 hover:bg-muted">
+                                <i data-lucide="rotate-ccw" class="size-4"></i>
+                            </button>
+                            <button onclick="exportCSV()" class="flex h-11 items-center gap-2 rounded-lg border border-border bg-secondary px-4 text-sm font-medium text-secondary-foreground transition-all duration-200 hover:bg-muted">
+                                <i data-lucide="download" class="size-4"></i>
+                                Export CSV
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Business Table -->
+                    <div class="rounded-xl border border-border bg-card overflow-hidden">
+                        <div class="max-h-[640px] overflow-auto">
+                            <table class="w-full min-w-[960px] border-collapse text-sm">
+                                <thead class="sticky top-0 z-10 bg-card/95 backdrop-blur">
+                                    <tr class="border-b border-border">
+                                        <th class="whitespace-nowrap px-3 py-3 text-left">
+                                            <button onclick="sortTable('name')" class="inline-flex items-center gap-1.5 rounded text-[11px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground">
+                                                Business
+                                                <i data-lucide="arrow-up-down" class="size-3"></i>
+                                            </button>
+                                        </th>
+                                        <th class="whitespace-nowrap px-3 py-3 text-left">
+                                            <button onclick="sortTable('owner')" class="inline-flex items-center gap-1.5 rounded text-[11px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground">
+                                                Owner
+                                                <i data-lucide="arrow-up-down" class="size-3"></i>
+                                            </button>
+                                        </th>
+                                        <th class="whitespace-nowrap px-3 py-3 text-left">
+                                            <button onclick="sortTable('status')" class="inline-flex items-center gap-1.5 rounded text-[11px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground">
+                                                Status
+                                                <i data-lucide="arrow-up-down" class="size-3"></i>
+                                            </button>
+                                        </th>
+                                        <th class="whitespace-nowrap px-3 py-3 text-left">
+                                            <button onclick="sortTable('plan')" class="inline-flex items-center gap-1.5 rounded text-[11px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground">
+                                                Plan
+                                                <i data-lucide="arrow-up-down" class="size-3"></i>
+                                            </button>
+                                        </th>
+                                        <th class="whitespace-nowrap px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                            Channels
+                                        </th>
+                                        <th class="whitespace-nowrap px-3 py-3 text-right">
+                                            <button onclick="sortTable('messages')" class="inline-flex items-center gap-1.5 rounded text-[11px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground">
+                                                Messages
+                                                <i data-lucide="arrow-up-down" class="size-3"></i>
+                                            </button>
+                                        </th>
+                                        <th class="whitespace-nowrap px-3 py-3 text-left">
+                                            <button onclick="sortTable('lastActivity')" class="inline-flex items-center gap-1.5 rounded text-[11px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground">
+                                                Last Activity
+                                                <i data-lucide="arrow-up-down" class="size-3"></i>
+                                            </button>
+                                        </th>
+                                        <th class="whitespace-nowrap px-3 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                            Actions
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="businessTableBody">
+                                    <!-- Table rows will be inserted here by JavaScript -->
+                                    <tr>
+                                        <td colspan="8" class="px-4 py-16 text-center">
+                                            <div class="flex items-center justify-center gap-2 text-muted-foreground">
+                                                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                                                <span>Loading businesses...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="mt-6 flex items-center justify-between">
+                        <p class="text-sm text-muted-foreground" id="paginationInfo">
+                            Showing <span id="showingStart">0</span>-<span id="showingEnd">0</span> of <span id="totalCount">0</span> businesses
+                        </p>
+                        <div class="flex items-center gap-2">
+                            <button onclick="prevPage()" id="prevButton" class="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-foreground transition-all duration-200 hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i data-lucide="chevron-left" class="size-4"></i>
+                            </button>
+                            <div class="flex items-center gap-1" id="pageNumbers">
+                                <!-- Page numbers will be inserted here -->
+                            </div>
+                            <button onclick="nextPage()" id="nextButton" class="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-foreground transition-all duration-200 hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i data-lucide="chevron-right" class="size-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Section -->
+                <div id="analyticsSection" class="hidden">
+                    <h2 class="text-2xl font-semibold mb-6">Platform Analytics</h2>
+                    <div class="rounded-xl border border-border bg-card p-8 text-center">
+                        <div class="flex flex-col items-center gap-3">
+                            <div class="flex size-12 items-center justify-center rounded-full bg-primary/12 text-primary">
+                                <i data-lucide="bar-chart-3" class="size-6"></i>
+                            </div>
+                            <p class="text-muted-foreground">Analytics dashboard coming soon...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Section -->
+                <div id="settingsSection" class="hidden">
+                    <h2 class="text-2xl font-semibold mb-6">System Settings</h2>
+                    <div class="rounded-xl border border-border bg-card p-8 text-center">
+                        <div class="flex flex-col items-center gap-3">
+                            <div class="flex size-12 items-center justify-center rounded-full bg-primary/12 text-primary">
+                                <i data-lucide="settings" class="size-6"></i>
+                            </div>
+                            <p class="text-muted-foreground">Settings panel coming soon...</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        if (savedTheme === 'dark') {
+            html.classList.add('dark');
         }
-      });
 
-      // Update section title
-      const titles = {
-        businesses: 'Businesses Management',
-        analytics: 'Platform Analytics',
-        settings: 'System Settings'
-      };
-      document.getElementById('section-title').textContent = titles[section];
+        themeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            const isDark = html.classList.contains('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            lucide.createIcons(); // Refresh icons
+        });
 
-      // Show/hide sections
-      document.getElementById('businesses-section').classList.toggle('hidden', section !== 'businesses');
-      document.getElementById('analytics-section').classList.toggle('hidden', section !== 'analytics');
-      document.getElementById('settings-section').classList.toggle('hidden', section !== 'settings');
-    }
+        // Navigation
+        const sections = {
+            businesses: 'Businesses Management',
+            analytics: 'Platform Analytics',
+            settings: 'System Settings'
+        };
 
-    // Format relative time
-    function formatRelative(minutes) {
-      if (minutes < 60) return `${minutes}m ago`;
-      const hours = Math.floor(minutes / 60);
-      if (hours < 24) return `${hours}h ago`;
-      return `${Math.floor(hours / 24)}d ago`;
-    }
+        function switchSection(sectionId) {
+            // Hide all sections
+            document.getElementById('businessesSection').classList.add('hidden');
+            document.getElementById('analyticsSection').classList.add('hidden');
+            document.getElementById('settingsSection').classList.add('hidden');
 
-    // Render business table
-    function renderBusinessTable() {
-      const tbody = document.getElementById('business-table-body');
-      const start = (currentPage - 1) * pageSize;
-      const end = start + pageSize;
-      const pageBusinesses = allBusinesses.slice(start, end);
+            // Show selected section
+            document.getElementById(sectionId + 'Section').classList.remove('hidden');
 
-      if (pageBusinesses.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="8" class="px-4 py-16 text-center">
-              <div class="flex flex-col items-center gap-2 text-muted-foreground">
-                <svg class="lucide h-8 w-8" viewBox="0 0 24 24">
-                  <circle cx="11" cy="11" r="8"/>
-                  <path d="m21 21-4.3-4.3"/>
-                  <path d="m13 13 2 2"/>
-                </svg>
-                <p class="text-sm font-medium text-foreground">No businesses match your filters</p>
-                <p class="text-sm">Try adjusting the filters or search query.</p>
-              </div>
-            </td>
-          </tr>
-        `;
-        return;
-      }
+            // Update nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active', 'bg-brand-gradient', 'text-primary-foreground', 'shadow-lg', 'shadow-brand-to/30');
+                item.classList.add('text-muted-foreground', 'hover:translate-x-1', 'hover:bg-primary/10', 'hover:text-foreground');
+            });
 
-      tbody.innerHTML = pageBusinesses.map(b => {
+            const activeItem = document.querySelector(`[data-section="${sectionId}"]`);
+            activeItem.classList.remove('text-muted-foreground', 'hover:translate-x-1', 'hover:bg-primary/10', 'hover:text-foreground');
+            activeItem.classList.add('active', 'bg-brand-gradient', 'text-primary-foreground', 'shadow-lg', 'shadow-brand-to/30');
+
+            // Update page title
+            document.getElementById('pageTitle').textContent = sections[sectionId];
+
+            lucide.createIcons(); // Refresh icons
+        }
+
+        // Logout
+        function handleLogout() {
+            if (confirm('You will be signed out of the REPLAI admin panel.')) {
+                window.location.href = '/login';
+            }
+        }
+
+        // Business Data Management
+        let businesses = [];
+        let filteredBusinesses = [];
+        let currentPage = 1;
+        const pageSize = 10;
+        let sortKey = 'name';
+        let sortDir = 'asc';
+
+        // Status and Plan badges
         const statusColors = {
-          active: 'bg-success/12 text-success ring-success/25',
-          trial: 'bg-warning/12 text-warning ring-warning/25',
-          suspended: 'bg-danger/12 text-danger ring-danger/25'
+            active: 'bg-success/10 text-success border-success/20',
+            trial: 'bg-warning/10 text-warning border-warning/20',
+            suspended: 'bg-danger/10 text-danger border-danger/20'
         };
 
         const planColors = {
-          free: 'bg-muted text-muted-foreground ring-border',
-          pro: 'bg-primary/12 text-primary ring-primary/25',
-          enterprise: 'bg-enterprise/12 text-enterprise ring-enterprise/25'
+            free: 'bg-muted text-muted-foreground border-border',
+            pro: 'bg-primary/10 text-primary border-primary/20',
+            enterprise: 'bg-enterprise/10 text-enterprise border-enterprise/20'
         };
 
-        const channelIcons = `
-          <ul class="flex items-center gap-1.5">
-            <li class="flex h-7 w-7 items-center justify-center rounded-md transition-colors ${b.channels.instagram ? 'bg-instagram/15 text-instagram' : 'bg-muted text-muted-foreground/50'}">
-              <svg class="lucide h-3.5 w-3.5" viewBox="0 0 24 24">
-                <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
-                <circle cx="12" cy="13" r="3"/>
-              </svg>
-            </li>
-            <li class="flex h-7 w-7 items-center justify-center rounded-md transition-colors ${b.channels.whatsapp ? 'bg-whatsapp/15 text-whatsapp' : 'bg-muted text-muted-foreground/50'}">
-              <svg class="lucide h-3.5 w-3.5" viewBox="0 0 24 24">
-                <path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9z"/>
-                <path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1"/>
-              </svg>
-            </li>
-            <li class="flex h-7 w-7 items-center justify-center rounded-md transition-colors ${b.channels.telegram ? 'bg-telegram/15 text-telegram' : 'bg-muted text-muted-foreground/50'}">
-              <svg class="lucide h-3.5 w-3.5" viewBox="0 0 24 24">
-                <path d="M21.426 5.474 17.5 20.5a1 1 0 0 1-1.633.407L11 17l-4.867 3.25a1 1 0 0 1-1.526-.83L2.574 5.474a1 1 0 0 1 1.293-1.093l17.486 6.093a1 1 0 0 1 .073 1.86z"/>
-                <path d="m11 17 2-5.5"/>
-              </svg>
-            </li>
-          </ul>
-        `;
+        // Load businesses from API
+        async function loadBusinesses() {
+            try {
+                const response = await fetch('/api/admin/businesses');
+                const data = await response.json();
 
-        return `
-          <tr class="group border-b border-border transition-all duration-200 last:border-b-0 even:bg-muted/40 hover:bg-accent/60">
-            <td class="px-3 py-4">
-              <div class="flex items-center gap-3">
-                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-gradient text-sm font-semibold text-primary-foreground">
-                  ${b.name.charAt(0)}
-                </div>
-                <div class="min-w-0">
-                  <p class="truncate font-medium text-foreground">${b.name}</p>
-                  <p class="truncate text-xs text-muted-foreground">${b.country}</p>
-                </div>
-              </div>
-            </td>
-            <td class="px-3 py-4">
-              <p class="text-foreground">${b.owner}</p>
-              <p class="max-w-44 truncate text-xs text-muted-foreground">${b.email}</p>
-            </td>
-            <td class="px-3 py-4">
-              <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ring-1 ring-inset ${statusColors[b.status]}">
-                <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
-                ${b.status}
-              </span>
-            </td>
-            <td class="px-3 py-4">
-              <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ring-1 ring-inset ${planColors[b.plan]}">
-                ${b.plan}
-              </span>
-            </td>
-            <td class="px-3 py-4">${channelIcons}</td>
-            <td class="px-3 py-4 text-right font-medium tabular-nums text-foreground">${b.messages.toLocaleString()}</td>
-            <td class="whitespace-nowrap px-3 py-4 text-muted-foreground">${formatRelative(b.lastActivityMinutes)}</td>
-            <td class="px-3 py-4">
-              <div class="flex items-center justify-end gap-0.5">
-                <button type="button" class="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-all duration-200 hover:scale-110 hover:bg-primary/12 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
-                  <svg class="lucide h-4 w-4" viewBox="0 0 24 24">
-                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                </button>
-                <button type="button" class="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-all duration-200 hover:scale-110 hover:bg-primary/12 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
-                  <svg class="lucide h-4 w-4" viewBox="0 0 24 24">
-                    <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/>
-                    <path d="m15 5 4 4"/>
-                  </svg>
-                </button>
-                <button type="button" class="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-all duration-200 hover:scale-110 hover:bg-danger/12 hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
-                  <svg class="lucide h-4 w-4" viewBox="0 0 24 24">
-                    <path d="M3 6h18"/>
-                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
-                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-                    <line x1="10" x2="10" y1="11" y2="17"/>
-                    <line x1="14" x2="14" y1="11" y2="17"/>
-                  </svg>
-                </button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join('');
+                if (data.success) {
+                    businesses = data.data || [];
+                    filteredBusinesses = [...businesses];
 
-      // Update pagination
-      document.getElementById('page-start').textContent = start + 1;
-      document.getElementById('page-end').textContent = Math.min(end, allBusinesses.length);
-      document.getElementById('total-businesses').textContent = allBusinesses.length;
-      document.getElementById('prev-page').disabled = currentPage === 1;
-      document.getElementById('next-page').disabled = end >= allBusinesses.length;
-    }
+                    // Update stats
+                    document.getElementById('statTotalBusinesses').textContent = data.total || 0;
+                    document.getElementById('statActiveToday').textContent = data.stats?.activeToday || 0;
+                    document.getElementById('statTotalMessages').textContent = (data.stats?.totalMessages || 0).toLocaleString('en-US');
 
-    // Pagination
-    document.getElementById('prev-page').addEventListener('click', () => {
-      if (currentPage > 1) {
-        currentPage--;
-        renderBusinessTable();
-      }
-    });
+                    // Animate numbers
+                    animateValue('statTotalBusinesses', 0, data.total || 0, 1000);
+                    animateValue('statActiveToday', 0, data.stats?.activeToday || 0, 1000);
+                    animateValue('statTotalMessages', 0, data.stats?.totalMessages || 0, 1000);
 
-    document.getElementById('next-page').addEventListener('click', () => {
-      const maxPage = Math.ceil(allBusinesses.length / pageSize);
-      if (currentPage < maxPage) {
-        currentPage++;
-        renderBusinessTable();
-      }
-    });
+                    renderTable();
+                } else {
+                    showError('Failed to load businesses: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error loading businesses:', error);
+                showError('Failed to load businesses. Please try again.');
+            }
+        }
 
-    // Filters
-    function applyFilters() {
-      const statusFilter = document.getElementById('filter-status').value;
-      const planFilter = document.getElementById('filter-plan').value;
-      const channelsFilter = document.getElementById('filter-channels').value;
-      const searchQuery = document.getElementById('search-input').value.toLowerCase();
+        function animateValue(id, start, end, duration) {
+            const element = document.getElementById(id);
+            const range = end - start;
+            const increment = range / (duration / 16);
+            let current = start;
 
-      allBusinesses = mockBusinesses.filter(b => {
-        if (statusFilter !== 'all' && b.status !== statusFilter) return false;
-        if (planFilter !== 'all' && b.plan !== planFilter) return false;
-        
-        const channelCount = (b.channels.instagram ? 1 : 0) + (b.channels.whatsapp ? 1 : 0) + (b.channels.telegram ? 1 : 0);
-        if (channelsFilter === 'connected' && channelCount !== 3) return false;
-        if (channelsFilter === 'partial' && (channelCount === 0 || channelCount === 3)) return false;
-        if (channelsFilter === 'none' && channelCount !== 0) return false;
-        
-        if (searchQuery && ![b.name, b.email, b.phone, b.owner].some(v => v.toLowerCase().includes(searchQuery))) return false;
-        
-        return true;
-      });
+            const timer = setInterval(() => {
+                current += increment;
+                if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+                    current = end;
+                    clearInterval(timer);
+                }
+                element.textContent = Math.round(current).toLocaleString('en-US');
+            }, 16);
+        }
 
-      currentPage = 1;
-      renderBusinessTable();
-    }
+        function showError(message) {
+            const tbody = document.getElementById('businessTableBody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="px-4 py-16 text-center">
+                        <div class="flex flex-col items-center gap-3">
+                            <div class="flex size-12 items-center justify-center rounded-full bg-danger/10 text-danger">
+                                <i data-lucide="alert-circle" class="size-6"></i>
+                            </div>
+                            <p class="text-foreground font-medium">${message}</p>
+                            <button onclick="loadBusinesses()" class="mt-2 flex items-center gap-2 rounded-lg border border-border bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground transition-all duration-200 hover:bg-muted">
+                                <i data-lucide="refresh-cw" class="size-4"></i>
+                                Retry
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            lucide.createIcons();
+        }
 
-    document.getElementById('filter-status').addEventListener('change', applyFilters);
-    document.getElementById('filter-plan').addEventListener('change', applyFilters);
-    document.getElementById('filter-channels').addEventListener('change', applyFilters);
-    document.getElementById('search-input').addEventListener('input', applyFilters);
+        // Format relative time
+        function formatRelative(minutes) {
+            if (minutes < 60) return `${minutes}m ago`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours}h ago`;
+            return `${Math.floor(hours / 24)}d ago`;
+        }
 
-    document.getElementById('reset-filters-btn').addEventListener('click', () => {
-      document.getElementById('filter-status').value = 'all';
-      document.getElementById('filter-plan').value = 'all';
-      document.getElementById('filter-channels').value = 'all';
-      document.getElementById('search-input').value = '';
-      applyFilters();
-    });
+        // Render table
+        function renderTable() {
+            const tbody = document.getElementById('businessTableBody');
 
-    // Export CSV
-    document.getElementById('export-csv-btn').addEventListener('click', () => {
-      const header = ['Name', 'Country', 'Owner', 'Email', 'Phone', 'Status', 'Plan', 'Channels', 'Messages'];
-      const rows = allBusinesses.map(b => [
-        b.name, b.country, b.owner, b.email, b.phone, b.status, b.plan,
-        [b.channels.instagram && 'Instagram', b.channels.whatsapp && 'WhatsApp', b.channels.telegram && 'Telegram']
-          .filter(Boolean).join(' | '),
-        b.messages
-      ]);
-      const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'replai-businesses.csv';
-      a.click();
-      URL.revokeObjectURL(url);
-    });
+            if (filteredBusinesses.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="px-4 py-16 text-center">
+                            <div class="flex flex-col items-center gap-2 text-muted-foreground">
+                                <i data-lucide="search-x" class="size-8"></i>
+                                <p class="text-sm font-medium text-foreground">No businesses match your filters</p>
+                                <p class="text-sm">Try adjusting the filters or search query.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                lucide.createIcons();
+                return;
+            }
 
-    // Logout
-    document.getElementById('logout-btn').addEventListener('click', () => {
-      if (confirm('You will be signed out of the REPLAI admin panel.')) {
-        alert('You have been signed out.');
-      }
-    });
+            const start = (currentPage - 1) * pageSize;
+            const end = Math.min(start + pageSize, filteredBusinesses.length);
+            const pageBusinesses = filteredBusinesses.slice(start, end);
 
-    // Add Business
-    document.getElementById('add-business-btn').addEventListener('click', () => {
-      alert('Add Business wizard would open here');
-    });
+            tbody.innerHTML = pageBusinesses.map(b => {
+                const channels = b.channels || {};
+                const channelIcons = [];
+                if (channels.instagram) channelIcons.push('<span class="flex size-6 items-center justify-center rounded-full bg-instagram/10 text-instagram" title="Instagram"><i data-lucide="instagram" class="size-3.5"></i></span>');
+                if (channels.whatsapp) channelIcons.push('<span class="flex size-6 items-center justify-center rounded-full bg-whatsapp/10 text-whatsapp" title="WhatsApp"><i data-lucide="message-circle" class="size-3.5"></i></span>');
+                if (channels.telegram) channelIcons.push('<span class="flex size-6 items-center justify-center rounded-full bg-telegram/10 text-telegram" title="Telegram"><i data-lucide="send" class="size-3.5"></i></span>');
 
-    // Initial render
-    renderBusinessTable();
+                return `
+                    <tr class="group border-b border-border transition-all duration-200 last:border-b-0 even:bg-muted/40 hover:bg-accent/60">
+                        <td class="px-3 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-gradient text-sm font-semibold text-primary-foreground">
+                                    ${b.name.charAt(0)}
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="truncate font-medium text-foreground">${b.name}</p>
+                                    <p class="truncate text-xs text-muted-foreground">${b.country || 'Unknown'}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-3 py-4">
+                            <p class="text-foreground">${b.ownerName || b.name}</p>
+                            <p class="max-w-44 truncate text-xs text-muted-foreground">${b.email}</p>
+                        </td>
+                        <td class="px-3 py-4">
+                            <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${statusColors[b.status] || statusColors.active}">
+                                <span class="size-1.5 rounded-full bg-current"></span>
+                                ${b.status}
+                            </span>
+                        </td>
+                        <td class="px-3 py-4">
+                            <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${planColors[b.plan] || planColors.free}">
+                                ${b.plan}
+                            </span>
+                        </td>
+                        <td class="px-3 py-4">
+                            <div class="flex items-center gap-1">
+                                ${channelIcons.join('') || '<span class="text-xs text-muted-foreground">None</span>'}
+                            </div>
+                        </td>
+                        <td class="px-3 py-4 text-right font-medium tabular-nums text-foreground">
+                            ${(b.messageCount || 0).toLocaleString('en-US')}
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-4 text-muted-foreground">
+                            ${formatRelative(Math.floor((Date.now() - new Date(b.lastActivity || b.updatedAt).getTime()) / 60000))}
+                        </td>
+                        <td class="px-3 py-4">
+                            <div class="flex items-center justify-end gap-0.5">
+                                <button onclick="viewBusiness('${b.id}')" class="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-all duration-200 hover:scale-110 hover:bg-primary/12 hover:text-primary" title="View ${b.name}">
+                                    <i data-lucide="eye" class="size-4"></i>
+                                </button>
+                                <button onclick="editBusiness('${b.id}')" class="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-all duration-200 hover:scale-110 hover:bg-primary/12 hover:text-primary" title="Edit ${b.name}">
+                                    <i data-lucide="pencil" class="size-4"></i>
+                                </button>
+                                <button onclick="deleteBusiness('${b.id}')" class="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-all duration-200 hover:scale-110 hover:bg-danger/12 hover:text-danger" title="Delete ${b.name}">
+                                    <i data-lucide="trash-2" class="size-4"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
 
-    // Update stats
-    document.querySelector('[data-stat="businesses"]').textContent = mockBusinesses.length;
-    const totalMessages = mockBusinesses.reduce((sum, b) => sum + b.messages, 0);
-    document.querySelector('[data-stat="messages"]').textContent = totalMessages.toLocaleString();
-  </script>
+            lucide.createIcons();
+            updatePagination();
+        }
+
+        // Pagination
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredBusinesses.length / pageSize);
+            const start = (currentPage - 1) * pageSize + 1;
+            const end = Math.min(currentPage * pageSize, filteredBusinesses.length);
+
+            document.getElementById('showingStart').textContent = start;
+            document.getElementById('showingEnd').textContent = end;
+            document.getElementById('totalCount').textContent = filteredBusinesses.length;
+
+            document.getElementById('prevButton').disabled = currentPage === 1;
+            document.getElementById('nextButton').disabled = currentPage === totalPages;
+
+            // Page numbers
+            const pageNumbers = document.getElementById('pageNumbers');
+            pageNumbers.innerHTML = '';
+
+            for (let i = 1; i <= Math.min(totalPages, 5); i++) {
+                const button = document.createElement('button');
+                button.textContent = i;
+                button.onclick = () => goToPage(i);
+                button.className = `flex h-9 w-9 items-center justify-center rounded-lg text-sm font-medium transition-all duration-200 ${
+                    i === currentPage
+                        ? 'bg-brand-gradient text-primary-foreground shadow-lg shadow-brand-to/30'
+                        : 'border border-border bg-card text-foreground hover:bg-secondary'
+                }`;
+                pageNumbers.appendChild(button);
+            }
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            renderTable();
+        }
+
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable();
+            }
+        }
+
+        function nextPage() {
+            const totalPages = Math.ceil(filteredBusinesses.length / pageSize);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTable();
+            }
+        }
+
+        // Filters
+        document.getElementById('filterStatus').addEventListener('change', applyFilters);
+        document.getElementById('filterPlan').addEventListener('change', applyFilters);
+        document.getElementById('filterChannels').addEventListener('change', applyFilters);
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+
+        function applyFilters() {
+            const status = document.getElementById('filterStatus').value;
+            const plan = document.getElementById('filterPlan').value;
+            const channels = document.getElementById('filterChannels').value;
+            const search = document.getElementById('searchInput').value.toLowerCase();
+
+            filteredBusinesses = businesses.filter(b => {
+                if (status !== 'all' && b.status !== status) return false;
+                if (plan !== 'all' && b.plan !== plan) return false;
+
+                const channelCount = (b.channels?.instagram ? 1 : 0) + (b.channels?.whatsapp ? 1 : 0) + (b.channels?.telegram ? 1 : 0);
+                if (channels === 'connected' && channelCount !== 3) return false;
+                if (channels === 'partial' && (channelCount === 0 || channelCount === 3)) return false;
+                if (channels === 'none' && channelCount !== 0) return false;
+
+                if (search && ![b.name, b.email, b.ownerName].some(v => v?.toLowerCase().includes(search))) return false;
+
+                return true;
+            });
+
+            currentPage = 1;
+            renderTable();
+        }
+
+        function resetFilters() {
+            document.getElementById('filterStatus').value = 'all';
+            document.getElementById('filterPlan').value = 'all';
+            document.getElementById('filterChannels').value = 'all';
+            document.getElementById('searchInput').value = '';
+            applyFilters();
+        }
+
+        // Sort table
+        function sortTable(key) {
+            if (sortKey === key) {
+                sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortKey = key;
+                sortDir = 'asc';
+            }
+
+            filteredBusinesses.sort((a, b) => {
+                let aVal = a[key];
+                let bVal = b[key];
+
+                if (key === 'lastActivity') {
+                    aVal = new Date(a.lastActivity || a.updatedAt).getTime();
+                    bVal = new Date(b.lastActivity || b.updatedAt).getTime();
+                } else if (key === 'messages') {
+                    aVal = a.messageCount || 0;
+                    bVal = b.messageCount || 0;
+                }
+
+                const cmp = typeof aVal === 'number' ? aVal - bVal : String(aVal).localeCompare(String(bVal));
+                return sortDir === 'asc' ? cmp : -cmp;
+            });
+
+            renderTable();
+        }
+
+        // Export CSV
+        function exportCSV() {
+            const header = ['Name', 'Country', 'Owner', 'Email', 'Status', 'Plan', 'Channels', 'Messages'];
+            const rows = filteredBusinesses.map(b => [
+                b.name,
+                b.country || '',
+                b.ownerName || b.name,
+                b.email,
+                b.status,
+                b.plan,
+                [b.channels?.instagram && 'Instagram', b.channels?.whatsapp && 'WhatsApp', b.channels?.telegram && 'Telegram'].filter(Boolean).join('; '),
+                b.messageCount || 0
+            ]);
+
+            const csv = [header, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `replai-businesses-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Business actions
+        function viewBusiness(id) {
+            const business = businesses.find(b => b.id === id);
+            if (business) {
+                alert(`Viewing business: ${business.name}\n\nThis will open a detail modal in the full implementation.`);
+            }
+        }
+
+        function editBusiness(id) {
+            const business = businesses.find(b => b.id === id);
+            if (business) {
+                alert(`Editing business: ${business.name}\n\nThis will open an edit modal in the full implementation.`);
+            }
+        }
+
+        function deleteBusiness(id) {
+            const business = businesses.find(b => b.id === id);
+            if (business && confirm(`"${business.name}" and all of its conversations will be permanently deleted. This action cannot be undone.\n\nAre you sure?`)) {
+                // Call delete API
+                fetch(`/api/admin/businesses/${id}`, { method: 'DELETE' })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            businesses = businesses.filter(b => b.id !== id);
+                            applyFilters();
+                            alert(`${business.name} was deleted.`);
+                        } else {
+                            alert('Failed to delete business: ' + (data.error || 'Unknown error'));
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Delete error:', err);
+                        alert('Failed to delete business. Please try again.');
+                    });
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadBusinesses();
+        });
+    </script>
 </body>
 </html>
