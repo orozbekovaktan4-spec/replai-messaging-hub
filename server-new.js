@@ -1018,6 +1018,67 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+// Database setup endpoint (run once to initialize production database)
+app.get('/setup-database-now', async (req, res) => {
+  try {
+    const { prisma } = await import('./db.js');
+    const bcrypt = await import('bcryptjs');
+    
+    const steps = [];
+    
+    // Step 1: Check if admin already exists
+    steps.push('Checking for existing admin...');
+    const existingAdmin = await prisma.admin.findFirst({
+      where: { email: 'admin@replai.com' }
+    });
+    
+    if (existingAdmin) {
+      return res.json({
+        success: true,
+        message: '✅ Admin user already exists!',
+        email: 'admin@replai.com',
+        note: 'You can login at /admin'
+      });
+    }
+    
+    // Step 2: Create admin user
+    steps.push('Creating admin user...');
+    const hashedPassword = await bcrypt.default.hash('admin123', 10);
+    
+    const admin = await prisma.admin.create({
+      data: {
+        id: 'admin_' + Date.now(),
+        email: 'admin@replai.com',
+        password: hashedPassword,
+        name: 'Super Admin',
+        role: 'admin',
+        updatedAt: new Date()
+      }
+    });
+    
+    steps.push('✅ Admin created successfully!');
+    
+    res.json({
+      success: true,
+      message: '✅ Database setup complete!',
+      steps,
+      credentials: {
+        email: 'admin@replai.com',
+        password: 'admin123'
+      },
+      loginUrl: '/admin',
+      note: 'This endpoint will be disabled after first use for security.'
+    });
+    
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      note: 'If you see "relation does not exist", run Prisma migrations first.'
+    });
+  }
+});
+
 // Serve public landing page as main page (for Meta verification)
 // Serve new landing page as main page
 app.get('/', (req, res) => {
