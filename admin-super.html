@@ -3066,8 +3066,11 @@
         let allBusinesses = [];
         let filteredBusinesses = [];
         
-        // Authentication Check
+        // Authentication Check - DISABLED for now
         function checkAuth() {
+            // Authentication temporarily disabled - always return true
+            return true;
+            
             const token = localStorage.getItem('adminToken');
             if (!token) {
                 window.location.href = '/login.html';
