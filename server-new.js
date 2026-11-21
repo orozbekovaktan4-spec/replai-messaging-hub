@@ -320,27 +320,42 @@ function saveUsers(users) {
   }
 }
 
-// Get user by email (checks both admin users and businesses database)
+// Get user by email (checks both admin database and businesses)
 async function getUserByEmail(email) {
-  // First check admin users (for super admin)
-  const users = loadUsers();
-  const user = users.find(u => u.email === email);
-  if (user) return user;
-
-  // Then check businesses database (for business owners)
-  const business = await db.findBusinessByEmail(email);
-  if (business) {
-    // Return in user format
-    return {
-      email: business.email,
-      name: business.ownerName || business.name,
-      passwordHash: business.password,
-      businessId: business.id,
-      type: 'business'
-    };
+  try {
+    // First check Admin table in database (for super admin)
+    const { prisma } = await import('./db.js');
+    const admin = await prisma.admin.findUnique({
+      where: { email: email.toLowerCase() }
+    });
+    
+    if (admin) {
+      return {
+        email: admin.email,
+        name: admin.name,
+        passwordHash: admin.password,
+        role: admin.role,
+        type: 'admin'
+      };
+    }
+    
+    // Then check businesses database (for business owners)
+    const business = await db.findBusinessByEmail(email);
+    if (business) {
+      return {
+        email: business.email,
+        name: business.ownerName || business.name,
+        passwordHash: business.password,
+        businessId: business.id,
+        type: 'business'
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('[Auth] Error getting user:', error.message);
+    return null;
   }
-
-  return null;
 }
 
 // Add new user
