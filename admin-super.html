@@ -2060,7 +2060,7 @@
                             <div class="platform-chart-wrapper">
                                 <canvas id="platformChart"></canvas>
                                 <div class="chart-center-label">
-                                    <span class="chart-center-value">249K</span>
+                                    <span class="chart-center-value" id="chartCenterValue">0</span>
                                     <span class="chart-center-label-text">Total messages</span>
                                 </div>
                             </div>
@@ -2068,17 +2068,17 @@
                                 <div class="legend-item">
                                     <span class="legend-dot" style="background: #E1306C;"></span>
                                     <span class="legend-label">Instagram</span>
-                                    <span class="legend-value">40%</span>
+                                    <span class="legend-value" id="instagramPercent">0%</span>
                                 </div>
                                 <div class="legend-item">
                                     <span class="legend-dot" style="background: #25D366;"></span>
                                     <span class="legend-label">WhatsApp</span>
-                                    <span class="legend-value">45%</span>
+                                    <span class="legend-value" id="whatsappPercent">0%</span>
                                 </div>
                                 <div class="legend-item">
                                     <span class="legend-dot" style="background: #0088cc;"></span>
                                     <span class="legend-label">Telegram</span>
-                                    <span class="legend-value">15%</span>
+                                    <span class="legend-value" id="telegramPercent">0%</span>
                                 </div>
                             </div>
                         </div>
@@ -2668,34 +2668,36 @@
         }
 
         // Generate chart data
-        function buildGrowthData(days) {
-            const data = [];
-            const labels = [];
-            const today = new Date();
-            
-            for (let i = days - 1; i >= 0; i--) {
-                const date = new Date(today);
-                date.setDate(today.getDate() - i);
-                labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-                
-                const base = 2 + (days - i) * (12 / days);
-                const wave = Math.sin((days - i) * 0.9) * 1.6 + Math.cos((days - i) * 0.37) * 1.2;
-                data.push(Math.max(1, Math.round(base + wave + 2)));
+        async function buildGrowthData(days) {
+            try {
+                const response = await fetch(`/api/admin/analytics/growth?days=${days}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    return {
+                        labels: result.labels,
+                        data: result.data
+                    };
+                } else {
+                    console.error('Failed to fetch growth data:', result.error);
+                    return { labels: [], data: [] };
+                }
+            } catch (error) {
+                console.error('Error fetching growth data:', error);
+                return { labels: [], data: [] };
             }
-            
-            return { labels, data };
         }
 
-        function initGrowthChart(days = 30) {
+        async function initGrowthChart(days = 30) {
             const ctx = document.getElementById('growthChart');
             if (!ctx) return;
-            
-            const { labels, data } = buildGrowthData(days);
-            
+
+            const { labels, data } = await buildGrowthData(days);
+
             if (growthChartInstance) {
                 growthChartInstance.destroy();
             }
-            
+
             growthChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -2737,7 +2739,7 @@
                     scales: {
                         x: {
                             grid: { display: false },
-                            ticks: { 
+                            ticks: {
                                 color: 'var(--muted-foreground)',
                                 font: { size: 12 },
                                 maxTicksLimit: 8
@@ -2745,11 +2747,11 @@
                         },
                         y: {
                             beginAtZero: true,
-                            grid: { 
+                            grid: {
                                 color: 'var(--border)',
                                 drawBorder: false
                             },
-                            ticks: { 
+                            ticks: {
                                 color: 'var(--muted-foreground)',
                                 font: { size: 12 },
                                 precision: 0
@@ -2763,27 +2765,55 @@
         function initPlatformChart() {
             const ctx = document.getElementById('platformChart');
             if (!ctx) return;
-            
+
             if (platformChartInstance) {
                 platformChartInstance.destroy();
             }
-            
+
             // Use real data if available, otherwise use placeholder data
             const platformData = window.platformData || {
                 instagram: 0,
                 whatsapp: 0,
                 telegram: 0
             };
-            
+
             const chartData = [
                 platformData.instagram,
                 platformData.whatsapp,
                 platformData.telegram
             ];
-            
-            // Only show chart if there's data
-            const hasData = chartData.some(val => val > 0);
-            
+
+            // Calculate total and percentages
+            const total = chartData.reduce((sum, val) => sum + val, 0);
+            const hasData = total > 0;
+
+            // Update center value
+            const centerValueEl = document.getElementById('chartCenterValue');
+            if (centerValueEl) {
+                if (total >= 1000000) {
+                    centerValueEl.textContent = (total / 1000000).toFixed(1) + 'M';
+                } else if (total >= 1000) {
+                    centerValueEl.textContent = (total / 1000).toFixed(1) + 'K';
+                } else {
+                    centerValueEl.textContent = total.toString();
+                }
+            }
+
+            // Update legend percentages
+            if (hasData) {
+                const instagramPercent = Math.round((platformData.instagram / total) * 100);
+                const whatsappPercent = Math.round((platformData.whatsapp / total) * 100);
+                const telegramPercent = Math.round((platformData.telegram / total) * 100);
+
+                document.getElementById('instagramPercent').textContent = instagramPercent + '%';
+                document.getElementById('whatsappPercent').textContent = whatsappPercent + '%';
+                document.getElementById('telegramPercent').textContent = telegramPercent + '%';
+            } else {
+                document.getElementById('instagramPercent').textContent = '0%';
+                document.getElementById('whatsappPercent').textContent = '0%';
+                document.getElementById('telegramPercent').textContent = '0%';
+            }
+
             platformChartInstance = new Chart(ctx, {
                 type: 'doughnut',
                 data: {

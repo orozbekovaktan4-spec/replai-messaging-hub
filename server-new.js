@@ -6037,19 +6037,93 @@ app.get('/api/admin/analytics/signups', optionalAuth, async (req, res) => {
 app.get('/api/admin/analytics/messages', optionalAuth, async (req, res) => {
   try {
     const { prisma } = await import('./db.js');
-    
+
     const totalMessages = await prisma.message.count();
-    
+
     res.json({
       success: true,
       count: totalMessages
     });
   } catch (error) {
     console.error('[Admin] Error fetching messages count:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       error: 'Failed to fetch messages count',
       count: 0
+    });
+  }
+});
+
+// Get business growth data for chart (last 7 days)
+app.get('/api/admin/analytics/growth', optionalAuth, async (req, res) => {
+  try {
+    const { prisma } = await import('./db.js');
+    const days = parseInt(req.query.days) || 7;
+
+    // Get businesses grouped by day for the last N days
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    const businesses = await prisma.business.findMany({
+      where: {
+        createdAt: {
+          gte: startDate
+        }
+      },
+      select: {
+        createdAt: true
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    });
+
+    // Group by day
+    const dailyCounts = {};
+    const labels = [];
+    const data = [];
+
+    // Initialize all days with 0
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      const dateKey = date.toISOString().split('T')[0];
+      dailyCounts[dateKey] = 0;
+
+      // Format label as "Mon", "Tue", etc
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      labels.push(dayNames[date.getDay()]);
+    }
+
+    // Count businesses per day
+    businesses.forEach(business => {
+      const date = new Date(business.createdAt);
+      date.setHours(0, 0, 0, 0);
+      const dateKey = date.toISOString().split('T')[0];
+      if (dailyCounts.hasOwnProperty(dateKey)) {
+        dailyCounts[dateKey]++;
+      }
+    });
+
+    // Convert to array
+    Object.keys(dailyCounts).forEach(key => {
+      data.push(dailyCounts[key]);
+    });
+
+    res.json({
+      success: true,
+      labels,
+      data
+    });
+  } catch (error) {
+    console.error('[Admin] Error fetching growth data:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch growth data',
+      labels: [],
+      data: []
     });
   }
 });
