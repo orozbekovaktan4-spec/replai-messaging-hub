@@ -5922,6 +5922,43 @@ app.get('/api/admin/statistics', async (req, res) => {
   }
 });
 
+// Get platform-specific message counts from database
+app.get('/api/admin/analytics/platforms', optionalAuth, async (req, res) => {
+  try {
+    const prisma = (await import('./db.js')).default;
+    
+    // Query message counts grouped by platform
+    const platformCounts = await prisma.message.groupBy({
+      by: ['platform'],
+      _count: {
+        id: true
+      }
+    });
+    
+    // Transform to object format
+    const data = {
+      instagram: 0,
+      whatsapp: 0,
+      telegram: 0
+    };
+    
+    platformCounts.forEach(item => {
+      const platform = item.platform.toLowerCase();
+      if (data.hasOwnProperty(platform)) {
+        data[platform] = item._count.id;
+      }
+    });
+    
+    res.json({
+      success: true,
+      data
+    });
+  } catch (error) {
+    console.error('[Admin] Error fetching platform analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch platform analytics' });
+  }
+});
+
 // Get single business details
 // CRITICAL FIX #2: Applied authentication middleware
 app.get('/api/admin/businesses/:id', optionalAuth, async (req, res) => {

@@ -2994,33 +2994,27 @@
                         healthChangeEl.innerHTML = '<i data-lucide="arrow-down"></i> Needs Attention';
                     }
                     
-                    // Calculate platform-specific message counts for chart
-                    let instagramMessages = 0;
-                    let whatsappMessages = 0;
-                    let telegramMessages = 0;
-                    
-                    allBusinesses.forEach(b => {
-                        const channels = b.channels || {};
-                        if (channels.instagram?.connected) {
-                            instagramMessages += b.messageCount || 0;
-                        }
-                        if (channels.whatsapp?.connected) {
-                            whatsappMessages += b.messageCount || 0;
-                        }
-                        if (channels.telegram?.connected) {
-                            telegramMessages += b.messageCount || 0;
-                        }
-                    });
-                    
-                    // Store platform data globally for chart
-                    window.platformData = {
-                        instagram: instagramMessages,
-                        whatsapp: whatsappMessages,
-                        telegram: telegramMessages
-                    };
-                    
-                    // Reinitialize platform chart with real data
-                    initPlatformChart();
+                    // Fetch real platform-specific message counts from database
+                    fetch('/api/admin/analytics/platforms')
+                        .then(res => res.json())
+                        .then(result => {
+                            if (result.success) {
+                                // Store platform data globally for chart
+                                window.platformData = {
+                                    instagram: result.data.instagram || 0,
+                                    whatsapp: result.data.whatsapp || 0,
+                                    telegram: result.data.telegram || 0
+                                };
+                                
+                                // Reinitialize platform chart with real data
+                                initPlatformChart();
+                            } else {
+                                console.error('Failed to load platform analytics');
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Error fetching platform analytics:', err);
+                        });
                     
                     // Reinitialize lucide icons for the new stat changes
                     lucide.createIcons();
