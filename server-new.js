@@ -1033,6 +1033,52 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+// Direct SQL test for admin login (bypasses Prisma completely)
+app.post('/api/test-login-direct', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    // Use pg library directly to avoid Prisma pooling issues
+    const { Pool } = await import('pg');
+    const pool = new Pool({ connectionString: process.env.DIRECT_URL || process.env.DATABASE_URL });
+    
+    // Query admin directly
+    const result = await pool.query(
+      'SELECT id, email, password, name, role FROM "Admin" WHERE email = $1',
+      [email.toLowerCase()]
+    );
+    
+    await pool.end();
+    
+    if (result.rows.length === 0) {
+      return res.json({ success: false, message: 'No admin found with that email', email });
+    }
+    
+    const admin = result.rows[0];
+    
+    // Test password
+    const bcrypt = await import('bcryptjs');
+    const isValid = await bcrypt.default.compare(password, admin.password);
+    
+    res.json({
+      success: true,
+      adminFound: true,
+      passwordMatch: isValid,
+      admin: {
+        id: admin.id,
+        email: admin.email,
+        name: admin.name,
+        role: admin.role
+      },
+      passwordHashLength: admin.password.length,
+      note: 'This is a direct SQL test to diagnose login issues'
+    });
+    
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Debug endpoint to check admin user
 app.get('/debug-admin-check', async (req, res) => {
   try {
