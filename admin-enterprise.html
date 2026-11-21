@@ -518,7 +518,7 @@
         // Logout
         function handleLogout() {
             if (confirm('You will be signed out of the REPLAI admin panel.')) {
-                window.location.href = '/login';
+                window.location.href = '/';
             }
         }
 
@@ -543,38 +543,96 @@
             enterprise: 'bg-enterprise/10 text-enterprise border-enterprise/20'
         };
 
-        // Load businesses from API
+        // Load businesses from real backend API
         async function loadBusinesses() {
+            console.log('[Admin] → loadBusinesses() STARTED');
+            console.log('[Admin] → Timestamp:', new Date().toISOString());
+
+            // Show loading state
+            const tbody = document.getElementById('businessTableBody');
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="px-4 py-16 text-center">
+                            <div class="flex items-center justify-center gap-2 text-muted-foreground">
+                                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                                <span>Loading businesses...</span>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+
             try {
-                const response = await fetch('/api/admin/businesses');
+                console.log('[Admin] → Fetching from API...');
+                console.log('[Admin] → API URL: /api/admin/businesses?limit=1000');
+
+                const response = await fetch('/api/admin/businesses?limit=1000');
+
+                console.log('[Admin] → API Response received');
+                console.log('[Admin] → Response status:', response.status);
+                console.log('[Admin] → Response ok:', response.ok);
+
                 const data = await response.json();
 
+                console.log('[Admin] → API Data parsed successfully');
+                console.log('[Admin] → Data received:', data);
+                console.log('[Admin] → Success:', data.success);
+                console.log('[Admin] → Business count:', data.data ? data.data.length : 0);
+
                 if (data.success) {
+                    console.log('[Admin] → Processing businesses...');
                     businesses = data.data || [];
                     filteredBusinesses = [...businesses];
+                    console.log('[Admin] → Businesses set to:', businesses.length, 'items');
 
+                    // Calculate time periods
+                    const now = new Date();
+                    const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000);
+
+                    console.log('[Admin] → Updating stats...');
+                    
                     // Update stats
-                    document.getElementById('statTotalBusinesses').textContent = data.total || 0;
-                    document.getElementById('statActiveToday').textContent = data.stats?.activeToday || 0;
-                    document.getElementById('statTotalMessages').textContent = (data.stats?.totalMessages || 0).toLocaleString('en-US');
+                    animateValue('statTotalBusinesses', 0, businesses.length, 1000);
 
-                    // Animate numbers
-                    animateValue('statTotalBusinesses', 0, data.total || 0, 1000);
-                    animateValue('statActiveToday', 0, data.stats?.activeToday || 0, 1000);
-                    animateValue('statTotalMessages', 0, data.stats?.totalMessages || 0, 1000);
+                    // Active businesses (updated in last 24h)
+                    const activeCount = businesses.filter(b => {
+                        if (!b.lastActivity) return false;
+                        const lastActivity = new Date(b.lastActivity);
+                        return lastActivity > oneDayAgo;
+                    }).length;
+                    animateValue('statActiveToday', 0, activeCount, 1000);
 
+                    // Total messages
+                    const totalMessages = businesses.reduce((sum, b) => sum + (b.messageCount || 0), 0);
+                    animateValue('statTotalMessages', 0, totalMessages, 1000);
+
+                    console.log('[Admin] → Stats updated - Total:', businesses.length, 'Active:', activeCount, 'Messages:', totalMessages);
+
+                    console.log('[Admin] → Calling renderTable()...');
                     renderTable();
+                    console.log('[Admin] → renderTable() completed');
                 } else {
+                    console.error('[Admin] ✖ API returned success=false');
+                    console.error('[Admin] ✖ Error:', data.error);
                     showError('Failed to load businesses: ' + (data.error || 'Unknown error'));
                 }
             } catch (error) {
-                console.error('Error loading businesses:', error);
+                console.error('[Admin] ✖✖✖ FATAL ERROR in loadBusinesses');
+                console.error('[Admin] ✖ Error:', error);
+                console.error('[Admin] ✖ Error message:', error.message);
+                console.error('[Admin] ✖ Error stack:', error.stack);
+
                 showError('Failed to load businesses. Please try again.');
             }
+
+            console.log('[Admin] → loadBusinesses() COMPLETED');
         }
 
         function animateValue(id, start, end, duration) {
             const element = document.getElementById(id);
+            if (!element) return;
+            
             const range = end - start;
             const increment = range / (duration / 16);
             let current = start;
@@ -645,16 +703,21 @@
             tbody.innerHTML = pageBusinesses.map(b => {
                 const channels = b.channels || {};
                 const channelIcons = [];
-                if (channels.instagram) channelIcons.push('<span class="flex size-6 items-center justify-center rounded-full bg-instagram/10 text-instagram" title="Instagram"><i data-lucide="instagram" class="size-3.5"></i></span>');
-                if (channels.whatsapp) channelIcons.push('<span class="flex size-6 items-center justify-center rounded-full bg-whatsapp/10 text-whatsapp" title="WhatsApp"><i data-lucide="message-circle" class="size-3.5"></i></span>');
-                if (channels.telegram) channelIcons.push('<span class="flex size-6 items-center justify-center rounded-full bg-telegram/10 text-telegram" title="Telegram"><i data-lucide="send" class="size-3.5"></i></span>');
+                // Check for connected channels
+                if (channels.instagram?.connected) channelIcons.push('<span class="flex size-6 items-center justify-center rounded-full bg-instagram/10 text-instagram" title="Instagram"><i data-lucide="instagram" class="size-3.5"></i></span>');
+                if (channels.whatsapp?.connected) channelIcons.push('<span class="flex size-6 items-center justify-center rounded-full bg-whatsapp/10 text-whatsapp" title="WhatsApp"><i data-lucide="message-circle" class="size-3.5"></i></span>');
+                if (channels.telegram?.connected) channelIcons.push('<span class="flex size-6 items-center justify-center rounded-full bg-telegram/10 text-telegram" title="Telegram"><i data-lucide="send" class="size-3.5"></i></span>');
+
+                // Ensure we have a status
+                const businessStatus = b.status || 'active';
+                const businessPlan = b.plan || 'free';
 
                 return `
                     <tr class="group border-b border-border transition-all duration-200 last:border-b-0 even:bg-muted/40 hover:bg-accent/60">
                         <td class="px-3 py-4">
                             <div class="flex items-center gap-3">
                                 <div class="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-gradient text-sm font-semibold text-primary-foreground">
-                                    ${b.name.charAt(0)}
+                                    ${b.name.charAt(0).toUpperCase()}
                                 </div>
                                 <div class="min-w-0">
                                     <p class="truncate font-medium text-foreground">${b.name}</p>
@@ -664,17 +727,17 @@
                         </td>
                         <td class="px-3 py-4">
                             <p class="text-foreground">${b.ownerName || b.name}</p>
-                            <p class="max-w-44 truncate text-xs text-muted-foreground">${b.email}</p>
+                            <p class="max-w-44 truncate text-xs text-muted-foreground">${b.ownerEmail || b.email || 'N/A'}</p>
                         </td>
                         <td class="px-3 py-4">
-                            <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${statusColors[b.status] || statusColors.active}">
+                            <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium capitalize ${statusColors[businessStatus] || statusColors.active}">
                                 <span class="size-1.5 rounded-full bg-current"></span>
-                                ${b.status}
+                                ${businessStatus}
                             </span>
                         </td>
                         <td class="px-3 py-4">
-                            <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${planColors[b.plan] || planColors.free}">
-                                ${b.plan}
+                            <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium capitalize ${planColors[businessPlan] || planColors.free}">
+                                ${businessPlan}
                             </span>
                         </td>
                         <td class="px-3 py-4">
@@ -686,7 +749,7 @@
                             ${(b.messageCount || 0).toLocaleString('en-US')}
                         </td>
                         <td class="whitespace-nowrap px-3 py-4 text-muted-foreground">
-                            ${formatRelative(Math.floor((Date.now() - new Date(b.lastActivity || b.updatedAt).getTime()) / 60000))}
+                            ${formatRelative(Math.floor((Date.now() - new Date(b.lastActivity || b.updatedAt || b.createdAt).getTime()) / 60000))}
                         </td>
                         <td class="px-3 py-4">
                             <div class="flex items-center justify-end gap-0.5">
@@ -772,15 +835,34 @@
             const search = document.getElementById('searchInput').value.toLowerCase();
 
             filteredBusinesses = businesses.filter(b => {
-                if (status !== 'all' && b.status !== status) return false;
-                if (plan !== 'all' && b.plan !== plan) return false;
+                // Status filter
+                const businessStatus = b.status || 'active';
+                if (status !== 'all' && businessStatus !== status) return false;
+                
+                // Plan filter
+                const businessPlan = b.plan || 'free';
+                if (plan !== 'all' && businessPlan !== plan) return false;
 
-                const channelCount = (b.channels?.instagram ? 1 : 0) + (b.channels?.whatsapp ? 1 : 0) + (b.channels?.telegram ? 1 : 0);
+                // Channel filter - check for connected channels
+                const channelCount = (b.channels?.instagram?.connected ? 1 : 0) + 
+                                   (b.channels?.whatsapp?.connected ? 1 : 0) + 
+                                   (b.channels?.telegram?.connected ? 1 : 0);
                 if (channels === 'connected' && channelCount !== 3) return false;
                 if (channels === 'partial' && (channelCount === 0 || channelCount === 3)) return false;
                 if (channels === 'none' && channelCount !== 0) return false;
 
-                if (search && ![b.name, b.email, b.ownerName].some(v => v?.toLowerCase().includes(search))) return false;
+                // Search filter
+                if (search) {
+                    const searchableFields = [
+                        b.name,
+                        b.email,
+                        b.ownerEmail,
+                        b.ownerName,
+                        b.phone
+                    ].filter(Boolean).map(f => f.toLowerCase());
+                    
+                    if (!searchableFields.some(field => field.includes(search))) return false;
+                }
 
                 return true;
             });
@@ -872,9 +954,15 @@
                     .then(r => r.json())
                     .then(data => {
                         if (data.success) {
+                            // Remove from local array
                             businesses = businesses.filter(b => b.id !== id);
                             applyFilters();
-                            alert(`${business.name} was deleted.`);
+                            
+                            // Show success message
+                            showSuccessToast(`${business.name} was deleted successfully`);
+                            
+                            // Reload from server to ensure sync
+                            loadBusinesses();
                         } else {
                             alert('Failed to delete business: ' + (data.error || 'Unknown error'));
                         }
@@ -884,6 +972,26 @@
                         alert('Failed to delete business. Please try again.');
                     });
             }
+        }
+
+        // Toast notification helper
+        function showSuccessToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-20 right-6 z-[10000] flex items-center gap-3 rounded-xl border border-success/20 bg-card px-4 py-3 shadow-lg animate-fade-in';
+            toast.innerHTML = `
+                <div class="flex size-8 items-center justify-center rounded-full bg-success/10 text-success">
+                    <i data-lucide="check-circle" class="size-4"></i>
+                </div>
+                <span class="text-sm font-medium text-foreground">${message}</span>
+            `;
+            document.body.appendChild(toast);
+            lucide.createIcons();
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
         // Initialize
