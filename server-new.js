@@ -5959,6 +5959,101 @@ app.get('/api/admin/analytics/platforms', optionalAuth, async (req, res) => {
   }
 });
 
+// Get recent activity feed for admin dashboard
+app.get('/api/admin/analytics/activity', optionalAuth, async (req, res) => {
+  try {
+    const prisma = (await import('./db.js')).default;
+    
+    // Fetch recent businesses (registrations)
+    const recentBusinesses = await prisma.business.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+      select: {
+        id: true,
+        name: true,
+        plan: true,
+        createdAt: true
+      }
+    });
+    
+    // Transform to activity items
+    const activities = recentBusinesses.map(business => ({
+      id: `biz_${business.id}_registered`,
+      type: 'business_registered',
+      icon: 'building-2',
+      tone: 'primary',
+      title: 'New business registered',
+      description: `${business.name} joined on the ${business.plan || 'Free'} plan`,
+      timestamp: business.createdAt.toISOString()
+    }));
+    
+    res.json({
+      success: true,
+      activities
+    });
+  } catch (error) {
+    console.error('[Admin] Error fetching activity feed:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch activity feed',
+      activities: []
+    });
+  }
+});
+
+// Get signups count for a given period (in days)
+app.get('/api/admin/analytics/signups', optionalAuth, async (req, res) => {
+  try {
+    const prisma = (await import('./db.js')).default;
+    const period = parseInt(req.query.period) || 30;
+    
+    const periodDate = new Date();
+    periodDate.setDate(periodDate.getDate() - period);
+    
+    const signupCount = await prisma.business.count({
+      where: {
+        createdAt: {
+          gte: periodDate
+        }
+      }
+    });
+    
+    res.json({
+      success: true,
+      count: signupCount,
+      period
+    });
+  } catch (error) {
+    console.error('[Admin] Error fetching signups count:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch signups count',
+      count: 0
+    });
+  }
+});
+
+// Get total messages processed count
+app.get('/api/admin/analytics/messages', optionalAuth, async (req, res) => {
+  try {
+    const prisma = (await import('./db.js')).default;
+    
+    const totalMessages = await prisma.message.count();
+    
+    res.json({
+      success: true,
+      count: totalMessages
+    });
+  } catch (error) {
+    console.error('[Admin] Error fetching messages count:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch messages count',
+      count: 0
+    });
+  }
+});
+
 // Get single business details
 // CRITICAL FIX #2: Applied authentication middleware
 app.get('/api/admin/businesses/:id', optionalAuth, async (req, res) => {

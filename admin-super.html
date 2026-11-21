@@ -1976,10 +1976,10 @@
                                     <i data-lucide="trending-up" style="width: 20px; height: 20px;"></i>
                                 </div>
                             </div>
-                            <p class="stat-value">128</p>
+                            <p class="stat-value" id="statNewSignups">-</p>
                             <p class="stat-change">
                                 <i data-lucide="arrow-up-right"></i>
-                                18% vs previous period
+                                <span id="statNewSignupsChange">Loading...</span>
                             </p>
                         </div>
 
@@ -1991,10 +1991,10 @@
                                     <i data-lucide="messages-square" style="width: 20px; height: 20px;"></i>
                                 </div>
                             </div>
-                            <p class="stat-value">248,930</p>
+                            <p class="stat-value" id="statMessagesProcessed">-</p>
                             <p class="stat-change">
                                 <i data-lucide="arrow-up-right"></i>
-                                24% vs last week
+                                <span id="statMessagesChange">Loading...</span>
                             </p>
                         </div>
 
@@ -2006,10 +2006,10 @@
                                     <i data-lucide="gauge" style="width: 20px; height: 20px;"></i>
                                 </div>
                             </div>
-                            <p class="stat-value">840<span style="font-size: 20px;">ms</span></p>
-                            <p class="stat-change" style="color: var(--warning);">
-                                <i data-lucide="arrow-up-right"></i>
-                                6% slower than target
+                            <p class="stat-value">N/A</p>
+                            <p class="stat-change" style="color: var(--muted-foreground);">
+                                <i data-lucide="info"></i>
+                                Tracking not yet implemented
                             </p>
                         </div>
 
@@ -2021,10 +2021,10 @@
                                     <i data-lucide="activity" style="width: 20px; height: 20px;"></i>
                                 </div>
                             </div>
-                            <p class="stat-value">99.98<span style="font-size: 20px;">%</span></p>
-                            <p class="stat-change">
-                                <i data-lucide="arrow-up-right"></i>
-                                Healthy
+                            <p class="stat-value">N/A</p>
+                            <p class="stat-change" style="color: var(--muted-foreground);">
+                                <i data-lucide="info"></i>
+                                Tracking not yet implemented
                             </p>
                         </div>
                     </div>
@@ -2481,19 +2481,27 @@
 
         let growthChartInstance = null;
         let platformChartInstance = null;
+        let activityFeedData = [];
+        let activityRefreshInterval = null;
 
-        // Activity feed data
-        const activityItems = [
-            { icon: 'building-2', tone: 'primary', title: 'New business registered', description: 'Aziz Barber Shop joined on the Pro trial', time: '2h ago' },
-            { icon: 'link-2', tone: 'success', title: 'Channel connected', description: 'Samarkand Grill connected WhatsApp Business', time: '3h ago' },
-            { icon: 'arrow-up-circle', tone: 'primary', title: 'Plan upgraded', description: 'MedCare Clinic upgraded to Enterprise', time: '5h ago' },
-            { icon: 'alert-triangle', tone: 'warning', title: 'Rate limit warning', description: 'Nova Retail reached 90% of monthly quota', time: '7h ago' },
-            { icon: 'credit-card', tone: 'success', title: 'Payment received', description: 'Luna Beauty Salon paid $29.00 invoice', time: '9h ago' },
-            { icon: 'user-plus', tone: 'primary', title: 'Team member invited', description: 'Urban Fade Studio invited 2 operators', time: '12h ago' },
-            { icon: 'shield-check', tone: 'success', title: 'Security check passed', description: 'Weekly vulnerability scan completed', time: '1d ago' },
-            { icon: 'link-2', tone: 'danger', title: 'Channel connected', description: 'Glow Nail Bar connected Instagram DMs', time: '1d ago' }
-        ];
+        // Helper function for relative time formatting
+        function getRelativeTime(timestamp) {
+            const now = new Date();
+            const past = new Date(timestamp);
+            const diffMs = now - past;
+            const diffSec = Math.floor(diffMs / 1000);
+            const diffMin = Math.floor(diffSec / 60);
+            const diffHour = Math.floor(diffMin / 60);
+            const diffDay = Math.floor(diffHour / 24);
+            
+            if (diffSec < 60) return 'Just now';
+            if (diffMin < 60) return `${diffMin}m ago`;
+            if (diffHour < 24) return `${diffHour}h ago`;
+            if (diffDay < 7) return `${diffDay}d ago`;
+            return past.toLocaleDateString();
+        }
 
+        // Get tone classes based on activity type
         function getToneClasses(tone) {
             const toneMap = {
                 'primary': 'rgba(0, 97, 255, 0.12)',
@@ -2510,10 +2518,50 @@
             return { bg: toneMap[tone], color: colorMap[tone] };
         }
 
+        // Fetch recent activity from backend
+        async function fetchRecentActivity() {
+            try {
+                const response = await fetch('/api/admin/analytics/activity', {
+                    headers: {
+                        'x-session-id': sessionId
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch activity feed');
+                }
+                
+                const result = await response.json();
+                
+                if (result.success && result.activities) {
+                    activityFeedData = result.activities;
+                    renderActivityFeed();
+                } else {
+                    throw new Error('Invalid response format');
+                }
+            } catch (error) {
+                console.error('Error fetching activity feed:', error);
+                activityFeedData = [];
+                renderActivityFeed();
+            }
+        }
+
         function renderActivityFeed() {
             const activityList = document.getElementById('activityList');
-            activityList.innerHTML = activityItems.map(item => {
+            
+            if (!activityFeedData || activityFeedData.length === 0) {
+                activityList.innerHTML = `
+                    <li class="activity-item" style="text-align: center; padding: 40px 20px;">
+                        <p style="color: var(--muted-foreground);">No recent activity</p>
+                    </li>
+                `;
+                return;
+            }
+            
+            activityList.innerHTML = activityFeedData.map(item => {
                 const toneStyle = getToneClasses(item.tone);
+                const relativeTime = getRelativeTime(item.timestamp);
+                
                 return `
                     <li class="activity-item">
                         <div class="activity-icon" style="background: ${toneStyle.bg}; color: ${toneStyle.color};">
@@ -2523,30 +2571,98 @@
                             <p class="activity-title">${item.title}</p>
                             <p class="activity-description">${item.description}</p>
                         </div>
-                        <time class="activity-time">${item.time}</time>
+                        <time class="activity-time">${relativeTime}</time>
                     </li>
                 `;
             }).join('');
             lucide.createIcons();
         }
 
-        function refreshActivity() {
+        async function refreshActivity() {
             const btn = document.getElementById('refreshActivityBtn');
             btn.disabled = true;
             const icon = btn.querySelector('svg');
             icon.style.animation = 'spin 1s linear infinite';
             
-            setTimeout(() => {
-                // Shuffle first item
-                const first = activityItems.shift();
-                activityItems.push(first);
-                activityItems[0].time = 'Just now';
-                renderActivityFeed();
-                
+            try {
+                await fetchRecentActivity();
+                showToast('Activity feed updated.');
+            } catch (error) {
+                console.error('Error refreshing activity:', error);
+                showToast('Failed to refresh activity feed.', 'error');
+            } finally {
                 btn.disabled = false;
                 icon.style.animation = '';
-                showToast('Activity feed updated.');
-            }, 600);
+            }
+        }
+
+        // Start auto-refresh for activity feed
+        function startActivityAutoRefresh() {
+            // Clear any existing interval
+            if (activityRefreshInterval) {
+                clearInterval(activityRefreshInterval);
+            }
+            
+            // Fetch immediately
+            fetchRecentActivity();
+            
+            // Then refresh every 30 seconds
+            activityRefreshInterval = setInterval(() => {
+                fetchRecentActivity();
+            }, 30000);
+        }
+
+        // Stop auto-refresh for activity feed
+        function stopActivityAutoRefresh() {
+            if (activityRefreshInterval) {
+                clearInterval(activityRefreshInterval);
+                activityRefreshInterval = null;
+            }
+        }
+
+        // Fetch and update analytics stat cards
+        async function fetchAnalyticsStats() {
+            try {
+                // Fetch new signups (30 days)
+                const signupsRes = await fetch('/api/admin/analytics/signups?period=30', {
+                    headers: { 'x-session-id': sessionId }
+                });
+                const signupsData = await signupsRes.json();
+                
+                if (signupsData.success) {
+                    const signupCount = signupsData.count || 0;
+                    document.getElementById('statNewSignups').textContent = signupCount;
+                    
+                    // Calculate growth percentage (simplified - comparing to total)
+                    const totalBusinesses = allBusinesses.length || 0;
+                    if (totalBusinesses > 0) {
+                        const growthPercent = Math.round((signupCount / totalBusinesses) * 100);
+                        document.getElementById('statNewSignupsChange').textContent = 
+                            `${growthPercent}% of total businesses`;
+                    } else {
+                        document.getElementById('statNewSignupsChange').textContent = 'No comparison data';
+                    }
+                }
+                
+                // Fetch total messages processed
+                const messagesRes = await fetch('/api/admin/analytics/messages', {
+                    headers: { 'x-session-id': sessionId }
+                });
+                const messagesData = await messagesRes.json();
+                
+                if (messagesData.success) {
+                    const messageCount = messagesData.count || 0;
+                    document.getElementById('statMessagesProcessed').textContent = 
+                        messageCount.toLocaleString();
+                    document.getElementById('statMessagesChange').textContent = 
+                        'All time total';
+                }
+                
+            } catch (error) {
+                console.error('Error fetching analytics stats:', error);
+                document.getElementById('statNewSignups').textContent = 'Error';
+                document.getElementById('statMessagesProcessed').textContent = 'Error';
+            }
         }
 
         // Generate chart data
@@ -2890,13 +3006,19 @@
         // Initialize on section switch
         const originalSwitchSection = switchSection;
         switchSection = function(sectionId) {
+            // Stop activity auto-refresh when leaving analytics
+            if (sectionId !== 'analytics') {
+                stopActivityAutoRefresh();
+            }
+            
             originalSwitchSection(sectionId);
             
             if (sectionId === 'analytics') {
                 setTimeout(() => {
                     initGrowthChart(30);
                     initPlatformChart();
-                    renderActivityFeed();
+                    startActivityAutoRefresh(); // Start auto-refresh instead of single render
+                    fetchAnalyticsStats(); // Fetch real stats for cards
                 }, 100);
             } else if (sectionId === 'settings') {
                 setTimeout(() => {
