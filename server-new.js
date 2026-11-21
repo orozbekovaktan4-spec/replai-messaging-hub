@@ -6424,6 +6424,214 @@ app.delete('/api/admin/businesses/:id', optionalAuth, async (req, res) => {
   }
 });
 
+// ==================== BUSINESS SETTINGS ENDPOINTS ====================
+
+// GET business connections (for settings page)
+app.get('/api/businesses/:id/connections', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get business to check if exists
+    const business = await db.findBusinessById(id);
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    // Parse connection data from Business model JSON fields
+    const connections = [];
+
+    if (business.instagram) {
+      try {
+        const instagramData = typeof business.instagram === 'string'
+          ? JSON.parse(business.instagram)
+          : business.instagram;
+        connections.push({
+          platform: 'INSTAGRAM',
+          platformUserId: instagramData.userId || instagramData.username,
+          platformUsername: instagramData.username,
+          isActive: instagramData.connected || false,
+          status: instagramData.connected ? 'CONNECTED' : 'DISCONNECTED',
+          metadata: instagramData
+        });
+      } catch (e) {
+        console.error('[Connections] Error parsing Instagram data:', e);
+      }
+    }
+
+    if (business.telegram) {
+      try {
+        const telegramData = typeof business.telegram === 'string'
+          ? JSON.parse(business.telegram)
+          : business.telegram;
+        connections.push({
+          platform: 'TELEGRAM',
+          platformUserId: telegramData.botId || telegramData.token?.split(':')[0],
+          platformUsername: telegramData.username || telegramData.botName,
+          isActive: telegramData.connected || false,
+          status: telegramData.connected ? 'CONNECTED' : 'DISCONNECTED',
+          metadata: telegramData
+        });
+      } catch (e) {
+        console.error('[Connections] Error parsing Telegram data:', e);
+      }
+    }
+
+    if (business.whatsapp) {
+      try {
+        const whatsappData = typeof business.whatsapp === 'string'
+          ? JSON.parse(business.whatsapp)
+          : business.whatsapp;
+        connections.push({
+          platform: 'WHATSAPP',
+          platformUserId: whatsappData.phoneId || whatsappData.phone,
+          platformUsername: whatsappData.phone,
+          isActive: whatsappData.connected || false,
+          status: whatsappData.connected ? 'CONNECTED' : 'DISCONNECTED',
+          metadata: whatsappData
+        });
+      } catch (e) {
+        console.error('[Connections] Error parsing WhatsApp data:', e);
+      }
+    }
+
+    res.json(connections);
+  } catch (error) {
+    console.error('[Connections] Get connections error:', error);
+    res.status(500).json({ error: 'Failed to load connections' });
+  }
+});
+
+// DELETE platform connection (disconnect)
+app.delete('/api/businesses/:businessId/connections/:platform', optionalAuth, async (req, res) => {
+  try {
+    const { businessId, platform } = req.params;
+    const platformLower = platform.toLowerCase();
+
+    const business = await db.findBusinessById(businessId);
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    // Update the specific platform field to null or disconnected state
+    const updateData = {};
+    updateData[platformLower] = null;
+
+    await db.updateBusiness(businessId, updateData);
+
+    console.log(`[Connections] Disconnected ${platform} for business ${businessId}`);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Connections] Disconnect error:', error);
+    res.status(500).json({ error: 'Failed to disconnect platform' });
+  }
+});
+
+// PUT AI training instructions
+app.put('/api/businesses/:id/ai-training', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { instructions } = req.body;
+
+    const business = await db.findBusinessById(id);
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    await db.updateBusiness(id, {
+      aiInstructions: instructions
+    });
+
+    console.log(`[AI Training] Instructions updated for business ${id}`);
+
+    res.json({ success: true, message: 'AI instructions saved successfully' });
+  } catch (error) {
+    console.error('[AI Training] Save error:', error);
+    res.status(500).json({ error: 'Failed to save AI instructions' });
+  }
+});
+
+// PUT AI settings (provider and model)
+app.put('/api/businesses/:id/ai-settings', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { provider, model } = req.body;
+
+    const business = await db.findBusinessById(id);
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    await db.updateBusiness(id, {
+      aiProvider: provider,
+      aiModel: model
+    });
+
+    console.log(`[AI Settings] Updated provider: ${provider}, model: ${model} for business ${id}`);
+
+    res.json({ success: true, message: 'AI settings saved successfully' });
+  } catch (error) {
+    console.error('[AI Settings] Save error:', error);
+    res.status(500).json({ error: 'Failed to save AI settings' });
+  }
+});
+
+// PUT business hours
+app.put('/api/businesses/:id/hours', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { hours } = req.body;
+
+    const business = await db.findBusinessById(id);
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    await db.updateBusiness(id, {
+      businessHours: hours
+    });
+
+    console.log(`[Business Hours] Updated for business ${id}`);
+
+    res.json({ success: true, message: 'Business hours saved successfully' });
+  } catch (error) {
+    console.error('[Business Hours] Save error:', error);
+    res.status(500).json({ error: 'Failed to save business hours' });
+  }
+});
+
+// POST knowledge base file upload
+app.post('/api/businesses/:id/knowledge-base', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { content, filename } = req.body;
+
+    const business = await db.findBusinessById(id);
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    // For now, store knowledge base as text
+    // In production, you might want to process and chunk this content
+    await db.updateBusiness(id, {
+      knowledgeBase: content
+    });
+
+    console.log(`[Knowledge Base] Uploaded ${filename} for business ${id}`);
+
+    res.json({
+      success: true,
+      message: 'Knowledge base uploaded successfully',
+      filename
+    });
+  } catch (error) {
+    console.error('[Knowledge Base] Upload error:', error);
+    res.status(500).json({ error: 'Failed to upload knowledge base' });
+  }
+});
+
+// ==================== END BUSINESS SETTINGS ENDPOINTS ====================
+
 // Get channel health for a business
 app.get('/api/admin/channel-health/:businessId', async (req, res) => {
   try {

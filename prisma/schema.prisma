@@ -64,14 +64,27 @@ model Business {
   industry                String?
   ownerName               String?
   password                String
-  whatsapp                String?   
-  instagram               String?   
-  telegram                String?   
+  whatsapp                String?
+  instagram               String?
+  telegram                String?
   plan                    String    @default("free")
   subscriptionEnd         DateTime?
   messageCount            Int       @default(0)
   status                  String    @default("active")
-  
+
+  // Business Settings fields
+  description             String?
+  phone                   String?
+
+  // AI Training fields
+  aiInstructions          String?   @db.Text
+  knowledgeBase           String?   @db.Text
+  aiProvider              String?   @default("groq")
+  aiModel                 String?   @default("llama-3.1-70b")
+
+  // Business hours (JSON format)
+  businessHours           String?   @db.Text
+
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
   Message                 Message[]

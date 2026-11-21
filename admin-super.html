@@ -3414,8 +3414,8 @@
                                 <button onclick="viewBusiness('${business.id}')" class="btn-icon-small" title="View Details">
                                     <i data-lucide="eye"></i>
                                 </button>
-                                <button onclick="editBusiness('${business.id}')" class="btn-icon-small" title="Edit Business">
-                                    <i data-lucide="pencil"></i>
+                                <button onclick="window.location.href='/business-settings.html?id=${business.id}'" class="btn-icon-small" title="Business Settings">
+                                    <i data-lucide="settings"></i>
                                 </button>
                                 <button onclick="deleteBusiness('${business.id}', '${business.name.replace(/'/g, "\\'")}'))" class="btn-icon-small" title="Delete" style="color: var(--danger);">
                                     <i data-lucide="trash-2"></i>

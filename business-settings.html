@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#08090c">
+    <title>Business Settings · REPLAI</title>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #08090c;
+            --card: #0e1015;
+            --field: #151820;
+            --line: rgba(255, 255, 255, 0.1);
+            --text: #eceef2;
+            --sub: #a0a3a8;
+            --blue: #0061ff;
+            --green: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            font: 14px/1.5 system-ui, -apple-system, sans-serif;
+            color: var(--text);
+            background: var(--bg);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { margin: 0; }
+        button, input, textarea, select { font: inherit; }
+        a { color: inherit; text-decoration: none; }
+
+        button {
+            color: inherit;
+            background: var(--field);
+            border: 1px solid var(--line);
+            padding: 9px 14px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            filter: brightness(1.16);
+            background-color: #202531;
+        }
+
+        button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        /* Header */
+        header {
+            height: 60px;
+            background: var(--card);
+            border-bottom: 1px solid var(--line);
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+        }
+
+        .brand {
+            font-size: 20px;
+            font-weight: 750;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, #60efff 0%, #0061ff 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        .business-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .grow { flex: 1; }
+
+        .save-status {
+            font-size: 13px;
+            color: var(--sub);
+        }
+
+        /* Main Layout */
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px 24px 100px;
+        }
+
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        .page-header h1 {
+            font-size: 32px;
+            font-weight: 650;
+            letter-spacing: -0.8px;
+            margin-bottom: 8px;
+        }
+
+        .page-header p {
+            color: var(--sub);
+            font-size: 14px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 24px;
+            border-bottom: 1px solid var(--line);
+            margin-bottom: 32px;
+            overflow-x: auto;
+        }
+
+        .tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 0;
+            color: var(--sub);
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            color: var(--text);
+            border-color: var(--blue);
+        }
+
+        /* Sections */
+        section {
+            display: none;
+        }
+
+        section.active {
+            display: block;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .section-header h2 {
+            font-size: 21px;
+            font-weight: 600;
+            letter-spacing: -0.4px;
+        }
+
+        .section-header p {
+            color: var(--sub);
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        /* Platform Cards */
+        .platforms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .platform-card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .platform-card.connected {
+            border-left: 3px solid var(--green);
+        }
+
+        .platform-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .platform-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .platform-logo.instagram {
+            background: linear-gradient(135deg, #f58529, #dd2a7b 50%, #8134af);
+        }
+
+        .platform-logo.telegram {
+            background: #22a7f0;
+        }
+
+        .platform-logo.whatsapp {
+            background: #25d366;
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-badge.connected {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--green);
+        }
+
+        .status-badge.disconnected {
+            background: var(--field);
+            color: var(--sub);
+            border: 1px solid var(--line);
+        }
+
+        .platform-card h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .platform-card p {
+            color: var(--sub);
+            font-size: 13px;
+            margin-bottom: 16px;
+        }
+
+        .platform-details {
+            background: var(--field);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+
+        .platform-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: auto;
+        }
+
+        /* Forms */
+        .form-card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-field.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-weight: 550;
+            font-size: 14px;
+            color: var(--text);
+        }
+
+        input:not([type="checkbox"]),
+        textarea,
+        select {
+            width: 100%;
+            background: var(--field);
+            color: var(--text);
+            border: 1px solid #252a34;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 14px;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--blue);
+        }
+
+        .hint {
+            color: var(--sub);
+            font-size: 12px;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: var(--blue) !important;
+            color: white !important;
+            border: none !important;
+            box-shadow: 0 2px 8px rgba(0, 97, 255, 0.3);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.15) !important;
+            color: var(--danger) !important;
+            border-color: rgba(239, 68, 68, 0.3) !important;
+        }
+
+        .btn-success {
+            background: var(--green) !important;
+            color: #071b0e !important;
+            border: none !important;
+        }
+
+        /* Footer */
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg);
+            border-top: 1px solid var(--line);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            z-index: 99;
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            right: 24px;
+            background: var(--card);
+            border: 1px solid var(--line);
+            padding: 16px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .toast.show {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--line);
+            border-top-color: var(--blue);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .platforms-grid {
+                grid-template-columns: 1fr;
+            }
+
+            header {
+                padding: 0 16px;
+            }
+
+            main {
+                padding: 24px 16px 100px;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <button class="back-btn" onclick="window.location.href='/admin-super.html'">
+            <i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i>
+            Back to Businesses
+        </button>
+        <span class="brand">REPLAI</span>
+        <span class="business-title" id="businessName">Loading...</span>
+        <div class="grow"></div>
+        <span class="save-status" id="saveStatus"></span>
+    </header>
+
+    <main>
+        <div class="page-header">
+            <h1>Business Settings</h1>
+            <p>Manage platform connections, AI training, and business information</p>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <nav class="tabs">
+            <a class="tab active" data-tab="details">
+                <i data-lucide="info" style="width: 18px; height: 18px;"></i>
+                Business Details
+            </a>
+            <a class="tab" data-tab="platforms">
+                <i data-lucide="link" style="width: 18px; height: 18px;"></i>
+                Platform Connections
+            </a>
+            <a class="tab" data-tab="ai">
+                <i data-lucide="sparkles" style="width: 18px; height: 18px;"></i>
+                AI Training
+            </a>
+        </nav>
+
+        <!-- Section 1: Business Details -->
+        <section id="details-section" class="active">
+            <div class="section-header">
+                <div>
+                    <h2>Business Details</h2>
+                    <p>Basic information about your business</p>
+                </div>
+            </div>
+
+            <form id="detailsForm">
+                <div class="form-card">
+                    <div class="form-grid">
+                        <div class="form-field full-width">
+                            <label for="name">Business Name</label>
+                            <input type="text" id="name" name="name" required>
+                        </div>
+
+                        <div class="form-field">
+                            <label for="ownerName">Owner Name</label>
+                            <input type="text" id="ownerName" name="ownerName">
+                        </div>
+
+                        <div class="form-field">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+
+                        <div class="form-field">
+                            <label for="phone">Phone</label>
+                            <input type="tel" id="phone" name="phone">
+                        </div>
+
+                        <div class="form-field">
+                            <label for="industry">Industry</label>
+                            <input type="text" id="industry" name="industry">
+                        </div>
+
+                        <div class="form-field">
+                            <label for="plan">Plan</label>
+                            <select id="plan" name="plan">
+                                <option value="free">Free</option>
+                                <option value="pro">Pro</option>
+                                <option value="enterprise">Enterprise</option>
+                            </select>
+                        </div>
+
+                        <div class="form-field">
+                            <label for="status">Status</label>
+                            <select id="status" name="status">
+                                <option value="active">Active</option>
+                                <option value="trial">Trial</option>
+                                <option value="suspended">Suspended</option>
+                            </select>
+                        </div>
+
+                        <div class="form-field full-width">
+                            <label for="description">Description</label>
+                            <textarea id="description" name="description" rows="4"></textarea>
+                            <span class="hint">Describe your business and what makes it unique</span>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <!-- Section 2: Platform Connections -->
+        <section id="platforms-section">
+            <div class="section-header">
+                <div>
+                    <h2>Platform Connections</h2>
+                    <p>Connect messaging platforms to receive customer messages</p>
+                </div>
+            </div>
+
+            <div class="platforms-grid">
+                <!-- Instagram Card -->
+                <div class="platform-card" id="instagram-card">
+                    <div class="platform-header">
+                        <div class="platform-logo instagram">
+                            <i data-lucide="instagram" style="width: 24px; height: 24px;"></i>
+                        </div>
+                        <span class="status-badge disconnected" id="instagram-status">Not Connected</span>
+                    </div>
+                    <h3>Instagram</h3>
+                    <p>Connect your Instagram Business account to respond to DMs and comments.</p>
+
+                    <div class="platform-details hidden" id="instagram-details">
+                        <strong>Account:</strong> <span id="instagram-username"></span>
+                    </div>
+
+                    <div class="platform-actions">
+                        <button class="btn-primary" id="instagram-connect-btn" onclick="connectInstagram()">
+                            Connect Instagram
+                        </button>
+                        <button class="btn-danger hidden" id="instagram-disconnect-btn" onclick="disconnectInstagram()">
+                            Disconnect
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Telegram Card -->
+                <div class="platform-card" id="telegram-card">
+                    <div class="platform-header">
+                        <div class="platform-logo telegram">
+                            <i data-lucide="send" style="width: 24px; height: 24px;"></i>
+                        </div>
+                        <span class="status-badge disconnected" id="telegram-status">Not Connected</span>
+                    </div>
+                    <h3>Telegram</h3>
+                    <p>Connect your Telegram bot to handle customer messages.</p>
+
+                    <div class="platform-details hidden" id="telegram-details">
+                        <strong>Bot:</strong> <span id="telegram-bot-name"></span>
+                    </div>
+
+                    <div id="telegram-form">
+                        <div class="form-field" style="margin-bottom: 12px;">
+                            <label for="telegram-token">Bot Token</label>
+                            <input type="password" id="telegram-token" placeholder="123456:ABC-DEF...">
+                            <span class="hint">Get your bot token from @BotFather</span>
+                        </div>
+                    </div>
+
+                    <div class="platform-actions">
+                        <button class="btn-success" id="telegram-connect-btn" onclick="connectTelegram()">
+                            Connect Telegram
+                        </button>
+                        <button class="btn-danger hidden" id="telegram-disconnect-btn" onclick="disconnectTelegram()">
+                            Disconnect
+                        </button>
+                    </div>
+                </div>
+
+                <!-- WhatsApp Card -->
+                <div class="platform-card" id="whatsapp-card">
+                    <div class="platform-header">
+                        <div class="platform-logo whatsapp">
+                            <i data-lucide="message-circle" style="width: 24px; height: 24px;"></i>
+                        </div>
+                        <span class="status-badge disconnected" id="whatsapp-status">Not Connected</span>
+                    </div>
+                    <h3>WhatsApp</h3>
+                    <p>Connect WhatsApp Business via Meta Cloud API.</p>
+
+                    <div class="platform-details hidden" id="whatsapp-details">
+                        <strong>Phone:</strong> <span id="whatsapp-phone"></span>
+                    </div>
+
+                    <div class="platform-actions">
+                        <button class="btn-success" id="whatsapp-connect-btn" onclick="connectWhatsApp()">
+                            Connect WhatsApp
+                        </button>
+                        <button class="btn-danger hidden" id="whatsapp-disconnect-btn" onclick="disconnectWhatsApp()">
+                            Disconnect
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: AI Training -->
+        <section id="ai-section">
+            <div class="section-header">
+                <div>
+                    <h2>AI Training & Configuration</h2>
+                    <p>Teach the AI about your business and customize its behavior</p>
+                </div>
+            </div>
+
+            <form id="aiForm">
+                <div class="form-card">
+                    <h3 style="margin-bottom: 16px;">Custom Instructions</h3>
+                    <div class="form-field">
+                        <label for="ai-instructions">Business Knowledge</label>
+                        <textarea id="ai-instructions" name="aiInstructions" rows="8" placeholder="Example: We are a barber shop in Bishkek. We offer haircuts (500 som), beard trim (300 som), and styling (400 som). We're open 9am-8pm. Our master is Azamat."></textarea>
+                        <span class="hint">Teach the AI about your services, prices, hours, and how to respond to customers</span>
+                    </div>
+                </div>
+
+                <div class="form-card">
+                    <h3 style="margin-bottom: 16px;">AI Model Settings</h3>
+                    <div class="form-grid">
+                        <div class="form-field">
+                            <label for="ai-provider">Provider</label>
+                            <select id="ai-provider" name="aiProvider">
+                                <option value="groq">Groq (Fast, Free)</option>
+                                <option value="openrouter">OpenRouter</option>
+                                <option value="together">Together AI</option>
+                            </select>
+                        </div>
+
+                        <div class="form-field">
+                            <label for="ai-model">Model</label>
+                            <select id="ai-model" name="aiModel">
+                                <option value="llama-3.1-70b">Llama 3.1 70B</option>
+                                <option value="llama-3.1-8b">Llama 3.1 8B (Faster)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <footer>
+        <button id="cancelBtn" onclick="window.location.href='/admin-super.html'">Cancel</button>
+        <button id="saveBtn" class="btn-primary" onclick="saveAllChanges()">
+            <i data-lucide="save" style="width: 16px; height: 16px;"></i>
+            Save Changes
+        </button>
+    </footer>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Global state
+        let currentBusinessId = null;
+        let businessData = null;
+        let originalData = null;
+
+        // Initialize
+        async function init() {
+            const params = new URLSearchParams(window.location.search);
+            currentBusinessId = params.get('id');
+
+            if (!currentBusinessId) {
+                showToast('No business ID provided', 'error');
+                setTimeout(() => window.location.href = '/admin-super.html', 2000);
+                return;
+            }
+
+            await loadBusinessData();
+            await loadPlatformConnections();
+            setupTabNavigation();
+            lucide.createIcons();
+        }
+
+        // Load business data
+        async function loadBusinessData() {
+            try {
+                const response = await fetch(`/api/admin/businesses/${currentBusinessId}`);
+                if (!response.ok) throw new Error('Failed to load business');
+
+                const result = await response.json();
+                businessData = result.data || result;
+                originalData = JSON.parse(JSON.stringify(businessData));
+
+                // Populate form fields
+                document.getElementById('businessName').textContent = businessData.name;
+                document.getElementById('name').value = businessData.name || '';
+                document.getElementById('ownerName').value = businessData.ownerName || '';
+                document.getElementById('email').value = businessData.email || '';
+                document.getElementById('phone').value = businessData.phone || '';
+                document.getElementById('industry').value = businessData.industry || '';
+                document.getElementById('plan').value = businessData.plan || 'free';
+                document.getElementById('status').value = businessData.status || 'active';
+                document.getElementById('description').value = businessData.description || '';
+
+                // AI settings
+                document.getElementById('ai-instructions').value = businessData.aiInstructions || '';
+                document.getElementById('ai-provider').value = businessData.aiProvider || 'groq';
+                document.getElementById('ai-model').value = businessData.aiModel || 'llama-3.1-70b';
+
+            } catch (error) {
+                console.error('Load error:', error);
+                showToast('Failed to load business data', 'error');
+            }
+        }
+
+        // Load platform connections
+        async function loadPlatformConnections() {
+            try {
+                // Try to get connections from business data (stored as JSON in Business model)
+                if (businessData) {
+                    updatePlatformUI('instagram', businessData.instagram ? JSON.parse(businessData.instagram) : null);
+                    updatePlatformUI('telegram', businessData.telegram ? JSON.parse(businessData.telegram) : null);
+                    updatePlatformUI('whatsapp', businessData.whatsapp ? JSON.parse(businessData.whatsapp) : null);
+                }
+            } catch (error) {
+                console.error('Connections load error:', error);
+            }
+        }
+
+        // Update platform UI
+        function updatePlatformUI(platform, connectionData) {
+            const card = document.getElementById(`${platform}-card`);
+            const statusBadge = document.getElementById(`${platform}-status`);
+            const details = document.getElementById(`${platform}-details`);
+            const connectBtn = document.getElementById(`${platform}-connect-btn`);
+            const disconnectBtn = document.getElementById(`${platform}-disconnect-btn`);
+
+            if (connectionData && connectionData.connected) {
+                card.classList.add('connected');
+                statusBadge.textContent = 'Connected';
+                statusBadge.classList.remove('disconnected');
+                statusBadge.classList.add('connected');
+
+                if (details) {
+                    details.classList.remove('hidden');
+                    const usernameEl = document.getElementById(`${platform}-username`) ||
+                                      document.getElementById(`${platform}-bot-name`) ||
+                                      document.getElementById(`${platform}-phone`);
+                    if (usernameEl) {
+                        usernameEl.textContent = connectionData.username || connectionData.botName || connectionData.phone || 'Connected';
+                    }
+                }
+
+                if (connectBtn) connectBtn.classList.add('hidden');
+                if (disconnectBtn) disconnectBtn.classList.remove('hidden');
+
+                // Hide Telegram form if connected
+                if (platform === 'telegram') {
+                    const form = document.getElementById('telegram-form');
+                    if (form) form.classList.add('hidden');
+                }
+            } else {
+                card.classList.remove('connected');
+                statusBadge.textContent = 'Not Connected';
+                statusBadge.classList.remove('connected');
+                statusBadge.classList.add('disconnected');
+
+                if (details) details.classList.add('hidden');
+                if (connectBtn) connectBtn.classList.remove('hidden');
+                if (disconnectBtn) disconnectBtn.classList.add('hidden');
+
+                // Show Telegram form if disconnected
+                if (platform === 'telegram') {
+                    const form = document.getElementById('telegram-form');
+                    if (form) form.classList.remove('hidden');
+                }
+            }
+        }
+
+        // Instagram connection
+        async function connectInstagram() {
+            showToast('Redirecting to Instagram...', 'info');
+
+            try {
+                const response = await fetch('/api/admin/instagram/oauth/start');
+                const data = await response.json();
+
+                if (data.authUrl) {
+                    // Store businessId in session storage for callback
+                    sessionStorage.setItem('oauth_business_id', currentBusinessId);
+                    window.location.href = data.authUrl;
+                } else {
+                    throw new Error('Failed to get OAuth URL');
+                }
+            } catch (error) {
+                console.error('Instagram connect error:', error);
+                showToast('Failed to connect Instagram', 'error');
+            }
+        }
+
+        async function disconnectInstagram() {
+            if (!confirm('Disconnect Instagram? You will stop receiving messages.')) return;
+
+            try {
+                const response = await fetch(`/api/instagram/disconnect`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!response.ok) throw new Error('Failed to disconnect');
+
+                businessData.instagram = null;
+                updatePlatformUI('instagram', null);
+                showToast('Instagram disconnected', 'success');
+            } catch (error) {
+                console.error('Disconnect error:', error);
+                showToast('Failed to disconnect Instagram', 'error');
+            }
+        }
+
+        // Telegram connection
+        async function connectTelegram() {
+            const token = document.getElementById('telegram-token').value.trim();
+            if (!token) {
+                showToast('Please enter bot token', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/telegram/connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ botToken: token })
+                });
+
+                if (!response.ok) throw new Error('Failed to connect');
+
+                const result = await response.json();
+                businessData.telegram = JSON.stringify({ connected: true, botName: result.username || 'Telegram Bot' });
+                updatePlatformUI('telegram', { connected: true, botName: result.username });
+                document.getElementById('telegram-token').value = '';
+                showToast('Telegram connected!', 'success');
+            } catch (error) {
+                console.error('Telegram connect error:', error);
+                showToast('Failed to connect Telegram. Check bot token.', 'error');
+            }
+        }
+
+        async function disconnectTelegram() {
+            if (!confirm('Disconnect Telegram bot?')) return;
+
+            try {
+                const response = await fetch('/api/admin/telegram/disconnect', {
+                    method: 'POST'
+                });
+
+                if (!response.ok) throw new Error('Failed to disconnect');
+
+                businessData.telegram = null;
+                updatePlatformUI('telegram', null);
+                showToast('Telegram disconnected', 'success');
+            } catch (error) {
+                console.error('Disconnect error:', error);
+                showToast('Failed to disconnect Telegram', 'error');
+            }
+        }
+
+        // WhatsApp connection
+        async function connectWhatsApp() {
+            showToast('Redirecting to WhatsApp...', 'info');
+
+            try {
+                // For now, just show a message
+                showToast('WhatsApp connection coming soon', 'info');
+            } catch (error) {
+                console.error('WhatsApp connect error:', error);
+                showToast('Failed to connect WhatsApp', 'error');
+            }
+        }
+
+        async function disconnectWhatsApp() {
+            if (!confirm('Disconnect WhatsApp?')) return;
+
+            try {
+                const response = await fetch('/api/admin/whatsapp/disconnect', {
+                    method: 'POST'
+                });
+
+                if (!response.ok) throw new Error('Failed to disconnect');
+
+                businessData.whatsapp = null;
+                updatePlatformUI('whatsapp', null);
+                showToast('WhatsApp disconnected', 'success');
+            } catch (error) {
+                console.error('Disconnect error:', error);
+                showToast('Failed to disconnect WhatsApp', 'error');
+            }
+        }
+
+        // Save all changes
+        async function saveAllChanges() {
+            const saveBtn = document.getElementById('saveBtn');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span class="spinner"></span> Saving...';
+
+            try {
+                // Collect all form data
+                const updateData = {
+                    name: document.getElementById('name').value,
+                    ownerName: document.getElementById('ownerName').value,
+                    email: document.getElementById('email').value,
+                    phone: document.getElementById('phone').value,
+                    industry: document.getElementById('industry').value,
+                    plan: document.getElementById('plan').value,
+                    status: document.getElementById('status').value,
+                    description: document.getElementById('description').value,
+                    aiInstructions: document.getElementById('ai-instructions').value,
+                    aiProvider: document.getElementById('ai-provider').value,
+                    aiModel: document.getElementById('ai-model').value
+                };
+
+                const response = await fetch(`/api/admin/businesses/${currentBusinessId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updateData)
+                });
+
+                if (!response.ok) throw new Error('Failed to save');
+
+                const result = await response.json();
+                businessData = result.data || result;
+                originalData = JSON.parse(JSON.stringify(businessData));
+
+                showToast('Changes saved successfully!', 'success');
+                document.getElementById('saveStatus').textContent = 'All changes saved';
+            } catch (error) {
+                console.error('Save error:', error);
+                showToast('Failed to save changes', 'error');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalText;
+                lucide.createIcons();
+            }
+        }
+
+        // Tab navigation
+        function setupTabNavigation() {
+            const tabs = document.querySelectorAll('.tab');
+            const sections = document.querySelectorAll('section');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const targetTab = tab.getAttribute('data-tab');
+
+                    // Update active tab
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    // Show corresponding section
+                    sections.forEach(s => s.classList.remove('active'));
+                    document.getElementById(`${targetTab}-section`).classList.add('active');
+                });
+            });
+        }
+
+        // Toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Check for OAuth callback
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('oauth_success') === 'true') {
+            showToast('Platform connected successfully!', 'success');
+            // Clean up URL
+            window.history.replaceState({}, document.title, window.location.pathname + '?id=' + params.get('id'));
+        }
+
+        // Start application
+        init();
+    </script>
+</body>
+</html>
