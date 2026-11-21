@@ -5962,7 +5962,7 @@ app.get('/api/admin/analytics/platforms', optionalAuth, async (req, res) => {
 // Get recent activity feed for admin dashboard
 app.get('/api/admin/analytics/activity', optionalAuth, async (req, res) => {
   try {
-    const prisma = (await import('./db.js')).default;
+    const { prisma } = await import('./db.js');
     
     // Fetch recent businesses (registrations)
     const recentBusinesses = await prisma.business.findMany({
@@ -6004,7 +6004,7 @@ app.get('/api/admin/analytics/activity', optionalAuth, async (req, res) => {
 // Get signups count for a given period (in days)
 app.get('/api/admin/analytics/signups', optionalAuth, async (req, res) => {
   try {
-    const prisma = (await import('./db.js')).default;
+    const { prisma } = await import('./db.js');
     const period = parseInt(req.query.period) || 30;
     
     const periodDate = new Date();
@@ -6036,7 +6036,7 @@ app.get('/api/admin/analytics/signups', optionalAuth, async (req, res) => {
 // Get total messages processed count
 app.get('/api/admin/analytics/messages', optionalAuth, async (req, res) => {
   try {
-    const prisma = (await import('./db.js')).default;
+    const { prisma } = await import('./db.js');
     
     const totalMessages = await prisma.message.count();
     

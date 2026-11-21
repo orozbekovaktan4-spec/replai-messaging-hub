@@ -2521,11 +2521,7 @@
         // Fetch recent activity from backend
         async function fetchRecentActivity() {
             try {
-                const response = await fetch('/api/admin/analytics/activity', {
-                    headers: {
-                        'x-session-id': sessionId
-                    }
-                });
+                const response = await fetch('/api/admin/analytics/activity');
                 
                 if (!response.ok) {
                     throw new Error('Failed to fetch activity feed');
@@ -2624,9 +2620,7 @@
         async function fetchAnalyticsStats() {
             try {
                 // Fetch new signups (30 days)
-                const signupsRes = await fetch('/api/admin/analytics/signups?period=30', {
-                    headers: { 'x-session-id': sessionId }
-                });
+                const signupsRes = await fetch('/api/admin/analytics/signups?period=30');
                 const signupsData = await signupsRes.json();
                 
                 if (signupsData.success) {
@@ -2645,9 +2639,7 @@
                 }
                 
                 // Fetch total messages processed
-                const messagesRes = await fetch('/api/admin/analytics/messages', {
-                    headers: { 'x-session-id': sessionId }
-                });
+                const messagesRes = await fetch('/api/admin/analytics/messages');
                 const messagesData = await messagesRes.json();
                 
                 if (messagesData.success) {
