@@ -1825,10 +1825,10 @@
                                     <i data-lucide="activity" style="width: 20px; height: 20px;"></i>
                                 </div>
                             </div>
-                            <p class="stat-value">92<span style="font-size: 20px;">%</span></p>
-                            <p class="stat-change">
-                                <i data-lucide="arrow-up-right"></i>
-                                Excellent
+                            <p class="stat-value" id="statPlatformHealth">0<span style="font-size: 20px;">%</span></p>
+                            <p class="stat-change" id="statPlatformHealthChange">
+                                <i data-lucide="loader"></i>
+                                Loading...
                             </p>
                         </div>
                     </div>
@@ -1869,9 +1869,9 @@
                                 <i data-lucide="download"></i>
                                 Export CSV
                             </button>
-                            <button onclick="showAddBusinessModal()" class="btn-primary" style="height: 44px; padding: 0 20px; display: flex; align-items: center; gap: 8px;">
-                                <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
-                                Add Business
+                            <button onclick="showAddBusinessModal()" class="btn-primary" style="height: 44px; padding: 0 20px; display: flex; align-items: center; gap: 8px; background: #10b981; border-radius: 8px; font-weight: 600; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);">
+                                <i data-lucide="plus" style="width: 18px; height: 18px;"></i>
+                                Add New Business
                             </button>
                         </div>
                     </div>
@@ -2650,12 +2650,28 @@
                 platformChartInstance.destroy();
             }
             
+            // Use real data if available, otherwise use placeholder data
+            const platformData = window.platformData || {
+                instagram: 0,
+                whatsapp: 0,
+                telegram: 0
+            };
+            
+            const chartData = [
+                platformData.instagram,
+                platformData.whatsapp,
+                platformData.telegram
+            ];
+            
+            // Only show chart if there's data
+            const hasData = chartData.some(val => val > 0);
+            
             platformChartInstance = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                     labels: ['Instagram', 'WhatsApp', 'Telegram'],
                     datasets: [{
-                        data: [98420, 112310, 38200],
+                        data: hasData ? chartData : [1, 1, 1], // Show equal slices if no data
                         backgroundColor: ['#E1306C', '#25D366', '#0088cc'],
                         borderWidth: 0,
                         borderRadius: 6,
@@ -2678,8 +2694,11 @@
                             displayColors: true,
                             callbacks: {
                                 label: (ctx) => {
+                                    if (!hasData) {
+                                        return `${ctx.label}: No data yet`;
+                                    }
                                     const value = ctx.parsed.toLocaleString('en-US');
-                                    return `${ctx.label}: ${value}`;
+                                    return `${ctx.label}: ${value} messages`;
                                 }
                             }
                         }
@@ -2946,6 +2965,65 @@
                     
                     const totalMessages = allBusinesses.reduce((sum, b) => sum + (b.messageCount || 0), 0);
                     document.getElementById('statTotalMessages').textContent = totalMessages.toLocaleString();
+                    
+                    // Calculate Platform Health - percentage of businesses with at least one platform connected
+                    const businessesWithConnections = allBusinesses.filter(b => {
+                        const channels = b.channels || {};
+                        const instagramConnected = channels.instagram?.connected || false;
+                        const whatsappConnected = channels.whatsapp?.connected || false;
+                        const telegramConnected = channels.telegram?.connected || false;
+                        return instagramConnected || whatsappConnected || telegramConnected;
+                    }).length;
+                    
+                    const platformHealth = allBusinesses.length > 0 
+                        ? Math.round((businessesWithConnections / allBusinesses.length) * 100) 
+                        : 0;
+                    
+                    document.getElementById('statPlatformHealth').innerHTML = 
+                        `${platformHealth}<span style="font-size: 20px;">%</span>`;
+                    
+                    // Update health status text
+                    const healthChangeEl = document.getElementById('statPlatformHealthChange');
+                    if (platformHealth >= 80) {
+                        healthChangeEl.innerHTML = '<i data-lucide="arrow-up-right"></i> Excellent';
+                    } else if (platformHealth >= 60) {
+                        healthChangeEl.innerHTML = '<i data-lucide="arrow-up"></i> Good';
+                    } else if (platformHealth >= 40) {
+                        healthChangeEl.innerHTML = '<i data-lucide="minus"></i> Average';
+                    } else {
+                        healthChangeEl.innerHTML = '<i data-lucide="arrow-down"></i> Needs Attention';
+                    }
+                    
+                    // Calculate platform-specific message counts for chart
+                    let instagramMessages = 0;
+                    let whatsappMessages = 0;
+                    let telegramMessages = 0;
+                    
+                    allBusinesses.forEach(b => {
+                        const channels = b.channels || {};
+                        if (channels.instagram?.connected) {
+                            instagramMessages += b.messageCount || 0;
+                        }
+                        if (channels.whatsapp?.connected) {
+                            whatsappMessages += b.messageCount || 0;
+                        }
+                        if (channels.telegram?.connected) {
+                            telegramMessages += b.messageCount || 0;
+                        }
+                    });
+                    
+                    // Store platform data globally for chart
+                    window.platformData = {
+                        instagram: instagramMessages,
+                        whatsapp: whatsappMessages,
+                        telegram: telegramMessages
+                    };
+                    
+                    // Reinitialize platform chart with real data
+                    initPlatformChart();
+                    
+                    // Reinitialize lucide icons for the new stat changes
+                    lucide.createIcons();
                     
                     renderBusinessTable();
                 } else {
