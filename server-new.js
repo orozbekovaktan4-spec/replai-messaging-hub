@@ -320,23 +320,40 @@ function saveUsers(users) {
   }
 }
 
-// Get user by email (checks both admin database and businesses)
+// Get user by email (checks both admin database and businesses) - uses raw SQL to avoid Prisma pooling issues
 async function getUserByEmail(email) {
   try {
-    // First check Admin table in database (for super admin)
-    const { prisma } = await import('./db.js');
-    const admin = await prisma.admin.findUnique({
-      where: { email: email.toLowerCase() }
+    // Use pg library directly instead of Prisma
+    const { default: pg } = await import('pg');
+    const { Pool } = pg;
+    const pool = new Pool({ 
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false }
     });
     
-    if (admin) {
-      return {
-        email: admin.email,
-        name: admin.name,
-        passwordHash: admin.password,
-        role: admin.role,
-        type: 'admin'
-      };
+    try {
+      // First check Admin table in database (for super admin)
+      const adminResult = await pool.query(
+        'SELECT id, email, password, name, role FROM "Admin" WHERE LOWER(email) = LOWER($1) LIMIT 1',
+        [email]
+      );
+      
+      if (adminResult.rows.length > 0) {
+        const admin = adminResult.rows[0];
+        await pool.end();
+        return {
+          email: admin.email,
+          name: admin.name,
+          passwordHash: admin.password,
+          role: admin.role,
+          type: 'admin'
+        };
+      }
+      
+      await pool.end();
+    } catch (pgError) {
+      console.error('[Auth] Raw SQL query error:', pgError.message);
+      try { await pool.end(); } catch {}
     }
     
     // Then check businesses database (for business owners)
