@@ -1739,6 +1739,11 @@
                         <i data-lucide="bar-chart-3"></i>
                         <span>Platform Analytics</span>
                     </button>
+
+                    <button onclick="switchSection('platforms')" class="nav-item" data-section="platforms">
+                        <i data-lucide="plug"></i>
+                        <span>Platform Connections</span>
+                    </button>
                 </div>
 
                 <!-- Configuration Group -->
@@ -2098,6 +2103,146 @@
                     </div>
                 </div>
 
+                <!-- Platform Connections Section -->
+                <div id="platformsSection" class="hidden">
+                    <div class="analytics-header">
+                        <h1 class="analytics-title">Platform Connections</h1>
+                        <p class="analytics-subtitle">Connect your social media and messaging platforms.</p>
+                    </div>
+
+                    <div style="display: grid; gap: 24px;">
+                        <!-- Instagram Integration -->
+                        <div style="border: 2px solid var(--border-color); border-radius: 12px; padding: 24px; background: var(--bg-secondary);">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                                <div style="display: flex; align-items: center; gap: 16px;">
+                                    <div style="width: 48px; height: 48px; background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                        <i data-lucide="instagram" style="width: 28px; height: 28px; color: white;"></i>
+                                    </div>
+                                    <div>
+                                        <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 4px;">Instagram</h3>
+                                        <p style="font-size: 13px; color: var(--text-secondary);">Respond to Instagram DMs automatically</p>
+                                    </div>
+                                </div>
+                                <span id="instagram-status-badge" style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; background: var(--danger-light); color: var(--danger);">
+                                    <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--danger);"></span>
+                                    Not Connected
+                                </span>
+                            </div>
+
+                            <div id="instagram-connected-info" style="display: none; margin-top: 16px; padding: 16px; background: var(--success-light); border-radius: 8px; border: 1px solid var(--success);">
+                                <p style="font-size: 14px; color: var(--success); margin-bottom: 8px; font-weight: 500;">
+                                    <i data-lucide="check-circle" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;"></i>
+                                    Connected as <strong id="instagram-username"></strong>
+                                </p>
+                            </div>
+
+                            <div style="display: flex; gap: 12px; margin-top: 20px;">
+                                <button id="btn-connect-instagram" class="btn-primary-large" onclick="initiateInstagramOAuth()">
+                                    <i data-lucide="link" style="width: 20px; height: 20px;"></i>
+                                    <span>Connect Instagram</span>
+                                </button>
+                                <button id="btn-disconnect-instagram" class="btn-secondary" onclick="disconnectInstagram()" style="display: none;">
+                                    <i data-lucide="unlink" style="width: 18px; height: 18px;"></i>
+                                    <span>Disconnect</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- WhatsApp Integration -->
+                        <div style="border: 2px solid var(--border-color); border-radius: 12px; padding: 24px; background: var(--bg-secondary);">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                                <div style="display: flex; align-items: center; gap: 16px;">
+                                    <div style="width: 48px; height: 48px; background: #25D366; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                        <i data-lucide="message-circle" style="width: 28px; height: 28px; color: white;"></i>
+                                    </div>
+                                    <div>
+                                        <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 4px;">WhatsApp</h3>
+                                        <p style="font-size: 13px; color: var(--text-secondary);">Respond to WhatsApp messages automatically</p>
+                                    </div>
+                                </div>
+                                <span id="whatsapp-status-badge" style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; background: var(--danger-light); color: var(--danger);">
+                                    <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--danger);"></span>
+                                    Not Connected
+                                </span>
+                            </div>
+
+                            <div id="whatsapp-connected-info" style="display: none; margin-top: 16px; padding: 16px; background: var(--success-light); border-radius: 8px; border: 1px solid var(--success);">
+                                <p style="font-size: 14px; color: var(--success); margin-bottom: 8px; font-weight: 500;">
+                                    <i data-lucide="check-circle" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;"></i>
+                                    Connected: <strong id="whatsapp-phone"></strong>
+                                </p>
+                            </div>
+
+                            <div style="display: flex; gap: 12px; margin-top: 20px;">
+                                <button id="btn-connect-whatsapp-oauth" class="btn-primary-large" onclick="connectWhatsAppOAuth()" style="flex: 1;">
+                                    <i data-lucide="qr-code" style="width: 20px; height: 20px;"></i>
+                                    <span>Connect via QR Code</span>
+                                </button>
+                                <button id="btn-connect-whatsapp" class="btn-secondary" onclick="connectWhatsApp()" style="flex: 1; display: none;">
+                                    <i data-lucide="key" style="width: 20px; height: 20px;"></i>
+                                    <span>Manual Setup</span>
+                                </button>
+                            </div>
+                            <div style="display: flex; gap: 12px; margin-top: 12px;">
+                                <button id="btn-disconnect-whatsapp" class="btn-secondary" onclick="disconnectWhatsApp()" style="display: none; width: 100%;">
+                                    <i data-lucide="unlink" style="width: 18px; height: 18px;"></i>
+                                    <span>Disconnect</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Telegram Integration -->
+                        <div style="border: 2px solid var(--border-color); border-radius: 12px; padding: 24px; background: var(--bg-secondary);">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                                <div style="display: flex; align-items: center; gap: 16px;">
+                                    <div style="width: 48px; height: 48px; background: #0088cc; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                        <i data-lucide="send" style="width: 28px; height: 28px; color: white;"></i>
+                                    </div>
+                                    <div>
+                                        <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 4px;">Telegram</h3>
+                                        <p style="font-size: 13px; color: var(--text-secondary);">Respond to Telegram messages automatically</p>
+                                    </div>
+                                </div>
+                                <span id="telegram-status-badge" style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; background: var(--danger-light); color: var(--danger);">
+                                    <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--danger);"></span>
+                                    Not Connected
+                                </span>
+                            </div>
+
+                            <div id="telegram-connected-info" style="display: none; margin-top: 16px; padding: 16px; background: var(--success-light); border-radius: 8px; border: 1px solid var(--success);">
+                                <p style="font-size: 14px; color: var(--success); margin-bottom: 8px; font-weight: 500;">
+                                    <i data-lucide="check-circle" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;"></i>
+                                    Connected: <strong id="telegram-bot-name"></strong>
+                                </p>
+                            </div>
+
+                            <div id="telegram-config" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                                <div style="display: grid; gap: 16px;">
+                                    <div>
+                                        <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px;">Bot Token</label>
+                                        <input type="password" id="telegram-token" placeholder="Your Telegram Bot Token" style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); font-size: 14px; font-family: monospace;">
+                                    </div>
+                                </div>
+                                <p style="font-size: 12px; color: var(--text-tertiary); margin-top: 12px;">
+                                    <i data-lucide="info" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle;"></i>
+                                    Need help? <a href="https://core.telegram.org/bots#3-how-do-i-create-a-bot" target="_blank" style="color: var(--primary); text-decoration: underline;">Create a Telegram bot</a>
+                                </p>
+                            </div>
+
+                            <div style="display: flex; gap: 12px; margin-top: 20px;">
+                                <button id="btn-connect-telegram" class="btn-primary-large" onclick="connectTelegram()">
+                                    <i data-lucide="link" style="width: 20px; height: 20px;"></i>
+                                    <span>Connect Telegram</span>
+                                </button>
+                                <button id="btn-disconnect-telegram" class="btn-secondary" onclick="disconnectTelegram()" style="display: none;">
+                                    <i data-lucide="unlink" style="width: 18px; height: 18px;"></i>
+                                    <span>Disconnect</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Settings Section -->
                 <div id="settingsSection" class="hidden">
                     <div class="settings-header">
@@ -2383,6 +2528,7 @@
         const sections = {
             businesses: 'Businesses Management',
             analytics: 'Platform Analytics',
+            platforms: 'Platform Connections',
             settings: 'System Settings'
         };
 
@@ -3451,7 +3597,323 @@
         function showAddBusinessModal() {
             showToast('Add Business wizard coming in next update');
         }
-        
+
+        // ==================== PLATFORM CONNECTION FUNCTIONS ====================
+
+        // Instagram OAuth Connection
+        async function initiateInstagramOAuth() {
+            console.log('[Instagram] Starting OAuth flow...');
+
+            // Detect if user is on mobile device
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+                             (window.innerWidth < 768);
+
+            console.log('[Instagram] Device type:', isMobile ? 'Mobile' : 'Desktop');
+
+            try {
+                // Get OAuth URL from backend
+                const response = await fetch('/api/admin/instagram/oauth/start');
+                const data = await response.json();
+
+                if (!data.success || !data.authUrl) {
+                    showToast('Failed to generate Instagram OAuth URL');
+                    console.error('[Instagram] OAuth URL error:', data.error);
+                    return;
+                }
+
+                if (isMobile) {
+                    // Mobile Flow: Full page redirect
+                    console.log('[Instagram] Using mobile redirect flow...');
+                    showToast('Redirecting to Instagram...');
+
+                    // Store that we're in OAuth flow
+                    sessionStorage.setItem('instagram_oauth_pending', 'true');
+
+                    // Redirect full page to Instagram
+                    window.location.href = data.authUrl;
+
+                } else {
+                    // Desktop Flow: Popup window
+                    console.log('[Instagram] Using desktop popup flow...');
+
+                    const width = 600;
+                    const height = 700;
+                    const left = (window.innerWidth - width) / 2;
+                    const top = (window.innerHeight - height) / 2;
+
+                    const popup = window.open(
+                        data.authUrl,
+                        'InstagramOAuth',
+                        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+                    );
+
+                    if (!popup) {
+                        showToast('Please allow popups for this website');
+                        return;
+                    }
+
+                    // Listen for OAuth success message from popup
+                    const messageHandler = (event) => {
+                        if (event.data && event.data.type === 'instagram_oauth_success') {
+                            console.log('[Instagram] ✅ OAuth success received from popup');
+                            window.removeEventListener('message', messageHandler);
+
+                            if (event.data.data && event.data.data.username) {
+                                updateInstagramUI(true, event.data.data.username);
+                                showToast('✅ Instagram connected: @' + event.data.data.username);
+                            } else {
+                                setTimeout(() => checkInstagramConnectionStatus(), 1000);
+                            }
+                        } else if (event.data && event.data.type === 'instagram_oauth_error') {
+                            console.error('[Instagram] OAuth error:', event.data.error);
+                            window.removeEventListener('message', messageHandler);
+                            showToast('❌ Instagram connection failed: ' + event.data.error);
+                        }
+                    };
+
+                    window.addEventListener('message', messageHandler);
+
+                    // Monitor popup closure
+                    const monitorPopup = setInterval(() => {
+                        if (popup.closed) {
+                            clearInterval(monitorPopup);
+                            console.log('[Instagram] Popup closed, checking connection...');
+
+                            setTimeout(() => {
+                                window.removeEventListener('message', messageHandler);
+                            }, 5000);
+
+                            setTimeout(() => {
+                                checkInstagramConnectionStatus();
+                            }, 1500);
+                        }
+                    }, 500);
+                }
+
+            } catch (error) {
+                console.error('[Instagram OAuth] Error:', error);
+                showToast('Error: ' + error.message);
+            }
+        }
+
+        async function checkInstagramConnectionStatus() {
+            try {
+                const response = await fetch('/api/admin/instagram/status');
+                const data = await response.json();
+
+                if (data.connected && data.username) {
+                    updateInstagramUI(true, data.username);
+                    showToast('✅ Instagram connected: @' + data.username);
+                }
+            } catch (error) {
+                console.error('[Instagram] Status check error:', error);
+            }
+        }
+
+        function updateInstagramUI(connected, username) {
+            const statusBadge = document.getElementById('instagram-status-badge');
+            const connectedInfo = document.getElementById('instagram-connected-info');
+            const usernameEl = document.getElementById('instagram-username');
+            const connectBtn = document.getElementById('btn-connect-instagram');
+            const disconnectBtn = document.getElementById('btn-disconnect-instagram');
+
+            if (connected && username) {
+                statusBadge.innerHTML = '<span style="width: 8px; height: 8px; border-radius: 50%; background: var(--success);"></span> Connected';
+                statusBadge.style.background = 'var(--success-light)';
+                statusBadge.style.color = 'var(--success)';
+
+                if (usernameEl) usernameEl.textContent = '@' + username;
+                if (connectedInfo) connectedInfo.style.display = 'block';
+                if (connectBtn) connectBtn.style.display = 'none';
+                if (disconnectBtn) disconnectBtn.style.display = 'inline-flex';
+            } else {
+                statusBadge.innerHTML = '<span style="width: 8px; height: 8px; border-radius: 50%; background: var(--danger);"></span> Not Connected';
+                statusBadge.style.background = 'var(--danger-light)';
+                statusBadge.style.color = 'var(--danger)';
+
+                if (connectedInfo) connectedInfo.style.display = 'none';
+                if (connectBtn) connectBtn.style.display = 'inline-flex';
+                if (disconnectBtn) disconnectBtn.style.display = 'none';
+            }
+
+            lucide.createIcons();
+        }
+
+        async function disconnectInstagram() {
+            if (!confirm('Are you sure you want to disconnect Instagram?')) {
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/admin/instagram/disconnect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    updateInstagramUI(false, null);
+                    showToast('Instagram disconnected');
+                } else {
+                    showToast('Error disconnecting: ' + data.error);
+                }
+            } catch (error) {
+                console.error('[Instagram] Disconnect error:', error);
+                showToast('Error: ' + error.message);
+            }
+        }
+
+        // WhatsApp OAuth connection with QR code
+        async function connectWhatsAppOAuth() {
+            try {
+                showToast('Initializing WhatsApp connection...');
+
+                // Get OAuth URL from backend
+                const response = await fetch('/api/admin/whatsapp/oauth/start');
+                const data = await response.json();
+
+                if (!data.success) {
+                    showToast('Failed to start OAuth: ' + data.error);
+                    return;
+                }
+
+                // Open popup window for OAuth flow
+                const width = 600;
+                const height = 700;
+                const left = (screen.width - width) / 2;
+                const top = (screen.height - height) / 2;
+
+                const popup = window.open(
+                    data.authUrl,
+                    'WhatsApp OAuth',
+                    `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes`
+                );
+
+                if (!popup) {
+                    showToast('Please allow popups to connect WhatsApp');
+                    return;
+                }
+
+                showToast('Scan QR code with your WhatsApp app');
+
+                // Listen for OAuth completion message
+                window.addEventListener('message', function handleOAuthMessage(event) {
+                    if (event.data.type === 'whatsapp_oauth_success') {
+                        window.removeEventListener('message', handleOAuthMessage);
+                        showToast('✅ WhatsApp connected successfully!');
+
+                        // Update UI
+                        const statusBadge = document.getElementById('whatsapp-status-badge');
+                        statusBadge.innerHTML = '<span style="width: 8px; height: 8px; border-radius: 50%; background: var(--success);"></span> Connected';
+                        statusBadge.style.background = 'var(--success-light)';
+                        statusBadge.style.color = 'var(--success)';
+
+                        document.getElementById('btn-connect-whatsapp-oauth').style.display = 'none';
+                        document.getElementById('btn-disconnect-whatsapp').style.display = 'block';
+
+                        if (event.data.data && event.data.data.phoneNumber) {
+                            const phoneEl = document.getElementById('whatsapp-phone');
+                            if (phoneEl) phoneEl.textContent = event.data.data.phoneNumber;
+
+                            const connectedInfo = document.getElementById('whatsapp-connected-info');
+                            if (connectedInfo) connectedInfo.style.display = 'block';
+                        }
+
+                        lucide.createIcons();
+                    } else if (event.data.type === 'whatsapp_oauth_error') {
+                        window.removeEventListener('message', handleOAuthMessage);
+                        showToast('OAuth failed: ' + event.data.error);
+                    }
+                });
+
+                // Check if popup was closed without completing
+                const checkClosed = setInterval(() => {
+                    if (popup.closed) {
+                        clearInterval(checkClosed);
+                        console.log('[WhatsApp OAuth] Popup closed');
+                    }
+                }, 500);
+
+            } catch (error) {
+                console.error('[WhatsApp OAuth] Error:', error);
+                showToast('Connection error: ' + error.message);
+            }
+        }
+
+        function connectWhatsApp() {
+            showToast('Manual WhatsApp setup - use QR Code option instead');
+        }
+
+        function disconnectWhatsApp() {
+            if (!confirm('Are you sure you want to disconnect WhatsApp?')) {
+                return;
+            }
+
+            const statusBadge = document.getElementById('whatsapp-status-badge');
+            statusBadge.innerHTML = '<span style="width: 8px; height: 8px; border-radius: 50%; background: var(--danger);"></span> Not Connected';
+            statusBadge.style.background = 'var(--danger-light)';
+            statusBadge.style.color = 'var(--danger)';
+
+            document.getElementById('btn-connect-whatsapp-oauth').style.display = 'inline-flex';
+            document.getElementById('btn-disconnect-whatsapp').style.display = 'none';
+
+            const connectedInfo = document.getElementById('whatsapp-connected-info');
+            if (connectedInfo) connectedInfo.style.display = 'none';
+
+            showToast('WhatsApp disconnected');
+            lucide.createIcons();
+        }
+
+        // Telegram Connection
+        function connectTelegram() {
+            const token = document.getElementById('telegram-token').value;
+
+            if (!token) {
+                document.getElementById('telegram-config').style.display = 'block';
+                showToast('Please enter Telegram bot token');
+                return;
+            }
+
+            // Update UI to show connected state
+            const statusBadge = document.getElementById('telegram-status-badge');
+            statusBadge.innerHTML = '<span style="width: 8px; height: 8px; border-radius: 50%; background: var(--success);"></span> Connected';
+            statusBadge.style.background = 'var(--success-light)';
+            statusBadge.style.color = 'var(--success)';
+
+            document.getElementById('btn-connect-telegram').style.display = 'none';
+            document.getElementById('btn-disconnect-telegram').style.display = 'inline-flex';
+            document.getElementById('telegram-config').style.display = 'none';
+
+            const botNameEl = document.getElementById('telegram-bot-name');
+            if (botNameEl) botNameEl.textContent = 'Bot Connected';
+
+            const connectedInfo = document.getElementById('telegram-connected-info');
+            if (connectedInfo) connectedInfo.style.display = 'block';
+
+            showToast('Telegram connected successfully!');
+            lucide.createIcons();
+        }
+
+        function disconnectTelegram() {
+            if (!confirm('Are you sure you want to disconnect Telegram?')) {
+                return;
+            }
+
+            const statusBadge = document.getElementById('telegram-status-badge');
+            statusBadge.innerHTML = '<span style="width: 8px; height: 8px; border-radius: 50%; background: var(--danger);"></span> Not Connected';
+            statusBadge.style.background = 'var(--danger-light)';
+            statusBadge.style.color = 'var(--danger)';
+
+            document.getElementById('btn-connect-telegram').style.display = 'inline-flex';
+            document.getElementById('btn-disconnect-telegram').style.display = 'none';
+
+            const connectedInfo = document.getElementById('telegram-connected-info');
+            if (connectedInfo) connectedInfo.style.display = 'none';
+
+            showToast('Telegram disconnected');
+            lucide.createIcons();
+        }
+
         // Run authentication check on page load
         if (checkAuth()) {
             // Load businesses when page loads
