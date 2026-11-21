@@ -3420,6 +3420,9 @@
                                 <button onclick="viewBusiness('${business.id}')" class="btn-icon-small" title="View Details">
                                     <i data-lucide="eye"></i>
                                 </button>
+                                <button onclick="editBusiness('${business.id}')" class="btn-icon-small" title="Edit Business">
+                                    <i data-lucide="pencil"></i>
+                                </button>
                                 <button onclick="deleteBusiness('${business.id}', '${business.name.replace(/'/g, "\\'")}'))" class="btn-icon-small" title="Delete" style="color: var(--danger);">
                                     <i data-lucide="trash-2"></i>
                                 </button>
@@ -3568,7 +3571,125 @@
         function viewBusiness(id) {
             showToast('Business details modal coming soon');
         }
-        
+
+        // Edit Business
+        async function editBusiness(id) {
+            try {
+                // Fetch business details
+                const response = await fetch(`/api/admin/businesses/${id}`);
+                const result = await response.json();
+
+                if (!result.success) {
+                    showToast('Failed to load business details');
+                    return;
+                }
+
+                const business = result.data;
+
+                // Create and show edit modal
+                const modal = document.createElement('div');
+                modal.id = 'editBusinessModal';
+                modal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;';
+
+                modal.innerHTML = `
+                    <div style="background: var(--bg-primary); border-radius: 16px; padding: 32px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                            <h2 style="font-size: 24px; font-weight: 600; color: var(--text-primary);">Edit Business</h2>
+                            <button onclick="closeEditModal()" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 24px;">&times;</button>
+                        </div>
+                        <form id="editBusinessForm" onsubmit="saveBusinessEdit(event, '${id}')">
+                            <div style="display: grid; gap: 16px;">
+                                <div>
+                                    <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--text-primary);">Business Name</label>
+                                    <input type="text" id="edit-name" value="${business.name || ''}" required style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--text-primary);">Owner Name</label>
+                                    <input type="text" id="edit-owner" value="${business.ownerName || business.name || ''}" style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--text-primary);">Email</label>
+                                    <input type="email" id="edit-email" value="${business.email || ''}" required style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--text-primary);">Industry</label>
+                                    <input type="text" id="edit-industry" value="${business.industry || ''}" style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--text-primary);">Plan</label>
+                                    <select id="edit-plan" style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
+                                        <option value="free" ${business.plan === 'free' ? 'selected' : ''}>Free</option>
+                                        <option value="pro" ${business.plan === 'pro' ? 'selected' : ''}>Pro</option>
+                                        <option value="enterprise" ${business.plan === 'enterprise' ? 'selected' : ''}>Enterprise</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--text-primary);">Status</label>
+                                    <select id="edit-status" style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
+                                        <option value="active" ${business.status === 'active' ? 'selected' : ''}>Active</option>
+                                        <option value="trial" ${business.status === 'trial' ? 'selected' : ''}>Trial</option>
+                                        <option value="suspended" ${business.status === 'suspended' ? 'selected' : ''}>Suspended</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                                <button type="button" onclick="closeEditModal()" class="btn-secondary" style="flex: 1;">Cancel</button>
+                                <button type="submit" class="btn-primary-large" style="flex: 1;">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+
+                document.body.appendChild(modal);
+                lucide.createIcons();
+
+            } catch (error) {
+                console.error('Error loading business details:', error);
+                showToast('Failed to load business details');
+            }
+        }
+
+        function closeEditModal() {
+            const modal = document.getElementById('editBusinessModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        async function saveBusinessEdit(event, id) {
+            event.preventDefault();
+
+            const updateData = {
+                name: document.getElementById('edit-name').value,
+                ownerName: document.getElementById('edit-owner').value,
+                email: document.getElementById('edit-email').value,
+                industry: document.getElementById('edit-industry').value,
+                plan: document.getElementById('edit-plan').value,
+                status: document.getElementById('edit-status').value
+            };
+
+            try {
+                const response = await fetch(`/api/admin/businesses/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updateData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast('Business updated successfully');
+                    closeEditModal();
+                    loadRealBusinesses();
+                } else {
+                    showToast('Failed to update business: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error updating business:', error);
+                showToast('Failed to update business');
+            }
+        }
+
         // Delete Business
         async function deleteBusiness(id, name) {
             if (!confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) {
