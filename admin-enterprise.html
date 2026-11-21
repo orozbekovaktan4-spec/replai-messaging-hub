@@ -7,6 +7,9 @@
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
     <style>
         /* REPLAI Enterprise - Color System */
@@ -869,6 +872,805 @@
         .empty-text {
             color: var(--muted-foreground);
         }
+
+        /* Analytics Section */
+        .analytics-header {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 24px;
+        }
+
+        .analytics-title {
+            font-size: 30px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            color: var(--foreground);
+        }
+
+        .analytics-subtitle {
+            font-size: 14px;
+            color: var(--muted-foreground);
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        @media (min-width: 1280px) {
+            .charts-grid { grid-template-columns: 3fr 2fr; }
+        }
+
+        .chart-card {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            padding: 24px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .chart-info h2 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--foreground);
+        }
+
+        .chart-info p {
+            font-size: 14px;
+            color: var(--muted-foreground);
+        }
+
+        .chart-select {
+            width: 160px;
+            height: 36px;
+            border-radius: 8px;
+            border: 1px solid var(--input);
+            background: var(--card);
+            padding: 0 12px;
+            font-size: 14px;
+            color: var(--foreground);
+            cursor: pointer;
+        }
+
+        .chart-select:focus {
+            outline: none;
+            border-color: var(--ring);
+        }
+
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 288px;
+        }
+
+        .platform-chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 224px;
+        }
+
+        .chart-center-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .chart-center-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--foreground);
+        }
+
+        .chart-center-label-text {
+            font-size: 12px;
+            color: var(--muted-foreground);
+        }
+
+        .platform-legend {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 24px 24px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .legend-label {
+            color: var(--muted-foreground);
+        }
+
+        .legend-value {
+            font-weight: 500;
+            color: var(--foreground);
+        }
+
+        .activity-feed-card {
+            display: flex;
+            flex-direction: column;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            overflow: hidden;
+        }
+
+        .activity-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+        }
+
+        .activity-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--foreground);
+        }
+
+        .btn-refresh {
+            display: flex;
+            width: 36px;
+            height: 36px;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--muted-foreground);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-refresh:hover {
+            background: var(--secondary);
+            color: var(--foreground);
+        }
+
+        .btn-refresh:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-refresh svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .activity-list {
+            list-style: none;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            transition: background 0.2s;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-item:hover {
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        [data-theme="dark"] .activity-item:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .activity-icon {
+            display: flex;
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+        }
+
+        .activity-icon svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .activity-content {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .activity-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--foreground);
+        }
+
+        .activity-description {
+            font-size: 14px;
+            color: var(--muted-foreground);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .activity-time {
+            flex-shrink: 0;
+            font-size: 12px;
+            color: var(--muted-foreground);
+        }
+
+        /* Settings Section */
+        .settings-header {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 24px;
+        }
+
+        .settings-title {
+            font-size: 30px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            color: var(--foreground);
+        }
+
+        .settings-subtitle {
+            font-size: 14px;
+            color: var(--muted-foreground);
+        }
+
+        .settings-container {
+            display: flex;
+            align-items: flex-start;
+            gap: 24px;
+        }
+
+        .settings-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            width: 200px;
+            flex-shrink: 0;
+        }
+
+        .settings-tab {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--muted-foreground);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+
+        .settings-tab:hover {
+            background: var(--secondary);
+            color: var(--foreground);
+        }
+
+        .settings-tab.active {
+            background: rgba(0, 97, 255, 0.12);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .settings-tab svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        .settings-content {
+            flex: 1;
+            min-width: 0;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            padding: 32px;
+        }
+
+        .tab-panel {
+            display: none;
+            max-width: 640px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .tab-panel.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tab-header {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 24px;
+            margin-bottom: 24px;
+        }
+
+        .tab-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--foreground);
+        }
+
+        .tab-description {
+            font-size: 14px;
+            color: var(--muted-foreground);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--foreground);
+        }
+
+        .form-input, .form-select {
+            height: 44px;
+            border-radius: 8px;
+            border: 1px solid var(--input);
+            background: var(--card);
+            padding: 0 12px;
+            font-size: 14px;
+            color: var(--foreground);
+            transition: all 0.2s;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--ring);
+            box-shadow: 0 0 0 2px rgba(0, 97, 255, 0.2);
+        }
+
+        .form-hint {
+            font-size: 12px;
+            color: var(--muted-foreground);
+            line-height: 1.5;
+        }
+
+        .toggle-group {
+            display: flex;
+            flex-direction: column;
+            divide-y: 1px solid var(--border);
+        }
+
+        .toggle-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 20px 0;
+        }
+
+        .toggle-item:first-child {
+            padding-top: 0;
+        }
+
+        .toggle-item:not(:last-child) {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .toggle-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .toggle-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--foreground);
+        }
+
+        .toggle-description {
+            font-size: 14px;
+            color: var(--muted-foreground);
+            line-height: 1.5;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .toggle-input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: var(--muted);
+            border-radius: 24px;
+            transition: all 0.2s;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+
+        .toggle-input:checked + .toggle-slider {
+            background: var(--primary);
+        }
+
+        .toggle-input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            height: 44px;
+            border-radius: 8px;
+            border: none;
+            background: linear-gradient(135deg, #60efff 0%, #0061ff 100%);
+            color: var(--primary-foreground);
+            padding: 0 24px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 97, 255, 0.3);
+        }
+
+        .btn-primary svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            height: 44px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--secondary);
+            color: var(--secondary-foreground);
+            padding: 0 24px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: var(--muted);
+        }
+
+        .btn-danger {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            height: 32px;
+            border-radius: 6px;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            background: var(--danger-light);
+            color: var(--danger);
+            padding: 0 12px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-danger:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .section-divider {
+            border-top: 1px solid var(--border);
+            margin-top: 32px;
+            padding-top: 32px;
+        }
+
+        .section-subtitle {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--foreground);
+            margin-bottom: 16px;
+        }
+
+        .api-key-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .api-key-card {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.02);
+            padding: 20px;
+        }
+
+        [data-theme="dark"] .api-key-card {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .api-key-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .api-key-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .api-key-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--foreground);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-success {
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        .badge-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .api-key-secret-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--background);
+            padding: 6px;
+            padding-left: 16px;
+        }
+
+        .api-key-secret {
+            flex: 1;
+            min-width: 0;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            color: var(--foreground);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .btn-icon-small {
+            display: flex;
+            width: 32px;
+            height: 32px;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            border: none;
+            background: transparent;
+            color: var(--muted-foreground);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-icon-small:hover {
+            background: var(--secondary);
+            color: var(--foreground);
+        }
+
+        .btn-icon-small svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .api-key-meta {
+            font-size: 12px;
+            color: var(--muted-foreground);
+        }
+
+        .billing-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+        @media (min-width: 1280px) {
+            .billing-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        .billing-card {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 24px;
+        }
+
+        .billing-card.primary {
+            border-color: rgba(0, 97, 255, 0.3);
+            background: rgba(0, 97, 255, 0.05);
+        }
+
+        .plan-header {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .plan-name {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--primary);
+        }
+
+        .plan-price {
+            font-size: 36px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            color: var(--foreground);
+        }
+
+        .plan-price span {
+            font-size: 16px;
+            font-weight: 400;
+            color: var(--muted-foreground);
+        }
+
+        .plan-features {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            list-style: none;
+        }
+
+        .plan-feature {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--foreground);
+        }
+
+        .plan-feature svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+            color: var(--success);
+        }
+
+        .usage-header {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--foreground);
+            margin-bottom: 12px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            border-radius: 12px;
+            background: var(--muted);
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #60efff 0%, #0061ff 100%);
+            transition: width 0.7s ease;
+        }
+
+        .usage-stats {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .usage-count {
+            font-weight: 500;
+            color: var(--foreground);
+        }
+
+        .usage-percent {
+            color: var(--muted-foreground);
+        }
+
+        .usage-description {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--muted-foreground);
+        }
     </style>
 </head>
 <body>
@@ -1155,26 +1957,377 @@
 
                 <!-- Analytics Section -->
                 <div id="analyticsSection" class="hidden">
-                    <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">Platform Analytics</h2>
-                    <div style="border-radius: 12px; border: 1px solid var(--border); background: var(--card); padding: 64px 32px;">
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i data-lucide="bar-chart-3"></i>
+                    <div class="analytics-header">
+                        <h1 class="analytics-title">Platform Analytics</h1>
+                        <p class="analytics-subtitle">Growth, traffic, and platform health across all businesses.</p>
+                    </div>
+
+                    <!-- Analytics Stats Grid -->
+                    <div class="stats-grid">
+                        <!-- New Signups -->
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">New Signups (30d)</span>
+                                <div class="stat-icon primary">
+                                    <i data-lucide="trending-up" style="width: 20px; height: 20px;"></i>
+                                </div>
                             </div>
-                            <p class="empty-text">Analytics dashboard coming soon...</p>
+                            <p class="stat-value">128</p>
+                            <p class="stat-change">
+                                <i data-lucide="arrow-up-right"></i>
+                                18% vs previous period
+                            </p>
                         </div>
+
+                        <!-- Messages Processed -->
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Messages Processed</span>
+                                <div class="stat-icon success">
+                                    <i data-lucide="messages-square" style="width: 20px; height: 20px;"></i>
+                                </div>
+                            </div>
+                            <p class="stat-value">248,930</p>
+                            <p class="stat-change">
+                                <i data-lucide="arrow-up-right"></i>
+                                24% vs last week
+                            </p>
+                        </div>
+
+                        <!-- Avg Response Time -->
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Avg. AI Response</span>
+                                <div class="stat-icon warning">
+                                    <i data-lucide="gauge" style="width: 20px; height: 20px;"></i>
+                                </div>
+                            </div>
+                            <p class="stat-value">840<span style="font-size: 20px;">ms</span></p>
+                            <p class="stat-change" style="color: var(--warning);">
+                                <i data-lucide="arrow-up-right"></i>
+                                6% slower than target
+                            </p>
+                        </div>
+
+                        <!-- Uptime -->
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Uptime (30d)</span>
+                                <div class="stat-icon danger">
+                                    <i data-lucide="activity" style="width: 20px; height: 20px;"></i>
+                                </div>
+                            </div>
+                            <p class="stat-value">99.98<span style="font-size: 20px;">%</span></p>
+                            <p class="stat-change">
+                                <i data-lucide="arrow-up-right"></i>
+                                Healthy
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Charts Grid -->
+                    <div class="charts-grid">
+                        <!-- Growth Chart -->
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <div class="chart-info">
+                                    <h2>Business Growth</h2>
+                                    <p>New business registrations</p>
+                                </div>
+                                <select id="growthRange" class="chart-select">
+                                    <option value="7">Last 7 days</option>
+                                    <option value="30" selected>Last 30 days</option>
+                                    <option value="90">Last 90 days</option>
+                                </select>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="growthChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Platform Chart -->
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <div class="chart-info">
+                                    <h2>Messages by Platform</h2>
+                                    <p>Share of messages this month</p>
+                                </div>
+                            </div>
+                            <div class="platform-chart-wrapper">
+                                <canvas id="platformChart"></canvas>
+                                <div class="chart-center-label">
+                                    <span class="chart-center-value">249K</span>
+                                    <span class="chart-center-label-text">Total messages</span>
+                                </div>
+                            </div>
+                            <div class="platform-legend">
+                                <div class="legend-item">
+                                    <span class="legend-dot" style="background: #E1306C;"></span>
+                                    <span class="legend-label">Instagram</span>
+                                    <span class="legend-value">40%</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-dot" style="background: #25D366;"></span>
+                                    <span class="legend-label">WhatsApp</span>
+                                    <span class="legend-value">45%</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-dot" style="background: #0088cc;"></span>
+                                    <span class="legend-label">Telegram</span>
+                                    <span class="legend-value">15%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Activity Feed -->
+                    <div class="activity-feed-card">
+                        <div class="activity-header">
+                            <h2>Recent Activity</h2>
+                            <button type="button" onclick="refreshActivity()" id="refreshActivityBtn" class="btn-refresh">
+                                <i data-lucide="refresh-cw"></i>
+                            </button>
+                        </div>
+                        <ul class="activity-list" id="activityList">
+                            <!-- Activity items will be inserted here -->
+                        </ul>
                     </div>
                 </div>
 
                 <!-- Settings Section -->
                 <div id="settingsSection" class="hidden">
-                    <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">System Settings</h2>
-                    <div style="border-radius: 12px; border: 1px solid var(--border); background: var(--card); padding: 64px 32px;">
-                        <div class="empty-state">
-                            <div class="empty-icon">
+                    <div class="settings-header">
+                        <h1 class="settings-title">System Settings</h1>
+                        <p class="settings-subtitle">Configure platform defaults, security, and billing.</p>
+                    </div>
+
+                    <div class="settings-container">
+                        <!-- Settings Sidebar -->
+                        <div class="settings-sidebar">
+                            <button type="button" class="settings-tab active" data-tab="general" onclick="switchSettingsTab('general')">
                                 <i data-lucide="settings"></i>
+                                <span>General</span>
+                            </button>
+                            <button type="button" class="settings-tab" data-tab="security" onclick="switchSettingsTab('security')">
+                                <i data-lucide="lock"></i>
+                                <span>Security</span>
+                            </button>
+                            <button type="button" class="settings-tab" data-tab="notifications" onclick="switchSettingsTab('notifications')">
+                                <i data-lucide="bell"></i>
+                                <span>Notifications</span>
+                            </button>
+                            <button type="button" class="settings-tab" data-tab="api" onclick="switchSettingsTab('api')">
+                                <i data-lucide="key-round"></i>
+                                <span>API Keys</span>
+                            </button>
+                            <button type="button" class="settings-tab" data-tab="billing" onclick="switchSettingsTab('billing')">
+                                <i data-lucide="credit-card"></i>
+                                <span>Billing</span>
+                            </button>
+                        </div>
+
+                        <!-- Settings Content -->
+                        <div class="settings-content">
+                            <!-- General Tab -->
+                            <div id="generalTab" class="tab-panel active">
+                                <div class="tab-header">
+                                    <h2 class="tab-title">General Settings</h2>
+                                    <p class="tab-description">Basic configuration that applies across the whole platform.</p>
+                                </div>
+                                <form onsubmit="saveGeneralSettings(event)">
+                                    <div class="form-group">
+                                        <label for="platformName" class="form-label">Platform Name</label>
+                                        <input type="text" id="platformName" class="form-input" value="REPLAI" />
+                                        <p class="form-hint">Shown in emails, the business dashboard, and the browser tab.</p>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="defaultLanguage" class="form-label">Default Language</label>
+                                        <select id="defaultLanguage" class="form-select">
+                                            <option value="en" selected>English</option>
+                                            <option value="ru">Русский</option>
+                                            <option value="uz">O'zbekcha</option>
+                                            <option value="tr">Türkçe</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="timeZone" class="form-label">Time Zone</label>
+                                        <select id="timeZone" class="form-select">
+                                            <option value="Asia/Tashkent" selected>(UTC+05:00) Tashkent</option>
+                                            <option value="Asia/Almaty">(UTC+05:00) Almaty</option>
+                                            <option value="Europe/Istanbul">(UTC+03:00) Istanbul</option>
+                                            <option value="Asia/Dubai">(UTC+04:00) Dubai</option>
+                                            <option value="Europe/London">(UTC+00:00) London</option>
+                                            <option value="America/New_York">(UTC-05:00) New York</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <button type="submit" class="btn-primary">Save Changes</button>
+                                    </div>
+                                </form>
                             </div>
-                            <p class="empty-text">Settings panel coming soon...</p>
+
+                            <!-- Security Tab -->
+                            <div id="securityTab" class="tab-panel">
+                                <div class="tab-header">
+                                    <h2 class="tab-title">Security Settings</h2>
+                                    <p class="tab-description">Protect the super admin account.</p>
+                                </div>
+                                <div class="toggle-group">
+                                    <div class="toggle-item">
+                                        <div class="toggle-info">
+                                            <div class="toggle-label">Two-Factor Authentication</div>
+                                            <div class="toggle-description">Require a one-time code from an authenticator app at sign in.</div>
+                                        </div>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" class="toggle-input" id="toggle2FA" onchange="handleToggle('Two-factor authentication', this.checked)">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                    <div class="toggle-item">
+                                        <div class="toggle-info">
+                                            <div class="toggle-label">Login Notifications</div>
+                                            <div class="toggle-description">Get an email whenever a new device signs in to this account.</div>
+                                        </div>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" class="toggle-input" id="toggleLoginAlerts" checked onchange="handleToggle('Login notifications', this.checked)">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="section-divider">
+                                    <h3 class="section-subtitle">Change Password</h3>
+                                    <form onsubmit="updatePassword(event)">
+                                        <div class="form-group">
+                                            <label for="currentPassword" class="form-label">Current password</label>
+                                            <input type="password" id="currentPassword" class="form-input" autocomplete="current-password" />
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="newPassword" class="form-label">New password</label>
+                                            <input type="password" id="newPassword" class="form-input" autocomplete="new-password" />
+                                            <p class="form-hint">Minimum 8 characters.</p>
+                                        </div>
+                                        <div>
+                                            <button type="submit" class="btn-primary">Update Password</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Notifications Tab -->
+                            <div id="notificationsTab" class="tab-panel">
+                                <div class="tab-header">
+                                    <h2 class="tab-title">Notification Preferences</h2>
+                                    <p class="tab-description">Choose which updates land in your inbox.</p>
+                                </div>
+                                <h3 style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-bottom: 16px;">Email Notifications</h3>
+                                <div class="toggle-group">
+                                    <div class="toggle-item">
+                                        <div class="toggle-info">
+                                            <div class="toggle-label">New Business Registration</div>
+                                            <div class="toggle-description">When a new business signs up on the platform.</div>
+                                        </div>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" class="toggle-input" checked onchange="handleToggle('New business registration', this.checked)">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                    <div class="toggle-item">
+                                        <div class="toggle-info">
+                                            <div class="toggle-label">System Alerts</div>
+                                            <div class="toggle-description">Outages, degraded performance, and quota warnings.</div>
+                                        </div>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" class="toggle-input" checked onchange="handleToggle('System alerts', this.checked)">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                    <div class="toggle-item">
+                                        <div class="toggle-info">
+                                            <div class="toggle-label">Weekly Reports</div>
+                                            <div class="toggle-description">A Monday summary of growth and message volume.</div>
+                                        </div>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" class="toggle-input" onchange="handleToggle('Weekly reports', this.checked)">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- API Keys Tab -->
+                            <div id="apiTab" class="tab-panel">
+                                <div class="tab-header">
+                                    <h2 class="tab-title">API Keys</h2>
+                                    <p class="tab-description">Keys grant full access to the REPLAI API. Keep them secret.</p>
+                                </div>
+                                <div class="api-key-list" id="apiKeyList">
+                                    <!-- API keys will be inserted here -->
+                                </div>
+                                <div style="margin-top: 24px;">
+                                    <button type="button" class="btn-primary" onclick="generateApiKey()">
+                                        <i data-lucide="plus"></i>
+                                        Generate New Key
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Billing Tab -->
+                            <div id="billingTab" class="tab-panel">
+                                <div class="tab-header">
+                                    <h2 class="tab-title">Billing & Usage</h2>
+                                    <p class="tab-description">Your subscription and this month's consumption.</p>
+                                </div>
+                                <div class="billing-grid">
+                                    <!-- Current Plan -->
+                                    <div class="billing-card primary">
+                                        <div class="plan-header">
+                                            <div class="plan-name">Professional Plan</div>
+                                            <div class="plan-price">$99<span>/month</span></div>
+                                        </div>
+                                        <ul class="plan-features">
+                                            <li class="plan-feature">
+                                                <i data-lucide="check"></i>
+                                                100,000 messages per month
+                                            </li>
+                                            <li class="plan-feature">
+                                                <i data-lucide="check"></i>
+                                                Unlimited businesses
+                                            </li>
+                                            <li class="plan-feature">
+                                                <i data-lucide="check"></i>
+                                                All messaging channels
+                                            </li>
+                                            <li class="plan-feature">
+                                                <i data-lucide="check"></i>
+                                                Priority support & SLA
+                                            </li>
+                                        </ul>
+                                        <button type="button" class="btn-primary" style="margin-top: auto;" onclick="showToast('Our sales team will contact you about upgrading.')">
+                                            Upgrade Plan
+                                        </button>
+                                    </div>
+
+                                    <!-- Usage -->
+                                    <div class="billing-card">
+                                        <h3 class="usage-header">Usage This Month</h3>
+                                        <div>
+                                            <div class="progress-bar">
+                                                <div class="progress-fill" style="width: 65%;"></div>
+                                            </div>
+                                            <div class="usage-stats">
+                                                <span class="usage-count">65,000 / 100,000 messages</span>
+                                                <span class="usage-percent">65%</span>
+                                            </div>
+                                            <p class="usage-description">
+                                                Resets on Nov 1, 2026. You'll get an alert at 80% usage.
+                                            </p>
+                                        </div>
+                                        <button type="button" class="btn-secondary" style="margin-top: auto;" onclick="showToast('Invoice history is on its way to your inbox.')">
+                                            View Invoices
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1319,6 +2472,415 @@
 
         // Initialize
         loadBusinesses();
+
+        // ==================== ANALYTICS SECTION ====================
+
+        let growthChartInstance = null;
+        let platformChartInstance = null;
+
+        // Activity feed data
+        const activityItems = [
+            { icon: 'building-2', tone: 'primary', title: 'New business registered', description: 'Aziz Barber Shop joined on the Pro trial', time: '2h ago' },
+            { icon: 'link-2', tone: 'success', title: 'Channel connected', description: 'Samarkand Grill connected WhatsApp Business', time: '3h ago' },
+            { icon: 'arrow-up-circle', tone: 'primary', title: 'Plan upgraded', description: 'MedCare Clinic upgraded to Enterprise', time: '5h ago' },
+            { icon: 'alert-triangle', tone: 'warning', title: 'Rate limit warning', description: 'Nova Retail reached 90% of monthly quota', time: '7h ago' },
+            { icon: 'credit-card', tone: 'success', title: 'Payment received', description: 'Luna Beauty Salon paid $29.00 invoice', time: '9h ago' },
+            { icon: 'user-plus', tone: 'primary', title: 'Team member invited', description: 'Urban Fade Studio invited 2 operators', time: '12h ago' },
+            { icon: 'shield-check', tone: 'success', title: 'Security check passed', description: 'Weekly vulnerability scan completed', time: '1d ago' },
+            { icon: 'link-2', tone: 'danger', title: 'Channel connected', description: 'Glow Nail Bar connected Instagram DMs', time: '1d ago' }
+        ];
+
+        function getToneClasses(tone) {
+            const toneMap = {
+                'primary': 'rgba(0, 97, 255, 0.12)',
+                'success': 'var(--success-light)',
+                'warning': 'var(--warning-light)',
+                'danger': 'var(--danger-light)'
+            };
+            const colorMap = {
+                'primary': 'var(--primary)',
+                'success': 'var(--success)',
+                'warning': 'var(--warning)',
+                'danger': 'var(--danger)'
+            };
+            return { bg: toneMap[tone], color: colorMap[tone] };
+        }
+
+        function renderActivityFeed() {
+            const activityList = document.getElementById('activityList');
+            activityList.innerHTML = activityItems.map(item => {
+                const toneStyle = getToneClasses(item.tone);
+                return `
+                    <li class="activity-item">
+                        <div class="activity-icon" style="background: ${toneStyle.bg}; color: ${toneStyle.color};">
+                            <i data-lucide="${item.icon}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <p class="activity-title">${item.title}</p>
+                            <p class="activity-description">${item.description}</p>
+                        </div>
+                        <time class="activity-time">${item.time}</time>
+                    </li>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function refreshActivity() {
+            const btn = document.getElementById('refreshActivityBtn');
+            btn.disabled = true;
+            const icon = btn.querySelector('svg');
+            icon.style.animation = 'spin 1s linear infinite';
+            
+            setTimeout(() => {
+                // Shuffle first item
+                const first = activityItems.shift();
+                activityItems.push(first);
+                activityItems[0].time = 'Just now';
+                renderActivityFeed();
+                
+                btn.disabled = false;
+                icon.style.animation = '';
+                showToast('Activity feed updated.');
+            }, 600);
+        }
+
+        // Generate chart data
+        function buildGrowthData(days) {
+            const data = [];
+            const labels = [];
+            const today = new Date();
+            
+            for (let i = days - 1; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(today.getDate() - i);
+                labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                
+                const base = 2 + (days - i) * (12 / days);
+                const wave = Math.sin((days - i) * 0.9) * 1.6 + Math.cos((days - i) * 0.37) * 1.2;
+                data.push(Math.max(1, Math.round(base + wave + 2)));
+            }
+            
+            return { labels, data };
+        }
+
+        function initGrowthChart(days = 30) {
+            const ctx = document.getElementById('growthChart');
+            if (!ctx) return;
+            
+            const { labels, data } = buildGrowthData(days);
+            
+            if (growthChartInstance) {
+                growthChartInstance.destroy();
+            }
+            
+            growthChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Registrations',
+                        data: data,
+                        borderColor: '#0061ff',
+                        backgroundColor: 'rgba(96, 239, 255, 0.2)',
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 5,
+                        pointHoverBackgroundColor: '#0061ff',
+                        pointHoverBorderColor: '#fff',
+                        pointHoverBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'var(--popover)',
+                            titleColor: 'var(--popover-foreground)',
+                            bodyColor: 'var(--popover-foreground)',
+                            borderColor: 'var(--border)',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: false,
+                            callbacks: {
+                                title: (ctx) => ctx[0].label,
+                                label: (ctx) => `Registrations: ${ctx.parsed.y}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { 
+                                color: 'var(--muted-foreground)',
+                                font: { size: 12 },
+                                maxTicksLimit: 8
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { 
+                                color: 'var(--border)',
+                                drawBorder: false
+                            },
+                            ticks: { 
+                                color: 'var(--muted-foreground)',
+                                font: { size: 12 },
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initPlatformChart() {
+            const ctx = document.getElementById('platformChart');
+            if (!ctx) return;
+            
+            if (platformChartInstance) {
+                platformChartInstance.destroy();
+            }
+            
+            platformChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Instagram', 'WhatsApp', 'Telegram'],
+                    datasets: [{
+                        data: [98420, 112310, 38200],
+                        backgroundColor: ['#E1306C', '#25D366', '#0088cc'],
+                        borderWidth: 0,
+                        borderRadius: 6,
+                        spacing: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '68%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'var(--popover)',
+                            titleColor: 'var(--popover-foreground)',
+                            bodyColor: 'var(--popover-foreground)',
+                            borderColor: 'var(--border)',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: true,
+                            callbacks: {
+                                label: (ctx) => {
+                                    const value = ctx.parsed.toLocaleString('en-US');
+                                    return `${ctx.label}: ${value}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Growth range change handler
+        document.getElementById('growthRange')?.addEventListener('change', (e) => {
+            initGrowthChart(Number(e.target.value));
+        });
+
+        // ==================== SETTINGS SECTION ====================
+
+        function switchSettingsTab(tabId) {
+            // Update tab buttons
+            document.querySelectorAll('.settings-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+            
+            // Update tab panels
+            document.querySelectorAll('.tab-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            document.getElementById(tabId + 'Tab').classList.add('active');
+            
+            lucide.createIcons();
+        }
+
+        function saveGeneralSettings(e) {
+            e.preventDefault();
+            const platformName = document.getElementById('platformName').value;
+            if (!platformName.trim()) {
+                alert('Platform name cannot be empty.');
+                return;
+            }
+            showToast('General settings saved.');
+        }
+
+        function updatePassword(e) {
+            e.preventDefault();
+            const current = document.getElementById('currentPassword').value;
+            const newPass = document.getElementById('newPassword').value;
+            
+            if (!current || newPass.length < 8) {
+                alert('Enter your current password and a new password of at least 8 characters.');
+                return;
+            }
+            
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            showToast('Password updated successfully.');
+        }
+
+        function handleToggle(label, checked) {
+            showToast(`${label} ${checked ? 'enabled' : 'disabled'}.`);
+        }
+
+        // API Keys Management
+        let apiKeys = [
+            {
+                id: 'k1',
+                name: 'Production API Key',
+                secret: 'rpl_live_8f2k1m9x7q4w3e5r6t0y2u8i1o3p7a9s',
+                created: 'Oct 11, 2026',
+                lastUsed: '2 hours ago'
+            }
+        ];
+
+        function renderApiKeys() {
+            const list = document.getElementById('apiKeyList');
+            if (!list) return;
+            
+            if (apiKeys.length === 0) {
+                list.innerHTML = `
+                    <div style="border-radius: 12px; border: 1px dashed var(--border); padding: 32px; text-align: center;">
+                        <p style="font-size: 14px; color: var(--muted-foreground);">No active API keys. Generate one to get started.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            list.innerHTML = apiKeys.map(key => `
+                <div class="api-key-card">
+                    <div class="api-key-header">
+                        <div class="api-key-title">
+                            <h3 class="api-key-name">${key.name}</h3>
+                            <div class="badge badge-success">
+                                <span class="badge-dot"></span>
+                                Active
+                            </div>
+                        </div>
+                        <button type="button" class="btn-danger" onclick="revokeApiKey('${key.id}')">Revoke</button>
+                    </div>
+                    <div class="api-key-secret-wrapper">
+                        <code class="api-key-secret" id="secret-${key.id}">${key.secret.slice(0, 9)}${'•'.repeat(24)}</code>
+                        <button type="button" class="btn-icon-small" onclick="toggleSecretVisibility('${key.id}')" title="Toggle visibility">
+                            <i data-lucide="eye" id="eye-${key.id}"></i>
+                        </button>
+                        <button type="button" class="btn-icon-small" onclick="copyApiKey('${key.secret}')" title="Copy to clipboard">
+                            <i data-lucide="copy"></i>
+                        </button>
+                    </div>
+                    <p class="api-key-meta">Created: ${key.created} • Last used: ${key.lastUsed}</p>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function generateApiKey() {
+            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            const secret = 'rpl_live_' + Array.from({ length: 32 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+            
+            apiKeys.push({
+                id: `k${Date.now()}`,
+                name: `API Key ${apiKeys.length + 1}`,
+                secret: secret,
+                created: 'Oct 12, 2026',
+                lastUsed: 'Never'
+            });
+            
+            renderApiKeys();
+            showToast('New API key generated.');
+        }
+
+        function revokeApiKey(keyId) {
+            const key = apiKeys.find(k => k.id === keyId);
+            if (confirm(`Revoking "${key.name}" will immediately break any integration using it. Continue?`)) {
+                apiKeys = apiKeys.filter(k => k.id !== keyId);
+                renderApiKeys();
+                showToast(`${key.name} revoked.`);
+            }
+        }
+
+        function toggleSecretVisibility(keyId) {
+            const secretEl = document.getElementById(`secret-${keyId}`);
+            const iconEl = document.getElementById(`eye-${keyId}`);
+            const key = apiKeys.find(k => k.id === keyId);
+            
+            if (secretEl.textContent.includes('•')) {
+                secretEl.textContent = key.secret;
+                iconEl.setAttribute('data-lucide', 'eye-off');
+            } else {
+                secretEl.textContent = key.secret.slice(0, 9) + '•'.repeat(24);
+                iconEl.setAttribute('data-lucide', 'eye');
+            }
+            lucide.createIcons();
+        }
+
+        function copyApiKey(secret) {
+            navigator.clipboard.writeText(secret).then(() => {
+                showToast('API key copied to clipboard.');
+            }).catch(() => {
+                alert('Could not access the clipboard.');
+            });
+        }
+
+        // Toast notification helper
+        function showToast(message) {
+            // Simple toast implementation
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 24px;
+                right: 24px;
+                background: var(--card);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 16px 24px;
+                font-size: 14px;
+                color: var(--foreground);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                z-index: 1000;
+                animation: fadeIn 0.3s ease-out;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                toast.style.transition = 'all 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Initialize on section switch
+        const originalSwitchSection = switchSection;
+        switchSection = function(sectionId) {
+            originalSwitchSection(sectionId);
+            
+            if (sectionId === 'analytics') {
+                setTimeout(() => {
+                    initGrowthChart(30);
+                    initPlatformChart();
+                    renderActivityFeed();
+                }, 100);
+            } else if (sectionId === 'settings') {
+                setTimeout(() => {
+                    renderApiKeys();
+                }, 100);
+            }
+        };
     </script>
 
 </body>
