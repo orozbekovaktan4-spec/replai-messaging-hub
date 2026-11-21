@@ -3583,52 +3583,52 @@
                 // Create and show edit modal
                 const modal = document.createElement('div');
                 modal.id = 'editBusinessModal';
-                modal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;';
+                modal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 10000;';
 
                 modal.innerHTML = `
-                    <div style="background: var(--bg-primary); border-radius: 16px; padding: 32px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                            <h2 style="font-size: 24px; font-weight: 600; color: var(--text-primary);">Edit Business</h2>
-                            <button onclick="closeEditModal()" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 24px;">&times;</button>
+                    <div style="background: #0e1015; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 0; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+                        <div style="background: #0e1015; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
+                            <h2 style="font-size: 24px; font-weight: 600; color: #eceef2; margin: 0;">Edit Business</h2>
+                            <button onclick="closeEditModal()" style="background: none; border: none; color: #8a919f; cursor: pointer; font-size: 28px; line-height: 1; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='none'">&times;</button>
                         </div>
                         <form id="editBusinessForm" onsubmit="saveBusinessEdit(event, '${id}')">
-                            <div style="display: grid; gap: 16px;">
+                            <div style="padding: 24px; display: grid; gap: 16px;">
                                 <div>
-                                    <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--text-primary);">Business Name</label>
-                                    <input type="text" id="edit-name" value="${business.name || ''}" required style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
+                                    <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: #eceef2;">Business Name</label>
+                                    <input type="text" id="edit-name" value="${business.name || ''}" required style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid #252a34; border-radius: 8px; background: #151820; color: #eceef2; font-size: 14px;">
                                 </div>
                                 <div>
-                                    <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--text-primary);">Owner Name</label>
-                                    <input type="text" id="edit-owner" value="${business.ownerName || business.name || ''}" style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
+                                    <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: #eceef2;">Owner Name</label>
+                                    <input type="text" id="edit-owner" value="${business.ownerName || business.name || ''}" style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid #252a34; border-radius: 8px; background: #151820; color: #eceef2; font-size: 14px;">
                                 </div>
                                 <div>
-                                    <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--text-primary);">Email</label>
-                                    <input type="email" id="edit-email" value="${business.email || ''}" required style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
+                                    <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: #eceef2;">Email</label>
+                                    <input type="email" id="edit-email" value="${business.email || ''}" required style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid #252a34; border-radius: 8px; background: #151820; color: #eceef2; font-size: 14px;">
                                 </div>
                                 <div>
-                                    <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--text-primary);">Industry</label>
-                                    <input type="text" id="edit-industry" value="${business.industry || ''}" style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
+                                    <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: #eceef2;">Industry</label>
+                                    <input type="text" id="edit-industry" value="${business.industry || ''}" style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid #252a34; border-radius: 8px; background: #151820; color: #eceef2; font-size: 14px;">
                                 </div>
                                 <div>
-                                    <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--text-primary);">Plan</label>
-                                    <select id="edit-plan" style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
+                                    <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: #eceef2;">Plan</label>
+                                    <select id="edit-plan" style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid #252a34; border-radius: 8px; background: #151820; color: #eceef2; font-size: 14px; cursor: pointer;">
                                         <option value="free" ${business.plan === 'free' ? 'selected' : ''}>Free</option>
                                         <option value="pro" ${business.plan === 'pro' ? 'selected' : ''}>Pro</option>
                                         <option value="enterprise" ${business.plan === 'enterprise' ? 'selected' : ''}>Enterprise</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--text-primary);">Status</label>
-                                    <select id="edit-status" style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
+                                    <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: #eceef2;">Status</label>
+                                    <select id="edit-status" style="width: 100%; height: 44px; padding: 0 16px; border: 1px solid #252a34; border-radius: 8px; background: #151820; color: #eceef2; font-size: 14px; cursor: pointer;">
                                         <option value="active" ${business.status === 'active' ? 'selected' : ''}>Active</option>
                                         <option value="trial" ${business.status === 'trial' ? 'selected' : ''}>Trial</option>
                                         <option value="suspended" ${business.status === 'suspended' ? 'selected' : ''}>Suspended</option>
                                     </select>
                                 </div>
                             </div>
-                            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                            <div style="background: #0e1015; border-top: 1px solid rgba(255,255,255,0.1); padding: 20px 24px; display: flex; gap: 12px; justify-content: flex-end;">
                                 <button type="button" onclick="closeEditModal()" class="btn-secondary" style="flex: 1;">Cancel</button>
-                                <button type="submit" class="btn-primary-large" style="flex: 1;">Save Changes</button>
+                                <button type="submit" class="btn-primary" style="flex: 1;">Save Changes</button>
                             </div>
                         </form>
                     </div>
