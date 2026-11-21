@@ -324,8 +324,7 @@ function saveUsers(users) {
 async function getUserByEmail(email) {
   try {
     // Use pg library directly instead of Prisma
-    const { default: pg } = await import('pg');
-    const { Pool } = pg;
+    const { Pool } = await import('pg');
     const pool = new Pool({ 
       connectionString: process.env.DATABASE_URL,
       ssl: { rejectUnauthorized: false }
