@@ -1024,54 +1024,60 @@ app.get('/setup-database-now', async (req, res) => {
     const { prisma } = await import('./db.js');
     const bcrypt = await import('bcryptjs');
     
-    // Just try to create admin directly, catch duplicate error
     const hashedPassword = await bcrypt.default.hash('admin123', 10);
     
+    // Use raw SQL to avoid Prisma pooling issues
     try {
-      const admin = await prisma.admin.create({
-        data: {
-          id: 'admin_' + Date.now(),
-          email: 'admin@replai.com',
-          password: hashedPassword,
-          name: 'Super Admin',
-          role: 'admin',
-          updatedAt: new Date()
-        }
-      });
+      await prisma.$executeRaw`
+        INSERT INTO "Admin" (id, email, password, name, role, "createdAt", "updatedAt")
+        VALUES (
+          ${('admin_' + Date.now())},
+          ${'admin@replai.com'},
+          ${hashedPassword},
+          ${'Super Admin'},
+          ${'admin'},
+          ${new Date()},
+          ${new Date()}
+        )
+        ON CONFLICT (email) DO NOTHING
+      `;
       
-      res.json({
-        success: true,
-        message: '✅ Admin user created successfully!',
-        credentials: {
-          email: 'admin@replai.com',
-          password: 'admin123'
-        },
-        loginUrl: 'https://replai-xc95.onrender.com/admin'
-      });
+      // Check if admin exists now
+      const admin = await prisma.$queryRaw`
+        SELECT id, email, name FROM "Admin" WHERE email = 'admin@replai.com' LIMIT 1
+      `;
       
-    } catch (createError) {
-      // If admin already exists (unique constraint error)
-      if (createError.code === 'P2002') {
+      if (admin && admin.length > 0) {
         res.json({
           success: true,
-          message: '✅ Admin user already exists!',
+          message: '✅ Admin user ready!',
           credentials: {
             email: 'admin@replai.com',
             password: 'admin123'
           },
-          loginUrl: 'https://replai-xc95.onrender.com/admin'
+          loginUrl: 'https://replai-xc95.onrender.com/admin',
+          adminExists: true
         });
       } else {
-        throw createError;
+        res.json({
+          success: false,
+          message: 'Admin creation may have failed',
+          hint: 'Try again or check logs'
+        });
       }
+      
+    } catch (sqlError) {
+      res.status(500).json({
+        success: false,
+        error: sqlError.message,
+        hint: 'Database tables might not exist. Check if migrations ran successfully in Render logs.'
+      });
     }
     
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message,
-      code: error.code,
-      hint: 'The database tables might not exist yet. Check Render logs for migration errors.'
+      error: error.message
     });
   }
 });
