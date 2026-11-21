@@ -6323,7 +6323,7 @@ app.get('/api/admin/businesses/:id', optionalAuth, async (req, res) => {
 app.put('/api/admin/businesses/:id', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, ownerName, ownerEmail, phone, country, plan, active, instagram, telegram, whatsapp } = req.body;
+    const { name, ownerName, email, ownerEmail, phone, country, industry, plan, status, active, instagram, telegram, whatsapp } = req.body;
 
     // Find business
     const business = await db.findBusinessById(id);
@@ -6333,20 +6333,31 @@ app.put('/api/admin/businesses/:id', optionalAuth, async (req, res) => {
 
     // Prepare update data
     const updateData = {};
-    
+
     if (name) updateData.name = name;
     if (ownerName) updateData.ownerName = ownerName;
-    if (ownerEmail) {
+
+    // Handle email field (accept both 'email' and 'ownerEmail')
+    const emailValue = email || ownerEmail;
+    if (emailValue) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(ownerEmail)) {
+      if (!emailRegex.test(emailValue)) {
         return res.status(400).json({ success: false, error: 'Invalid email format' });
       }
-      updateData.email = ownerEmail;
+      updateData.email = emailValue;
     }
+
     if (phone !== undefined) updateData.phone = phone;
+    if (industry !== undefined) updateData.industry = industry;
     if (plan) updateData.plan = plan;
-    if (typeof active === 'boolean') updateData.status = active ? 'active' : 'inactive';
-    
+
+    // Handle status field (accept both 'status' string and 'active' boolean)
+    if (status) {
+      updateData.status = status;
+    } else if (typeof active === 'boolean') {
+      updateData.status = active ? 'active' : 'inactive';
+    }
+
     // Handle platform connections
     if (instagram !== undefined) {
       updateData.instagram = instagram ? JSON.stringify(instagram) : null;
@@ -6357,11 +6368,11 @@ app.put('/api/admin/businesses/:id', optionalAuth, async (req, res) => {
     if (whatsapp !== undefined) {
       updateData.whatsapp = whatsapp ? JSON.stringify(whatsapp) : null;
     }
-    
+
     // Update in database
     const updatedBusiness = await db.updateBusiness(id, updateData);
 
-    console.log(`[Admin] Business updated: ${id} - Platforms: ${Object.keys(updateData).filter(k => ['instagram','telegram','whatsapp'].includes(k)).join(',')}`);
+    console.log(`[Admin] Business updated: ${name} (${id}) - Fields: ${Object.keys(updateData).join(', ')}`);
 
     res.json({
       success: true,
@@ -6370,10 +6381,10 @@ app.put('/api/admin/businesses/:id', optionalAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('[Admin] Error updating business:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       error: 'Failed to update business',
-      details: error.message 
+      details: error.message
     });
   }
 });
