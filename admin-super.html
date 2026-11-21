@@ -2387,6 +2387,11 @@
         };
 
         function switchSection(sectionId) {
+            // Stop activity auto-refresh when leaving Analytics
+            if (activityRefreshInterval) {
+                stopActivityAutoRefresh();
+            }
+            
             // Hide all sections
             document.getElementById('businessesSection').classList.add('hidden');
             document.getElementById('analyticsSection').classList.add('hidden');
@@ -2405,6 +2410,11 @@
 
             // Update page title
             document.getElementById('pageTitle').textContent = sections[sectionId];
+
+            // Start activity auto-refresh when entering Analytics
+            if (sectionId === 'analytics') {
+                startActivityAutoRefresh();
+            }
 
             // Refresh icons
             lucide.createIcons();

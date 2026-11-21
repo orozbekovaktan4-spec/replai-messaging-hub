@@ -5925,7 +5925,7 @@ app.get('/api/admin/statistics', async (req, res) => {
 // Get platform-specific message counts from database
 app.get('/api/admin/analytics/platforms', optionalAuth, async (req, res) => {
   try {
-    const prisma = (await import('./db.js')).default;
+    const { prisma } = await import('./db.js');
     
     // Query message counts grouped by platform
     const platformCounts = await prisma.message.groupBy({
