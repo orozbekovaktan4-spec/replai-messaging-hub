@@ -1033,6 +1033,31 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+// Debug endpoint to check admin user
+app.get('/debug-admin-check', async (req, res) => {
+  try {
+    const { prisma } = await import('./db.js');
+    
+    // Check if Admin table exists and has data
+    const adminCount = await prisma.admin.count();
+    const admins = await prisma.admin.findMany({
+      select: { id: true, email: true, name: true, role: true, createdAt: true }
+    });
+    
+    res.json({
+      success: true,
+      adminCount,
+      admins,
+      note: 'This shows all admins in database (passwords hidden)'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Database setup endpoint (run once to initialize production database)
 app.get('/setup-database-now', async (req, res) => {
   try {
