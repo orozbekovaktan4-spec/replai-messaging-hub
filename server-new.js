@@ -2752,6 +2752,47 @@ app.post('/api/admin/instagram/connect-token', async (req, res) => {
 // ============================================
 
 /**
+ * DEBUG: Show generated OAuth URL for testing
+ * GET /api/admin/instagram/oauth/debug-url
+ */
+app.get('/api/admin/instagram/oauth/debug-url', (req, res) => {
+  try {
+    const businessId = req.query.businessId || 'test-business';
+    const connector = connectionManager.getConnector('instagram');
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : req.protocol;
+    const baseUrl = `${protocol}://${req.get('host')}`;
+
+    // Generate auth URL
+    const authUrl = connector.getAuthUrl(baseUrl, businessId);
+
+    // Parse the URL to show parameters
+    const url = new URL(authUrl);
+    const paramsJson = url.searchParams.get('params_json');
+    const params = paramsJson ? JSON.parse(paramsJson) : {};
+
+    res.json({
+      success: true,
+      authUrl: authUrl,
+      flow: url.searchParams.get('flow'),
+      parameters: params,
+      environment: {
+        appId: process.env.INSTAGRAM_APP_ID ? `${process.env.INSTAGRAM_APP_ID.substring(0, 4)}...` : 'NOT SET',
+        appIdLength: process.env.INSTAGRAM_APP_ID ? process.env.INSTAGRAM_APP_ID.length : 0,
+        redirectUri: process.env.INSTAGRAM_REDIRECT_URI || 'NOT SET',
+        baseUrl: baseUrl,
+        nodeEnv: process.env.NODE_ENV || 'development'
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
+/**
  * GET /api/admin/instagram/oauth/start
  * Initiate Instagram OAuth flow (enhanced with connection manager)
  */
