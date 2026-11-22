@@ -509,6 +509,39 @@ export class InstagramConnector extends PlatformConnector {
   }
 
   /**
+   * Alternative OAuth using Facebook endpoint
+   * Works even if Instagram app is not approved by Meta
+   */
+  getAuthUrlViaFacebook(baseUrl, businessId = null) {
+    if (!this.appId) {
+      throw new Error('INSTAGRAM_APP_ID not configured');
+    }
+
+    const state = this.generateStateToken();
+    const redirectUri = process.env.INSTAGRAM_REDIRECT_URI || (baseUrl ? `${baseUrl}/api/admin/instagram/oauth/callback` : this.redirectUri);
+
+    this.storeOAuthState(state, {
+      redirectUri,
+      businessId,
+      initiatedAt: new Date().toISOString(),
+      method: 'facebook_oauth' // Track which method was used
+    });
+
+    // Use Facebook OAuth endpoint with Instagram permissions
+    const params = new URLSearchParams({
+      client_id: this.appId,
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      state: state,
+      scope: 'instagram_basic,instagram_manage_comments,instagram_manage_messages,pages_show_list,pages_read_engagement',
+      auth_type: 'rerequest', // Force permission dialog even if previously granted
+      display: 'popup' // Better for desktop
+    });
+
+    return `https://www.facebook.com/v18.0/dialog/oauth?${params.toString()}`;
+  }
+
+  /**
    * Handle OAuth callback
    */
   async handleCallback(code, state) {

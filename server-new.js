@@ -1652,6 +1652,16 @@ app.get('/privacy-policy', (req, res) => {
   res.sendFile(path.join(__dirname, 'privacy-policy.html'));
 });
 
+// Serve privacy policy (alternative path)
+app.get('/privacy-policy.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'privacy-policy.html'));
+});
+
+// Serve privacy (short URL for Meta)
+app.get('/privacy', (req, res) => {
+  res.sendFile(path.join(__dirname, 'privacy-policy.html'));
+});
+
 // Admin route (same as main page)
 // ========================================
 // ADMIN PANEL ROUTES
@@ -2798,23 +2808,36 @@ app.get('/api/admin/instagram/oauth/debug-url', (req, res) => {
  */
 app.get('/api/admin/instagram/oauth/start', (req, res) => {
   try {
-    const { businessId } = req.query;
-
     console.log('[Instagram OAuth] Starting OAuth flow...');
-    console.log('[Instagram OAuth] Business ID:', businessId || 'none provided');
+
+    const businessId = req.query.businessId || req.body.businessId;
+    const useFacebookFlow = req.query.fb === 'true' || process.env.USE_FACEBOOK_OAUTH === 'true';
+
+    if (!businessId) {
+      return res.status(400).json({
+        success: false,
+        error: 'businessId is required'
+      });
+    }
 
     const connector = connectionManager.getConnector('instagram');
     // Force HTTPS for production (Render always serves over HTTPS externally)
     const protocol = process.env.NODE_ENV === 'production' ? 'https' : req.protocol;
     const baseUrl = `${protocol}://${req.get('host')}`;
 
-    const authUrl = connector.getAuthUrl(baseUrl, businessId);
+    // Choose OAuth method
+    const authUrl = useFacebookFlow
+      ? connector.getAuthUrlViaFacebook(baseUrl, businessId) // Alternative Facebook method
+      : connector.getAuthUrl(baseUrl, businessId); // Original Instagram method
 
+    console.log('[Instagram OAuth] Business ID:', businessId);
+    console.log('[Instagram OAuth] Using flow:', useFacebookFlow ? 'Facebook OAuth' : 'Instagram Business Login');
     console.log('[Instagram OAuth] Auth URL generated with businessId tracking');
 
     res.json({
       success: true,
       authUrl,
+      method: useFacebookFlow ? 'facebook' : 'instagram',
       instructions: 'Open this URL in a popup to connect your Instagram Business account.'
     });
   } catch (error) {
