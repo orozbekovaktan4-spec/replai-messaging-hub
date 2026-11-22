@@ -47,7 +47,7 @@ export async function analyzeProfiles(businessId, scrapedContent) {
     await prisma.business.update({
       where: { id: businessId },
       data: {
-        aiTrainingData: JSON.stringify(aiTrainingData)
+        aiInstructions: JSON.stringify(aiTrainingData)
       }
     });
     

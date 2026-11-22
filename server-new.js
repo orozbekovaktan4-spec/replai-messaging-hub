@@ -4523,19 +4523,22 @@ async function handleInstagramMessage(event) {
     console.log('[Instagram DM] Received from:', senderId, 'to:', recipientId);
     console.log('[Instagram DM] Message:', messageText);
 
-    // Find business by Instagram userId
+    // Find business by Instagram account ID (recipient = your Instagram Business account)
     const businesses = await db.getAllBusinesses();
     const business = businesses.find(b => {
       try {
         const ig = typeof b.instagram === 'string' ? JSON.parse(b.instagram) : b.instagram;
-        return ig && ig.userId === recipientId;
+        // Check both accountId (new OAuth) and userId (legacy)
+        return ig && (ig.accountId === recipientId || ig.userId === recipientId);
       } catch (e) {
         return false;
       }
     });
 
     if (!business) {
-      console.error('[Instagram DM] No business found for Instagram userId:', recipientId);
+      console.error('[Instagram DM] No business found for Instagram account ID:', recipientId);
+      console.error('[Instagram DM] Recipient ID from webhook:', recipientId);
+      console.error('[Instagram DM] Available businesses:', businesses.length);
       return;
     }
 

@@ -163,11 +163,11 @@ TONE: Professional, helpful, efficient, and friendly - like a well-trained custo
       const { prisma } = await import('./db.js');
       const business = await prisma.business.findUnique({
         where: { id: businessId },
-        select: { aiTrainingData: true }
+        select: { aiInstructions: true, knowledgeBase: true }
       });
 
-      if (business?.aiTrainingData) {
-        const trainingData = JSON.parse(business.aiTrainingData);
+      if (business?.aiInstructions) {
+        const trainingData = JSON.parse(business.aiInstructions);
 
         if (trainingData.brandVoice && trainingData.keyTopics && trainingData.samplePosts) {
           systemPrompt += `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
