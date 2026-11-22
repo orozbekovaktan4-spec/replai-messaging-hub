@@ -3331,6 +3331,14 @@
                 }
             } catch (error) {
                 console.error('Error loading businesses:', error);
+
+                // Reset arrays on error
+                allBusinesses = [];
+                filteredBusinesses = [];
+
+                // Render table to show empty state
+                renderBusinessTable();
+
                 showToast('Failed to load businesses: ' + error.message);
             }
         }
