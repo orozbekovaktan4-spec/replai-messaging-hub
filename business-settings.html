@@ -833,8 +833,8 @@
 
                 console.log('[Instagram] Starting OAuth for business:', currentBusinessId);
 
-                // USE FACEBOOK OAUTH (works without Meta approval!)
-                const response = await fetch(`/api/admin/instagram/oauth/start?businessId=${currentBusinessId}&fb=true`, {
+                // USE INSTAGRAM BUSINESS LOGIN (direct consent flow)
+                const response = await fetch(`/api/admin/instagram/oauth/start?businessId=${currentBusinessId}`, {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' }
                 });

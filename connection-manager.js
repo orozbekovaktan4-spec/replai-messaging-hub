@@ -501,11 +501,14 @@ export class InstagramConnector extends PlatformConnector {
       redirect_uri: redirectUri,
       response_type: 'code',
       state: state,
-      scope: 'instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments'
+      scope: 'instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments',
+      logger_id: crypto.randomUUID(), // Add logger_id for tracking
+      app_id: this.appId, // Add app_id parameter
+      platform_app_id: this.appId // Add platform_app_id (same as app_id)
     });
 
-    // Fusion's format: flow=ig_biz_login_oauth with JSON params
-    return `https://www.instagram.com/consent/?flow=ig_biz_login_oauth&params_json=${encodeURIComponent(paramsJson)}`;
+    // Fusion's format: flow=ig_biz_login_oauth with JSON params and source
+    return `https://www.instagram.com/consent/?flow=ig_biz_login_oauth&params_json=${encodeURIComponent(paramsJson)}&source=oauth_permissions_page_www`;
   }
 
   /**

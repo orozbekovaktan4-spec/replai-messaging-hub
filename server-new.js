@@ -2832,7 +2832,27 @@ app.get('/api/admin/instagram/oauth/start', (req, res) => {
 
     console.log('[Instagram OAuth] Business ID:', businessId);
     console.log('[Instagram OAuth] Using flow:', useFacebookFlow ? 'Facebook OAuth' : 'Instagram Business Login');
-    console.log('[Instagram OAuth] Auth URL generated with businessId tracking');
+    console.log('[Instagram OAuth] Generated URL:', authUrl.substring(0, 100) + '...');
+
+    // Parse and log the OAuth parameters for debugging
+    try {
+      if (!useFacebookFlow) {
+        const url = new URL(authUrl);
+        const paramsJson = url.searchParams.get('params_json');
+        if (paramsJson) {
+          const params = JSON.parse(paramsJson);
+          console.log('[Instagram OAuth] Parameters:');
+          console.log('  - client_id:', params.client_id);
+          console.log('  - redirect_uri:', params.redirect_uri);
+          console.log('  - scope:', params.scope);
+          console.log('  - state:', params.state ? params.state.substring(0, 20) + '...' : 'missing');
+          console.log('  - logger_id:', params.logger_id ? 'present' : 'missing');
+          console.log('  - app_id:', params.app_id ? 'present' : 'missing');
+        }
+      }
+    } catch (e) {
+      console.error('[Instagram OAuth] Failed to parse URL:', e.message);
+    }
 
     res.json({
       success: true,
@@ -2842,6 +2862,7 @@ app.get('/api/admin/instagram/oauth/start', (req, res) => {
     });
   } catch (error) {
     console.error('[Instagram OAuth Start] Error:', error.message);
+    console.error('[Instagram OAuth Start] Stack:', error.stack);
     res.status(500).json({
       success: false,
       error: error.message,
