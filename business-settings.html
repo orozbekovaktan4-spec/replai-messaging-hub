@@ -709,6 +709,15 @@
                 return;
             }
 
+            // Check for OAuth success from redirect
+            const oauthSuccess = params.get('oauth_success');
+            const platform = params.get('platform');
+            if (oauthSuccess === 'true' && platform) {
+                showToast(`${platform.charAt(0).toUpperCase() + platform.slice(1)} connected successfully!`, 'success');
+                // Clean URL
+                window.history.replaceState({}, '', `${window.location.pathname}?id=${currentBusinessId}`);
+            }
+
             await loadBusinessData();
             await loadPlatformConnections();
             setupTabNavigation();
@@ -816,19 +825,48 @@
             showToast('Redirecting to Instagram...', 'info');
 
             try {
-                const response = await fetch('/api/admin/instagram/oauth/start');
+                // Pass businessId as query parameter
+                const response = await fetch(`/api/admin/instagram/oauth/start?businessId=${currentBusinessId}`);
                 const data = await response.json();
 
                 if (data.authUrl) {
-                    // Store businessId in session storage for callback
-                    sessionStorage.setItem('oauth_business_id', currentBusinessId);
-                    window.location.href = data.authUrl;
+                    // Open OAuth in popup for desktop, redirect for mobile
+                    if (window.innerWidth > 768) {
+                        // Desktop: Open popup
+                        const popup = window.open(data.authUrl, 'instagram-oauth', 'width=600,height=700');
+
+                        // Listen for OAuth success message
+                        window.addEventListener('message', handleOAuthMessage);
+                    } else {
+                        // Mobile: Full redirect
+                        window.location.href = data.authUrl;
+                    }
                 } else {
                     throw new Error('Failed to get OAuth URL');
                 }
             } catch (error) {
                 console.error('Instagram connect error:', error);
                 showToast('Failed to connect Instagram', 'error');
+            }
+        }
+
+        // Handle OAuth postMessage from popup
+        function handleOAuthMessage(event) {
+            if (event.data.type === 'instagram_oauth_success') {
+                console.log('Instagram OAuth success:', event.data.data);
+                showToast('Instagram connected successfully!', 'success');
+
+                // Reload connections to show new connection
+                loadBusinessData().then(() => loadPlatformConnections());
+
+                // Remove listener
+                window.removeEventListener('message', handleOAuthMessage);
+            } else if (event.data.type === 'instagram_oauth_error') {
+                console.error('Instagram OAuth error:', event.data.error);
+                showToast('Instagram connection failed: ' + event.data.error, 'error');
+
+                // Remove listener
+                window.removeEventListener('message', handleOAuthMessage);
             }
         }
 

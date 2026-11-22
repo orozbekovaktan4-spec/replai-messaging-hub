@@ -481,7 +481,7 @@ export class InstagramConnector extends PlatformConnector {
    * Get Instagram OAuth URL - Fusion-style (instagram.com/consent)
    * Simple, direct Instagram Business login - exactly like Fusion
    */
-  getAuthUrl(baseUrl) {
+  getAuthUrl(baseUrl, businessId = null) {
     if (!this.appId) {
       throw new Error('INSTAGRAM_APP_ID not configured');
     }
@@ -491,6 +491,7 @@ export class InstagramConnector extends PlatformConnector {
 
     this.storeOAuthState(state, {
       redirectUri,
+      businessId,
       initiatedAt: new Date().toISOString()
     });
 

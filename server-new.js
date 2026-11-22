@@ -2757,17 +2757,20 @@ app.post('/api/admin/instagram/connect-token', async (req, res) => {
  */
 app.get('/api/admin/instagram/oauth/start', (req, res) => {
   try {
+    const { businessId } = req.query;
+
     console.log('[Instagram OAuth] Starting OAuth flow...');
-    
+    console.log('[Instagram OAuth] Business ID:', businessId || 'none provided');
+
     const connector = connectionManager.getConnector('instagram');
     // Force HTTPS for production (Render always serves over HTTPS externally)
     const protocol = process.env.NODE_ENV === 'production' ? 'https' : req.protocol;
     const baseUrl = `${protocol}://${req.get('host')}`;
-    
-    const authUrl = connector.getAuthUrl(baseUrl);
-    
-    console.log('[Instagram OAuth] Auth URL generated');
-    
+
+    const authUrl = connector.getAuthUrl(baseUrl, businessId);
+
+    console.log('[Instagram OAuth] Auth URL generated with businessId tracking');
+
     res.json({
       success: true,
       authUrl,
@@ -2778,8 +2781,8 @@ app.get('/api/admin/instagram/oauth/start', (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message,
-      hint: error.message.includes('INSTAGRAM_APP_ID') ? 
-        'Please configure INSTAGRAM_APP_ID in your .env file' : 
+      hint: error.message.includes('INSTAGRAM_APP_ID') ?
+        'Please configure INSTAGRAM_APP_ID in your .env file' :
         'Please check your Instagram configuration'
     });
   }
@@ -2895,6 +2898,12 @@ app.get('/api/admin/instagram/oauth/callback', async (req, res) => {
     console.log('[Instagram OAuth] ✓ Connection successful');
     console.log('[Instagram OAuth] Username: @' + connectionState.metadata.username);
 
+    // Extract businessId from OAuth state
+    const stateData = connector.verifyOAuthState(state);
+    const businessId = stateData?.data?.businessId;
+
+    console.log('[Instagram OAuth] Business ID from state:', businessId || 'none');
+
     // Update in-memory platform connections
     platformConnections.instagram = {
       connected: true,
@@ -2904,12 +2913,54 @@ app.get('/api/admin/instagram/oauth/callback', async (req, res) => {
       expiresAt: connectionState.expiresAt
     };
 
+    // ============================================
+    // SAVE TO DATABASE
+    // ============================================
+    if (businessId) {
+      try {
+        console.log('[Instagram OAuth] Saving to database...');
+
+        const instagramData = {
+          connected: true,
+          connectedAt: connectionState.connectedAt,
+          username: connectionState.metadata.username,
+          accountId: connectionState.metadata.instagramId,
+          accessToken: connectionState.accessToken,
+          expiresAt: connectionState.expiresAt,
+          pageId: connectionState.metadata.pageId,
+          profilePictureUrl: connectionState.metadata.profilePictureUrl,
+          followersCount: connectionState.metadata.followersCount,
+          tokenType: connectionState.tokenType,
+          scope: 'instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments'
+        };
+
+        await prisma.business.update({
+          where: { id: businessId },
+          data: {
+            instagram: JSON.stringify(instagramData),
+            updatedAt: new Date()
+          }
+        });
+
+        console.log('[Instagram OAuth] ✓ Saved to database for business:', businessId);
+      } catch (dbError) {
+        console.error('[Instagram OAuth] Database save failed:', dbError.message);
+        // Continue anyway - connection still works in-memory
+      }
+    } else {
+      console.warn('[Instagram OAuth] No businessId in state - skipping database save');
+    }
+
     const username = connectionState.metadata.username || 'Unknown';
 
     if (isMobile) {
       // ============================================
-      // MOBILE: Redirect back to admin panel
+      // MOBILE: Redirect back to business settings
       // ============================================
+      const redirectUrl = businessId
+        ? `/business-settings.html?id=${businessId}&oauth_success=true&platform=instagram`
+        : `/admin-super.html?instagram=connected&username=${encodeURIComponent(username)}`;
+
       return res.send(`
         <!DOCTYPE html>
         <html>
@@ -2934,11 +2985,11 @@ app.get('/api/admin/instagram/oauth/callback', async (req, res) => {
             <div class="success">✓</div>
             <h2>Instagram Connected!</h2>
             <p>@${username}</p>
-            <p style="margin-top: 30px; font-size: 14px;">Redirecting back to admin panel...</p>
+            <p style="margin-top: 30px; font-size: 14px;">Redirecting back...</p>
           </div>
           <script>
             setTimeout(() => {
-              window.location.href = '/admin-super.html?instagram=connected&username=${encodeURIComponent(username)}';
+              window.location.href = '${redirectUrl}';
             }, 2000);
           </script>
         </body>
@@ -2979,7 +3030,10 @@ app.get('/api/admin/instagram/oauth/callback', async (req, res) => {
             if (window.opener) {
               window.opener.postMessage({
                 type: 'instagram_oauth_success',
-                data: { username: '${username}' }
+                data: {
+                  username: '${username}',
+                  businessId: '${businessId || ''}'
+                }
               }, '*');
             }
 
