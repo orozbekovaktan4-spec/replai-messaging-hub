@@ -833,8 +833,11 @@
 
                 console.log('[Instagram] Starting OAuth for business:', currentBusinessId);
 
-                // USE INSTAGRAM BUSINESS LOGIN (direct consent flow)
-                const response = await fetch(`/api/admin/instagram/oauth/start?businessId=${currentBusinessId}`, {
+                // Using Facebook OAuth (&fb=true) instead of Instagram Business Login
+                // because Meta app lacks Instagram Business Login configuration.
+                // This works immediately without Meta approval and grants identical permissions.
+                // To use Instagram consent later: remove &fb=true and configure Meta app.
+                const response = await fetch(`/api/admin/instagram/oauth/start?businessId=${currentBusinessId}&fb=true`, {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' }
                 });
@@ -902,8 +905,8 @@
         // Handle OAuth postMessage from popup
         function handleOAuthMessage(event) {
             if (event.data.type === 'instagram_oauth_success') {
-                console.log('Instagram OAuth success:', event.data.data);
-                showToast('Instagram connected successfully!', 'success');
+                console.log('[Instagram] OAuth success:', event.data.data);
+                showToast('Instagram connected via Facebook successfully!', 'success');
 
                 // Reload connections to show new connection
                 loadBusinessData().then(() => loadPlatformConnections());
@@ -911,7 +914,7 @@
                 // Remove listener
                 window.removeEventListener('message', handleOAuthMessage);
             } else if (event.data.type === 'instagram_oauth_error') {
-                console.error('Instagram OAuth error:', event.data.error);
+                console.error('[Instagram] OAuth error:', event.data.error);
                 showToast('Instagram connection failed: ' + event.data.error, 'error');
 
                 // Remove listener
