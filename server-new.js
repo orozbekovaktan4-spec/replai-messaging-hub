@@ -7743,11 +7743,16 @@ app.post('/api/admin/fix-instagram-db', async (req, res) => {
       return res.status(404).json({ error: 'Business biz_001 not found' });
     }
     
+    const accessToken = (process.env.INSTAGRAM_ACCESS_TOKEN || '').trim();
+    if (!accessToken) {
+      return res.status(400).json({ error: 'INSTAGRAM_ACCESS_TOKEN is not set — nothing to write' });
+    }
+
     const instagramData = {
       userId: '17841442927870144',
       username: 'akt4n.o',
       connected: true,
-      accessToken: process.env.INSTAGRAM_ACCESS_TOKEN || 'EAAc3h9iWFtsBS0lz5FBLwNwxvbaPlnUIgLpKaNbwksPXXKFUe9A7zNtXb1j1FqPXju2G9rUMrrjjGqXRJlLZAXQ8VNFmGcsyE0ZAksWBjYHxBHLHTDZAwJLyzsbmx0rrXVMT5DYZA5t2YJGoI6ObfGoZBsHFUyHD4AKxdvSWoW5dhOlZBq6oKhBE5BdjHkyyl1YHTXeNIZBSEApiy7Tkdsm',
+      accessToken,
       pageId: '1077310258808665',
       pageName: 'Akt4n.o',
       config: {
@@ -7765,9 +7770,9 @@ app.post('/api/admin/fix-instagram-db', async (req, res) => {
     res.json({
       success: true,
       message: 'Instagram configuration updated in database',
-      instagram: instagramData
+      instagram: { ...instagramData, accessToken: '[redacted]' }
     });
-    
+
   } catch (error) {
     console.error('[Admin] Error updating Instagram config:', error);
     res.status(500).json({ error: error.message });
