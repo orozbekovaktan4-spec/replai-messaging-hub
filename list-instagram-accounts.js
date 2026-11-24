@@ -1,7 +1,13 @@
 #!/usr/bin/env node
 
-// Paste your user access token here:
-const userAccessToken = 'EAAc3h9iWFtsBS3fZBw1T3q3WInZCgsxxJdvV5nyJwX2k5m7d1jID2lQAK6dZCcIcyDgHi3ksx87U0AnvrkJY4aMOH7PAEnkMFVheKDP3Nu5Uy9cHZAW1oy3sGxuJZBvksCZAxjjGbJMm3D6R01rZARDGUw6HwvBpCZBkP8ZBxSSAGYDO8RFQ38sHyUL0SL8JaeJNxqTJBVCGk9R7uVGdeXNfws5oRZB2pFNuFykwYySBIpbbx7K7kIushp';
+// Needs a Graph Explorer user token: export FB_USER_ACCESS_TOKEN='...'
+import 'dotenv/config';
+
+const userAccessToken = (process.env.FB_USER_ACCESS_TOKEN || '').trim();
+if (!userAccessToken) {
+  console.error('Set FB_USER_ACCESS_TOKEN in your environment (from Graph Explorer) first.');
+  process.exit(1);
+}
 
 console.log('\n📋 Listing All Facebook Pages with Instagram Accounts...\n');
 console.log('=' .repeat(70));
@@ -60,9 +66,4 @@ async function listInstagramAccounts() {
   }
 }
 
-if (userAccessToken === 'PASTE_YOUR_USER_ACCESS_TOKEN_HERE') {
-  console.log('\n❌ Please paste your user access token at line 4!\n');
-  console.log('Get it from: https://developers.facebook.com/tools/explorer/\n');
-} else {
-  listInstagramAccounts();
-}
+listInstagramAccounts();

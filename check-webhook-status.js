@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 
-const accessToken = 'EAAc3h9iWFtsBSyXsTCfBciSZBxPgRBTvXpCQxGARCsCRgL7nSK7i8yVXxLFDCzq35BKVjDOOk5rF3E9wnxyZCJUgFhOY9YkwzxmIOmKMNI9QzfRldTTIDpzLUNEDQUNGcXJuQfD2vNujf5UyV64dQDsPVRvKEqmT00TGU4nZAGNqmlyHZALLh47nR6Ov8g4J0nYJwgQnhmTX';
+import 'dotenv/config';
+
+const accessToken = (process.env.INSTAGRAM_ACCESS_TOKEN || '').trim();
+if (!accessToken) {
+  console.error('Set INSTAGRAM_ACCESS_TOKEN in .env first.');
+  process.exit(1);
+}
 const businessAccountId = '17841442927870144';
 
 console.log('\n🔍 Checking Instagram Webhook Configuration...\n');

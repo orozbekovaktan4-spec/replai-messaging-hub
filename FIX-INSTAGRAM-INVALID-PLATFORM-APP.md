@@ -111,7 +111,7 @@ Since Instagram OAuth is being problematic, use your existing access token:
 
 ```bash
 # Your .env already has:
-INSTAGRAM_ACCESS_TOKEN=EAAc3h9iWFtsBR3n25GAYiZBiHVFhkR85a2WvOJxXXZALAFe...
+INSTAGRAM_ACCESS_TOKEN=<set-this-in-the-Render-env>...
 INSTAGRAM_BUSINESS_ACCOUNT_ID=17841442927870144
 INSTAGRAM_USERNAME=akt4n.o
 ```
@@ -229,7 +229,7 @@ If you want a fresh token without OAuth:
 **DON'T use OAuth - use your existing token:**
 ```bash
 # Your .env already has a working token!
-INSTAGRAM_ACCESS_TOKEN=EAAc3h9iWFtsBR3n25GAYiZBiHVFhkR85a2WvOJxXXZALAFe...
+INSTAGRAM_ACCESS_TOKEN=<set-this-in-the-Render-env>...
 ```
 
 ✅ This is SIMPLER  

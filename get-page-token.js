@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 
-const userAccessToken = 'EAAc3h9iWFtsBSyXsTCfBciSZBxPgRBTvXpCQxGARCsCRgL7nSK7i8yVXxLFDCzq35BKVjDOOk5rF3E9wnxyZCJUgFhOY9YkwzxmIOmKMNI9QzfRldTTIDpzLUNEDQUNGcXJuQfD2vNujf5UyV64dQDsPVRvKEqmT00TGU4nZAGNqmlyHZALLh47nR6Ov8g4J0nYJwgQnhmTX';
+import 'dotenv/config';
+
+const userAccessToken = (process.env.FB_USER_ACCESS_TOKEN || '').trim();
+if (!userAccessToken) {
+  console.error('Set FB_USER_ACCESS_TOKEN in your environment (from Graph Explorer) first.');
+  process.exit(1);
+}
 const pageId = '1077310258808665'; // Akt4n.o page
 const businessAccountId = '17841442927870144';
 

@@ -5,9 +5,20 @@
 // 2. Select App: REPLAI (2031381430802139)
 // 3. Click "Generate Access Token"
 // 4. Grant permissions: pages_show_list, instagram_basic, instagram_manage_messages
-// 5. Copy the token and paste it below:
+// 5. Export it, don't paste it into this file:
+//      export FB_USER_ACCESS_TOKEN='...'
 
-const userAccessToken = 'EAAc3h9iWFtsBS3fZBw1T3q3WInZCgsxxJdvV5nyJwX2k5m7d1jID2lQAK6dZCcIcyDgHi3ksx87U0AnvrkJY4aMOH7PAEnkMFVheKDP3Nu5Uy9cHZAW1oy3sGxuJZBvksCZAxjjGbJMm3D6R01rZARDGUw6HwvBpCZBkP8ZBxSSAGYDO8RFQ38sHyUL0SL8JaeJNxqTJBVCGk9R7uVGdeXNfws5oRZB2pFNuFykwYySBIpbbx7K7kIushp';
+import 'dotenv/config';
+
+const userAccessToken = (process.env.FB_USER_ACCESS_TOKEN || '').trim();
+if (!userAccessToken) {
+  console.error('\n❌ Set FB_USER_ACCESS_TOKEN first:\n');
+  console.error('  1. https://developers.facebook.com/tools/explorer/');
+  console.error('  2. Select app REPLAI, Generate Access Token');
+  console.error('  3. Grant pages_show_list, pages_read_engagement, instagram_basic, instagram_manage_messages');
+  console.error("  4. export FB_USER_ACCESS_TOKEN='...'\n");
+  process.exit(1);
+}
 
 console.log('\n🏆 Getting White Gold Instagram Access Token...\n');
 console.log('=' .repeat(60));
@@ -161,19 +172,4 @@ async function getWhiteGoldToken() {
   }
 }
 
-if (userAccessToken === 'PASTE_YOUR_USER_ACCESS_TOKEN_HERE') {
-  console.log('\n❌ Please edit this file and paste your user access token!\n');
-  console.log('HOW TO GET IT:');
-  console.log('1. Go to: https://developers.facebook.com/tools/explorer/');
-  console.log('2. Select App: REPLAI (2031381430802139)');
-  console.log('3. Click "Generate Access Token"');
-  console.log('4. Grant permissions:');
-  console.log('   • pages_show_list');
-  console.log('   • pages_read_engagement');
-  console.log('   • instagram_basic');
-  console.log('   • instagram_manage_messages');
-  console.log('5. Copy the token');
-  console.log('6. Paste it in this file at line 10\n');
-} else {
-  getWhiteGoldToken();
-}
+getWhiteGoldToken();

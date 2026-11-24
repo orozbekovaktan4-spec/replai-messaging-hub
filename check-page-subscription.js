@@ -1,6 +1,13 @@
 #!/usr/bin/env node
 
-const pageAccessToken = 'EAAc3h9iWFtsBS0lz5FBLwNwxvbaPlnUIgLpKaNbwksPXXKFUe9A7zNtXb1j1FqPXju2G9rUMrrjjGqXRJlLZAXQ8VNFmGcsyE0ZAksWBjYHxBHLHTDZAwJLyzsbmx0rrXVMT5DYZA5t2YJGoI6ObfGoZBsHFUyHD4AKxdvSWoW5dhOlZBq6oKhBE5BdjHkyyl1YHTXeNIZBSEApiy7Tkdsm';
+import 'dotenv/config';
+
+const pageAccessToken = (process.env.INSTAGRAM_ACCESS_TOKEN || '').trim();
+if (!pageAccessToken) {
+  console.error('Set INSTAGRAM_ACCESS_TOKEN in .env first.');
+  process.exit(1);
+}
+
 const pageId = '1077310258808665'; // Akt4n.o page
 
 console.log('\n🔍 Checking if Page is subscribed to app...\n');

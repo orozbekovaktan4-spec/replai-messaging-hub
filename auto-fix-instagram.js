@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 
-const accessToken = 'EAAc3h9iWFtsBSZBv3nl8TclZBZBzVQMA9CH9VSoZCFz5ocpjNXr6aBLwwiZCgcyDopBU6njcHtfc5VVHmaGKthuEbPMAHYe0VE2cYvtnm80zPRonZArtEp2thXRmKEGiIQPBnOLLthLqIhB7HNGvnTw7EgEpet197L66Q61u28uJ39NSzwKSVhKSH2S75N6WJCKHh2Js3HuZCC8bvYhxGHzoB06LOktF8eEC6tsFbSd2D1ijcLzqts16tD4Fp1O8MVC48wUYLhRrNjzQU8L1LMsRrFFcBUFLMdsaqTbWnkZD';
+import 'dotenv/config';
+
+const accessToken = (process.env.INSTAGRAM_ACCESS_TOKEN || '').trim();
+if (!accessToken) {
+  console.error('Set INSTAGRAM_ACCESS_TOKEN in .env first.');
+  process.exit(1);
+}
 
 console.log('\n🔍 Auto-Fixing Instagram Connection...\n');
 

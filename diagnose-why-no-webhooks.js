@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 
-const pageAccessToken = 'EAAc3h9iWFtsBSyXsTCfBciSZBxPgRBTvXpCQxGARCsCRgL7nSK7i8yVXxLFDCzq35BKVjDOOk5rF3E9wnxyZCJUgFhOY9YkwzxmIOmKMNI9QzfRldTTIDpzLUNEDQUNGcXJuQfD2vNujf5UyV64dQDsPVRvKEqmT00TGU4nZAGNqmlyHZALLh47nR6Ov8g4J0nYJwgQnhmTX';
+import 'dotenv/config';
+
+const pageAccessToken = (process.env.INSTAGRAM_ACCESS_TOKEN || '').trim();
+if (!pageAccessToken) {
+  console.error('Set INSTAGRAM_ACCESS_TOKEN in .env first.');
+  process.exit(1);
+}
 const businessAccountId = '17841442927870144';
 const pageId = '1077310258808665';
 
