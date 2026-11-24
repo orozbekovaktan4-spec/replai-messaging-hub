@@ -56,6 +56,29 @@ export async function findBusinessById(id) {
 }
 
 /**
+ * Find the business that owns an Instagram account, by the account id Meta sends
+ * in the webhook. Matched in JS rather than with Prisma's `contains:` because
+ * that substring-matches the whole JSON blob and can hit the wrong field.
+ * shortcut: loads every business per webhook, fine to a few hundred rows;
+ * move to an indexed Business.instagramAccountId column beyond that.
+ * @param {string} accountId - Instagram Business Account ID
+ * @returns {Promise<Object|null>}
+ */
+export async function findBusinessByInstagramAccountId(accountId) {
+  if (!accountId) return null;
+  const wanted = String(accountId);
+
+  const businesses = await getAllBusinesses();
+  return businesses.find(b => {
+    const ig = b.instagram;
+    if (!ig || typeof ig !== 'object') return false;
+    return String(ig.accountId || '') === wanted
+      || String(ig.userId || '') === wanted
+      || String(ig.instagramId || '') === wanted;
+  }) || null;
+}
+
+/**
  * Create new business
  * @param {Object} data - Business data
  * @returns {Promise<Object>} Created business

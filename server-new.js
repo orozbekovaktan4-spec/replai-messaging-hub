@@ -2811,6 +2811,7 @@ app.get('/api/admin/instagram/oauth/start', (req, res) => {
     console.log('[Instagram OAuth] Starting OAuth flow...');
 
     const businessId = req.query.businessId || req.body.businessId;
+    const pageId = req.query.pageId || null; // optional: pick one of several Instagram accounts
     const useFacebookFlow = req.query.fb === 'true' || process.env.USE_FACEBOOK_OAUTH === 'true';
 
     if (!businessId) {
@@ -2827,7 +2828,7 @@ app.get('/api/admin/instagram/oauth/start', (req, res) => {
 
     // Choose OAuth method
     const authUrl = useFacebookFlow
-      ? connector.getAuthUrlViaFacebook(baseUrl, businessId) // Alternative Facebook method
+      ? connector.getAuthUrlViaFacebook(baseUrl, businessId, pageId) // Alternative Facebook method
       : connector.getAuthUrl(baseUrl, businessId); // Original Instagram method
 
     console.log('[Instagram OAuth] Business ID:', businessId);
@@ -5043,7 +5044,7 @@ app.post('/api/analytics/clear', (req, res) => {
 
 // --- MULTI-PLATFORM MESSAGING BACKEND INTERFACING ---
 
-async function sendResponseToPlatform(platform, userId, message) {
+async function sendResponseToPlatform(platform, userId, message, business = null) {
   try {
     if (platform === 'telegram' && platformConnections.telegram.connected) {
       const telegramUrl = `https://api.telegram.org/bot${platformConnections.telegram.token}/sendMessage`;
@@ -5067,11 +5068,25 @@ async function sendResponseToPlatform(platform, userId, message) {
 
       // Instagram DMs should use the official Instagram Messaging API. The old
       // private API path is intentionally not used because it triggers 467 blocks.
-      const igAccessToken = process.env.INSTAGRAM_ACCESS_TOKEN;
+      // Reply from the business's own account, not from whichever token happens
+      // to be in .env — otherwise every business answers as the same Instagram.
+      const ig = business?.instagram && typeof business.instagram === 'object' ? business.instagram : null;
+      const igAccessToken = ig?.accessToken || process.env.INSTAGRAM_ACCESS_TOKEN;
+      const igAccountId = ig?.accountId || ig?.userId || process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID;
+
       if (igAccessToken) {
-        const response = await fetch(INSTAGRAM_MESSAGE_SEND_URL, {
+        // Page tokens post to the account's own edge; the /me/ form only works
+        // for Instagram-Login tokens.
+        const sendUrl = igAccountId
+          ? facebookGraphUrl(`${igAccountId}/messages`)
+          : INSTAGRAM_MESSAGE_SEND_URL;
+
+        const response = await fetch(sendUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${igAccessToken}`
+          },
           body: JSON.stringify({
             recipient: { id: String(userId) },
             message: { text: String(message).slice(0, 1000) }
@@ -5107,7 +5122,7 @@ async function sendResponseToPlatform(platform, userId, message) {
         console.log(`[instagram] ✓ Sent via Instagram Messaging API to ${userId}`);
         return { ok: true, platform, response: data };
       } else {
-        const error = 'Configure INSTAGRAM_ACCESS_TOKEN to send Instagram replies.';
+        const error = 'No Instagram token for this business — reconnect Instagram in its settings.';
         console.warn(`[instagram] Cannot send message: ${error}`);
         return { ok: false, platform, error };
       }
@@ -5208,6 +5223,7 @@ app.post('/webhook/:platform', async (req, res) => {
     console.log(`[Webhook:${platform}] Received:`, JSON.stringify(body).substring(0, 500));
 
     let userMessage, userId, userName, messageId;
+    let platformAccountId; // the business's own account the message arrived on
 
     // Validate WhatsApp signature (Meta API)
     if (platform === 'whatsapp') {
@@ -5233,6 +5249,10 @@ app.post('/webhook/:platform', async (req, res) => {
       const entry = body.entry?.[0];
       const messaging = entry?.messaging?.[0] || entry?.standby?.[0];
 
+      // Which of our Instagram accounts this arrived on — decides whose AI
+      // context answers and whose token replies.
+      platformAccountId = messaging?.recipient?.id || entry?.id || null;
+
       // Check for comments
       if (body.object === 'instagram' && entry?.changes?.[0]?.field === 'comments') {
         const change = entry.changes[0];
@@ -5241,10 +5261,14 @@ app.post('/webhook/:platform', async (req, res) => {
         console.log('[Instagram Webhook] Comment received:', JSON.stringify(comment).substring(0, 200));
 
         // Process comment through rules system
-        const businesses = await db.getAllBusinesses();
-    const business = businesses[0];
+        const business = await db.findBusinessByInstagramAccountId(platformAccountId);
 
-        if (business && comment.text) {
+        if (!business) {
+          console.error(`[instagram] No business owns Instagram account ${platformAccountId} — dropping comment`);
+          return res.sendStatus(200);
+        }
+
+        if (comment.text) {
           await processInstagramMessage(business, {
             id: comment.id,
             text: comment.text,
@@ -5316,9 +5340,21 @@ app.post('/webhook/:platform', async (req, res) => {
 
       console.log(`[${platform}] ${userId}: "${userMessage}"`);
 
-      // Find business for this webhook (for now, use first business - TODO: improve business matching)
-      const businesses = await db.getAllBusinesses();
-      const business = businesses[0]; // TODO: Match business by platform config
+      // Find the business this message belongs to. Instagram can identify it
+      // exactly; the other platforms still need the same treatment.
+      let business;
+      if (platform === 'instagram') {
+        business = await db.findBusinessByInstagramAccountId(platformAccountId);
+        if (!business) {
+          // Answering from the wrong business's knowledge base is worse than
+          // staying silent, so drop it rather than falling back.
+          console.error(`[instagram] No business owns Instagram account ${platformAccountId} — not replying`);
+          return res.sendStatus(200);
+        }
+      } else {
+        const businesses = await db.getAllBusinesses();
+        business = businesses[0]; // TODO: match telegram/whatsapp by platform config too
+      }
 
       const aiResponse = await getAIResponse(userId.toString(), userMessage, 'auto', business?.id || null);
 
@@ -5350,7 +5386,7 @@ app.post('/webhook/:platform', async (req, res) => {
         });
       }
 
-      const sendResult = await sendResponseToPlatform(platform, userId, aiResponse);
+      const sendResult = await sendResponseToPlatform(platform, userId, aiResponse, business);
       if (sendResult.ok) {
         console.log(`[${platform}] AI reply sent to ${userId}`);
 

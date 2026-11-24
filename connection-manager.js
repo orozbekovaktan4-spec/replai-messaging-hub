@@ -469,6 +469,51 @@ export class WhatsAppConnector extends PlatformConnector {
 // INSTAGRAM CONNECTOR (OAuth)
 // ============================================
 
+/**
+ * Pick which Facebook Page (and so which Instagram account) to connect.
+ * Never falls back to the first page: connecting the wrong Instagram account is
+ * worse than failing, because the business then replies as someone else.
+ * @param {Array} pages - `me/accounts` data, with instagram_business_account{id,username}
+ * @param {string|null} requestedPageId - the Page the admin chose, if any
+ * @returns {Object} the selected page
+ */
+export function selectInstagramPage(pages, requestedPageId = null) {
+  if (!Array.isArray(pages) || pages.length === 0) {
+    throw new Error('No Facebook Pages found. Instagram Business requires a Facebook Page that this Facebook user administers.');
+  }
+
+  const igPages = pages.filter(p => p.instagram_business_account?.id);
+
+  if (igPages.length === 0) {
+    throw new Error(
+      `No Instagram Business Account linked to any of your Facebook Pages (${pages.map(p => p.name).join(', ')}). ` +
+      `Link the Instagram account to a Page you administer, then try again.`
+    );
+  }
+
+  let selected;
+  if (requestedPageId) {
+    selected = igPages.find(p => String(p.id) === String(requestedPageId));
+    if (!selected) {
+      throw new Error(`Page ${requestedPageId} is not available to this Facebook user, or has no Instagram Business Account linked.`);
+    }
+  } else if (igPages.length === 1) {
+    selected = igPages[0];
+  } else {
+    const choices = igPages.map(p => `@${p.instagram_business_account.username} (pageId=${p.id})`).join(', ');
+    throw new Error(
+      `This Facebook user administers ${igPages.length} Instagram accounts: ${choices}. ` +
+      `Re-run the connect with ?pageId=<id> to pick one.`
+    );
+  }
+
+  if (!selected.access_token) {
+    throw new Error(`No Page access token returned for ${selected.name} — the pages_show_list permission was not granted for it.`);
+  }
+
+  return selected;
+}
+
 export class InstagramConnector extends PlatformConnector {
   constructor() {
     super('instagram');
@@ -515,7 +560,7 @@ export class InstagramConnector extends PlatformConnector {
    * Alternative OAuth using Facebook endpoint
    * Works even if Instagram app is not approved by Meta
    */
-  getAuthUrlViaFacebook(baseUrl, businessId = null) {
+  getAuthUrlViaFacebook(baseUrl, businessId = null, pageId = null) {
     if (!this.appId) {
       throw new Error('INSTAGRAM_APP_ID not configured');
     }
@@ -526,6 +571,7 @@ export class InstagramConnector extends PlatformConnector {
     this.storeOAuthState(state, {
       redirectUri,
       businessId,
+      pageId, // optional: which Facebook Page / Instagram account to connect
       initiatedAt: new Date().toISOString(),
       method: 'facebook_oauth' // Track which method was used
     });
@@ -601,30 +647,21 @@ export class InstagramConnector extends PlatformConnector {
 
     console.log('[Instagram OAuth] Fetching Instagram Business Account...');
 
-    // First, get Facebook Pages
-    const pagesResponse = await fetch(`https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}`);
+    // Ask for the linked Instagram account up front so we can match on it
+    const pagesResponse = await fetch(
+      `https://graph.facebook.com/v18.0/me/accounts?fields=id,name,access_token,instagram_business_account{id,username}&access_token=${accessToken}`
+    );
     const pagesData = await pagesResponse.json();
 
-    if (!pagesData.data || pagesData.data.length === 0) {
-      throw new Error('No Facebook Pages found. Instagram Business requires a Facebook Page.');
-    }
+    console.log('[Instagram OAuth] Found', pagesData.data?.length || 0, 'Facebook Page(s)');
 
-    console.log('[Instagram OAuth] Found', pagesData.data.length, 'Facebook Page(s)');
+    const selectedPage = selectInstagramPage(pagesData.data, stateData.data.pageId);
 
-    // Get Instagram Business Account from first page
-    const pageId = pagesData.data[0].id;
-    const pageAccessToken = pagesData.data[0].access_token;
+    const pageId = selectedPage.id;
+    const pageAccessToken = selectedPage.access_token;
+    const igAccountId = selectedPage.instagram_business_account.id;
 
-    const igAccountResponse = await fetch(
-      `https://graph.facebook.com/v18.0/${pageId}?fields=instagram_business_account&access_token=${pageAccessToken}`
-    );
-    const igAccountData = await igAccountResponse.json();
-
-    if (!igAccountData.instagram_business_account) {
-      throw new Error('No Instagram Business Account linked to this Facebook Page');
-    }
-
-    const igAccountId = igAccountData.instagram_business_account.id;
+    console.log('[Instagram OAuth] Selected @' + selectedPage.instagram_business_account.username, '(page', pageId + ')');
     console.log('[Instagram OAuth] Instagram Business Account ID:', igAccountId);
 
     // ============================================
@@ -670,13 +707,20 @@ export class InstagramConnector extends PlatformConnector {
       }
     });
 
-    // Update env
-    this.updateEnvFile({
-      INSTAGRAM_ACCESS_TOKEN: pageAccessToken,
-      INSTAGRAM_BUSINESS_ACCOUNT_ID: igAccountId,
-      INSTAGRAM_USERNAME: username,
-      INSTAGRAM_TOKEN_EXPIRES_AT: connectionState.expiresAt
-    });
+    // A per-business connect is persisted to Business.instagram by the callback
+    // route. Writing .env here would overwrite whichever business connected last
+    // (and is lost on the next Render deploy anyway), so only the legacy
+    // single-account connect still touches it.
+    if (stateData.data.businessId) {
+      console.log('[Instagram OAuth] Per-business connect — leaving .env untouched');
+    } else {
+      this.updateEnvFile({
+        INSTAGRAM_ACCESS_TOKEN: pageAccessToken,
+        INSTAGRAM_BUSINESS_ACCOUNT_ID: igAccountId,
+        INSTAGRAM_USERNAME: username,
+        INSTAGRAM_TOKEN_EXPIRES_AT: connectionState.expiresAt
+      });
+    }
 
     return connectionState;
   }
