@@ -3716,9 +3716,164 @@
             }
         }
         
-        // Add Business Modal (placeholder - will be implemented next)
+        // Add Business Modal
         function showAddBusinessModal() {
-            showToast('Add Business wizard coming in next update');
+            const modal = document.createElement('div');
+            modal.id = 'addBusinessModal';
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(4px);';
+            
+            modal.innerHTML = `
+                <div style="background: var(--card); border-radius: 16px; padding: 32px; width: 90%; max-width: 500px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <h2 style="font-size: 24px; font-weight: 600; color: var(--foreground); margin: 0;">Add New Business</h2>
+                        <button onclick="closeAddBusinessModal()" style="background: none; border: none; color: var(--muted-foreground); cursor: pointer; padding: 8px; border-radius: 8px; transition: all 0.2s;">
+                            <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+                        </button>
+                    </div>
+                    
+                    <form id="addBusinessForm" onsubmit="handleAddBusiness(event)" style="display: flex; flex-direction: column; gap: 20px;">
+                        <div>
+                            <label style="display: block; font-size: 14px; font-weight: 500; color: var(--foreground); margin-bottom: 8px;">
+                                Business Name <span style="color: var(--danger);">*</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                id="businessName" 
+                                required
+                                placeholder="e.g., White Gold Jewelry"
+                                style="width: 100%; padding: 12px 16px; border: 2px solid var(--border); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 14px; transition: all 0.2s;"
+                            />
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; font-size: 14px; font-weight: 500; color: var(--foreground); margin-bottom: 8px;">
+                                Email <span style="color: var(--danger);">*</span>
+                            </label>
+                            <input 
+                                type="email" 
+                                id="businessEmail" 
+                                required
+                                placeholder="e.g., contact@whitegold.kg"
+                                style="width: 100%; padding: 12px 16px; border: 2px solid var(--border); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 14px; transition: all 0.2s;"
+                            />
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; font-size: 14px; font-weight: 500; color: var(--foreground); margin-bottom: 8px;">
+                                Industry
+                            </label>
+                            <select 
+                                id="businessIndustry"
+                                style="width: 100%; padding: 12px 16px; border: 2px solid var(--border); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 14px; transition: all 0.2s; cursor: pointer;"
+                            >
+                                <option value="">Select industry...</option>
+                                <option value="Retail">Retail</option>
+                                <option value="Jewelry">Jewelry</option>
+                                <option value="Fashion">Fashion</option>
+                                <option value="Food & Beverage">Food & Beverage</option>
+                                <option value="Beauty & Salon">Beauty & Salon</option>
+                                <option value="Fitness & Gym">Fitness & Gym</option>
+                                <option value="Healthcare">Healthcare</option>
+                                <option value="Education">Education</option>
+                                <option value="Real Estate">Real Estate</option>
+                                <option value="Services">Services</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div style="display: flex; gap: 12px; margin-top: 8px;">
+                            <button 
+                                type="button" 
+                                onclick="closeAddBusinessModal()" 
+                                style="flex: 1; padding: 12px; border: 2px solid var(--border); background: transparent; color: var(--foreground); border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.2s;"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                type="submit" 
+                                id="submitBusinessBtn"
+                                style="flex: 1; padding: 12px; border: none; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);"
+                            >
+                                Create Business
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            lucide.createIcons();
+            
+            // Focus first input
+            setTimeout(() => document.getElementById('businessName').focus(), 100);
+            
+            // Close on background click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeAddBusinessModal();
+            });
+        }
+        
+        function closeAddBusinessModal() {
+            const modal = document.getElementById('addBusinessModal');
+            if (modal) {
+                modal.style.opacity = '0';
+                setTimeout(() => modal.remove(), 200);
+            }
+        }
+        
+        async function handleAddBusiness(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('businessName').value.trim();
+            const email = document.getElementById('businessEmail').value.trim();
+            const industry = document.getElementById('businessIndustry').value;
+            
+            if (!name || !email) {
+                showToast('Please fill in all required fields');
+                return;
+            }
+            
+            const submitBtn = document.getElementById('submitBusinessBtn');
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating...';
+            submitBtn.style.opacity = '0.7';
+            
+            try {
+                const response = await fetch('/api/admin/businesses', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name,
+                        email,
+                        industry: industry || 'Other'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast(`${name} created successfully!`);
+                    closeAddBusinessModal();
+                    await loadRealBusinesses();
+                    
+                    // Scroll to top to see new business
+                    document.getElementById('businessTableBody').scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    showToast('Failed to create business: ' + (result.error || 'Unknown error'));
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                    submitBtn.style.opacity = '1';
+                }
+            } catch (error) {
+                console.error('Error creating business:', error);
+                showToast('Failed to create business: ' + error.message);
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+                submitBtn.style.opacity = '1';
+            }
         }
 
         // ==================== PLATFORM CONNECTION FUNCTIONS ====================
