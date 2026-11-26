@@ -332,6 +332,17 @@
             font-size: 12px;
         }
 
+        .manual-setup {
+            margin-bottom: 12px;
+        }
+
+        .manual-setup summary {
+            cursor: pointer;
+            color: var(--sub);
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
         /* Buttons */
         .btn-primary {
             background: var(--blue) !important;
@@ -626,7 +637,8 @@
                         <strong>Phone:</strong> <span id="whatsapp-phone"></span>
                     </div>
 
-                    <div id="whatsapp-form">
+                    <details id="whatsapp-form" class="manual-setup">
+                        <summary>Manual setup (access token)</summary>
                         <div class="form-field" style="margin-bottom: 12px;">
                             <label for="whatsapp-token">Access Token</label>
                             <input type="password" id="whatsapp-token" placeholder="EAAG..." autocomplete="off">
@@ -641,10 +653,13 @@
                             <input type="text" id="whatsapp-waba-id" placeholder="2034567890123456" inputmode="numeric">
                             <span class="hint">Needed to subscribe incoming messages</span>
                         </div>
-                    </div>
+                        <button class="btn-primary" id="whatsapp-manual-btn" onclick="connectWhatsApp()">
+                            Connect with token
+                        </button>
+                    </details>
 
                     <div class="platform-actions">
-                        <button class="btn-success" id="whatsapp-connect-btn" onclick="connectWhatsApp()">
+                        <button class="btn-success" id="whatsapp-connect-btn" onclick="launchWhatsAppSignup()">
                             Connect WhatsApp
                         </button>
                         <button class="btn-danger hidden" id="whatsapp-disconnect-btn" onclick="disconnectWhatsApp()">
@@ -778,9 +793,11 @@
             try {
                 // Try to get connections from business data (stored as JSON in Business model)
                 if (businessData) {
-                    updatePlatformUI('instagram', businessData.instagram ? JSON.parse(businessData.instagram) : null);
-                    updatePlatformUI('telegram', businessData.telegram ? JSON.parse(businessData.telegram) : null);
-                    updatePlatformUI('whatsapp', businessData.whatsapp ? JSON.parse(businessData.whatsapp) : null);
+                    // The API may return these already parsed or as JSON strings.
+                    const parse = v => (typeof v === 'string' ? JSON.parse(v) : v || null);
+                    updatePlatformUI('instagram', parse(businessData.instagram));
+                    updatePlatformUI('telegram', parse(businessData.telegram));
+                    updatePlatformUI('whatsapp', parse(businessData.whatsapp));
                 }
             } catch (error) {
                 console.error('Connections load error:', error);
@@ -1012,13 +1029,24 @@
                 return;
             }
 
-            const btn = document.getElementById('whatsapp-connect-btn');
+            const btn = document.getElementById('whatsapp-manual-btn');
             btn.disabled = true;
             try {
-                const response = await fetch('/api/admin/connect/whatsapp', {
+                await finishWhatsAppConnect('/api/admin/connect/whatsapp',
+                    { businessId: currentBusinessId, token, phone_id: phoneId, waba_id: wabaId });
+                document.getElementById('whatsapp-token').value = '';
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // POST a connect request and update the card; shared by manual setup and Embedded Signup.
+        async function finishWhatsAppConnect(url, payload) {
+            try {
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ businessId: currentBusinessId, token, phone_id: phoneId, waba_id: wabaId })
+                    body: JSON.stringify(payload)
                 });
                 const result = await response.json().catch(() => ({}));
                 if (!response.ok || !result.success) throw new Error(result.error || 'Failed to connect');
@@ -1026,14 +1054,76 @@
                 const connection = { connected: true, phone: result.phone || result.verifiedName };
                 businessData.whatsapp = JSON.stringify(connection);
                 updatePlatformUI('whatsapp', connection);
-                document.getElementById('whatsapp-token').value = '';
                 showToast(result.warning || 'WhatsApp connected!', result.warning ? 'info' : 'success');
             } catch (error) {
                 console.error('WhatsApp connect error:', error);
                 showToast('Failed to connect WhatsApp: ' + error.message, 'error');
-            } finally {
-                btn.disabled = false;
             }
+        }
+
+        // ---- WhatsApp Embedded Signup (Meta's popup; no tokens to copy) ----
+        let waConfig = null;
+        let waSignupData = {};
+
+        // Load the Facebook SDK up front: FB.login must run straight from the click,
+        // or the browser blocks its popup.
+        async function initWhatsAppSignup() {
+            try {
+                const response = await fetch('/api/admin/whatsapp/config');
+                const config = await response.json();
+                if (!config.success) throw new Error(config.error);
+
+                window.fbAsyncInit = () => {
+                    FB.init({ appId: config.appId, autoLogAppEvents: true, xfbml: false, version: config.graphVersion });
+                    waConfig = config;
+                };
+                const script = document.createElement('script');
+                script.src = 'https://connect.facebook.net/en_US/sdk.js';
+                script.async = true;
+                script.defer = true;
+                script.crossOrigin = 'anonymous';
+                document.body.appendChild(script);
+            } catch (error) {
+                console.error('WhatsApp signup init error:', error);
+            }
+        }
+
+        // Meta posts the chosen WABA and phone number IDs back to this page.
+        window.addEventListener('message', (event) => {
+            let host = '';
+            try { host = new URL(event.origin).hostname; } catch { return; }
+            if (host !== 'facebook.com' && !host.endsWith('.facebook.com')) return;
+
+            let data;
+            try { data = JSON.parse(event.data); } catch { return; }
+            if (data.type !== 'WA_EMBEDDED_SIGNUP') return;
+
+            if (data.event === 'FINISH' || data.event === 'FINISH_ONLY_WABA') {
+                waSignupData = data.data || {};
+            } else if (data.event === 'CANCEL') {
+                showToast('WhatsApp signup cancelled', 'info');
+            } else if (data.event === 'ERROR') {
+                showToast('WhatsApp signup error: ' + (data.data?.error_message || 'unknown'), 'error');
+            }
+        });
+
+        function launchWhatsAppSignup() {
+            if (!waConfig || typeof FB === 'undefined') {
+                showToast('Facebook is still loading — try again in a moment', 'info');
+                return;
+            }
+            waSignupData = {};
+            FB.login((response) => {
+                const code = response.authResponse?.code;
+                if (!code) return; // closed or cancelled; the message listener reports why
+                finishWhatsAppConnect('/api/admin/whatsapp/oauth/exchange',
+                    { businessId: currentBusinessId, code, signupData: waSignupData });
+            }, {
+                config_id: waConfig.configId,
+                response_type: 'code',
+                override_default_response_type: true,
+                extras: { setup: {}, featureType: '', sessionInfoVersion: '3' }
+            });
         }
 
         async function disconnectWhatsApp() {
@@ -1145,6 +1235,7 @@
 
         // Start application
         init();
+        initWhatsAppSignup();
     </script>
 </body>
 </html>

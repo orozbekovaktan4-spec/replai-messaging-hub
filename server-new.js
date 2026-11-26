@@ -75,11 +75,13 @@ app.use((req, res, next) => {
   // Content Security Policy (prevent XSS)
   res.setHeader('Content-Security-Policy',
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com https://connect.facebook.net; " +
     "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
     "img-src 'self' data: https:; " +
     "font-src 'self' data:; " +
-    "connect-src 'self' https://api.telegram.org https://graph.instagram.com https://graph.facebook.com;"
+    // Facebook JS SDK (WhatsApp Embedded Signup) talks to facebook.com via hidden iframes.
+    "frame-src 'self' https://*.facebook.com; " +
+    "connect-src 'self' https://api.telegram.org https://graph.instagram.com https://graph.facebook.com https://*.facebook.com;"
   );
 
   // Referrer Policy
@@ -3369,6 +3371,102 @@ app.post('/api/instagram/poll', async (req, res) => {
   });
 });
 
+/**
+ * Validate a WhatsApp number + token and save it to one business. Shared by the
+ * manual connect (Plan C) and Embedded Signup. Returns { status, body } for res.
+ * register=true also activates the number on the Cloud API (new Embedded Signup numbers need it).
+ */
+async function saveWhatsAppConnection({ businessId, token, phoneId, wabaId, method, register = false }) {
+  const fail = (status, error, extra = {}) => ({ status, body: { success: false, error, ...extra } });
+
+  const business = await db.findBusinessById(businessId);
+  if (!business) return fail(404, 'Business not found');
+
+  // One number must belong to one business, or webhook routing is ambiguous.
+  const owner = await db.findBusinessByWhatsAppPhoneId(phoneId);
+  if (owner && owner.id !== businessId) {
+    return fail(409, `This number is already connected to "${owner.name}"`);
+  }
+
+  // Validate token against the number
+  const testRes = await fetch(facebookGraphUrl(`${phoneId}?fields=id,display_phone_number,verified_name,quality_rating`), {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  const testData = await testRes.json().catch(() => ({}));
+  if (!testRes.ok || testData.error) {
+    const errorMsg = testData.error?.message || 'Invalid token or phone number ID';
+    console.error('[whatsapp] Validation failed:', errorMsg);
+    return fail(401, errorMsg, { code: testData.error?.code });
+  }
+
+  const warnings = [];
+
+  // A number fresh from Embedded Signup can't send until registered; the PIN
+  // becomes its two-step verification code, so keep it.
+  let registrationPin = null;
+  if (register) {
+    const pin = String(crypto.randomInt(100000, 1000000));
+    const regRes = await fetch(facebookGraphUrl(`${phoneId}/register`), {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messaging_product: 'whatsapp', pin })
+    });
+    const regData = await regRes.json().catch(() => ({}));
+    if (regRes.ok && regData.success === true) {
+      registrationPin = pin;
+    } else {
+      console.warn('[whatsapp] register failed:', regData.error?.message || regRes.status);
+      warnings.push(`Number registration failed (${regData.error?.message || regRes.status}) — if replies don't send, register it in WhatsApp Manager.`);
+    }
+  }
+
+  // Without this subscription Meta does not deliver this WABA's messages to our webhook.
+  let subscribed = null;
+  if (wabaId) {
+    const subRes = await fetch(facebookGraphUrl(`${wabaId}/subscribed_apps`), {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const subData = await subRes.json().catch(() => ({}));
+    subscribed = subRes.ok && subData.success === true;
+    if (!subscribed) {
+      console.warn('[whatsapp] subscribed_apps failed:', subData.error?.message || subRes.status);
+      warnings.push('Saved, but subscribing the app to this WhatsApp Business Account failed — incoming messages may not arrive.');
+    }
+  } else {
+    warnings.push('No WhatsApp Business Account ID given — make sure the app is subscribed to its webhooks.');
+  }
+
+  const whatsapp = {
+    connected: true,
+    connectedAt: new Date().toISOString(),
+    method,
+    phoneNumberId: phoneId,
+    phoneId, // older readers use phoneId
+    wabaId: wabaId || null,
+    phone: testData.display_phone_number || null,
+    verifiedName: testData.verified_name || null,
+    qualityRating: testData.quality_rating || null,
+    accessToken: token,
+    webhookSubscribed: subscribed,
+    registrationPin
+  };
+  await db.updateBusiness(businessId, { whatsapp });
+
+  console.log(`[whatsapp] ✓ Connected ${whatsapp.phone} to business ${businessId} (${method})`);
+  return {
+    status: 200,
+    body: {
+      success: true,
+      message: 'WhatsApp connected successfully',
+      phone: whatsapp.phone,
+      verifiedName: whatsapp.verifiedName,
+      webhookSubscribed: subscribed,
+      warning: warnings.length ? warnings.join(' ') : undefined
+    }
+  };
+}
+
 // Manual per-business WhatsApp connect (Plan C): admin pastes a system-user
 // token + phone_number_id from the client's Meta Business Manager.
 app.post('/api/admin/connect/whatsapp', async (req, res) => {
@@ -3383,64 +3481,8 @@ app.post('/api/admin/connect/whatsapp', async (req, res) => {
     if (!/^\d+$/.test(phoneId)) return res.status(400).json({ success: false, error: 'Phone number ID must be numeric' });
     if (wabaId && !/^\d+$/.test(wabaId)) return res.status(400).json({ success: false, error: 'WhatsApp Business Account ID must be numeric' });
 
-    const business = await db.findBusinessById(businessId);
-    if (!business) return res.status(404).json({ success: false, error: 'Business not found' });
-
-    // One number must belong to one business, or webhook routing is ambiguous.
-    const owner = await db.findBusinessByWhatsAppPhoneId(phoneId);
-    if (owner && owner.id !== businessId) {
-      return res.status(409).json({ success: false, error: `This number is already connected to "${owner.name}"` });
-    }
-
-    // Validate token against the number
-    const testRes = await fetch(facebookGraphUrl(`${phoneId}?fields=id,display_phone_number,verified_name,quality_rating`), {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const testData = await testRes.json().catch(() => ({}));
-    if (!testRes.ok || testData.error) {
-      const errorMsg = testData.error?.message || 'Invalid token or phone number ID';
-      console.error('[whatsapp] Validation failed:', errorMsg);
-      return res.status(401).json({ success: false, error: errorMsg, code: testData.error?.code });
-    }
-
-    // Without this subscription Meta does not deliver this WABA's messages to our webhook.
-    let subscribed = null;
-    if (wabaId) {
-      const subRes = await fetch(facebookGraphUrl(`${wabaId}/subscribed_apps`), {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const subData = await subRes.json().catch(() => ({}));
-      subscribed = subRes.ok && subData.success === true;
-      if (!subscribed) console.warn('[whatsapp] subscribed_apps failed:', subData.error?.message || subRes.status);
-    }
-
-    const whatsapp = {
-      connected: true,
-      connectedAt: new Date().toISOString(),
-      method: 'manual',
-      phoneNumberId: phoneId,
-      phoneId, // older readers use phoneId
-      wabaId: wabaId || null,
-      phone: testData.display_phone_number || null,
-      verifiedName: testData.verified_name || null,
-      qualityRating: testData.quality_rating || null,
-      accessToken: token,
-      webhookSubscribed: subscribed
-    };
-    await db.updateBusiness(businessId, { whatsapp });
-
-    console.log(`[whatsapp] ✓ Connected ${whatsapp.phone} to business ${businessId}`);
-    res.json({
-      success: true,
-      message: 'WhatsApp connected successfully',
-      phone: whatsapp.phone,
-      verifiedName: whatsapp.verifiedName,
-      webhookSubscribed: subscribed,
-      warning: subscribed === false
-        ? 'Saved, but subscribing the app to this WhatsApp Business Account failed — incoming messages may not arrive.'
-        : (subscribed === null ? 'No WhatsApp Business Account ID given — make sure the app is subscribed to its webhooks.' : undefined)
-    });
+    const { status, body } = await saveWhatsAppConnection({ businessId, token, phoneId, wabaId, method: 'manual' });
+    res.status(status).json(body);
   } catch (error) {
     console.error('[WhatsApp Connect] Error:', error.message);
     res.status(500).json({ success: false, error: error.message });
@@ -3742,163 +3784,94 @@ app.post('/api/admin/whatsapp/validate', async (req, res) => {
 });
 
 /**
+ * GET /api/admin/whatsapp/config
+ * Public values the page needs to launch Embedded Signup.
+ */
+app.get('/api/admin/whatsapp/config', (req, res) => {
+  const appId = process.env.FACEBOOK_APP_ID || process.env.INSTAGRAM_APP_ID;
+  // shortcut: falls back to the config created earlier; set WHATSAPP_ES_CONFIG_ID to switch.
+  const configId = process.env.WHATSAPP_ES_CONFIG_ID || '893706532897953';
+  if (!appId) return res.status(500).json({ success: false, error: 'Meta app ID not configured' });
+  res.json({ success: true, appId, configId, graphVersion: META_GRAPH_API_VERSION });
+});
+
+/**
  * POST /api/admin/whatsapp/oauth/exchange
- * Exchange FB SDK authorization code for WhatsApp Business access token
- * This is for Embedded Signup v4 with Facebook JavaScript SDK
+ * Embedded Signup (FB JS SDK): exchange the FB.login code for the client's
+ * business token and connect that number to one business.
+ * Body: { businessId, code, signupData: { waba_id, phone_number_id } }
  */
 app.post('/api/admin/whatsapp/oauth/exchange', async (req, res) => {
   try {
-    const { code, signupData } = req.body;
-    
-    if (!code) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Authorization code is required' 
-      });
+    const { businessId, code } = req.body;
+    const signupData = req.body.signupData || {};
+    const numericId = v => (/^\d+$/.test(String(v || '')) ? String(v) : '');
+
+    if (!businessId) return res.status(400).json({ success: false, error: 'businessId is required' });
+    if (!code) return res.status(400).json({ success: false, error: 'Authorization code is required' });
+
+    const appId = process.env.FACEBOOK_APP_ID || process.env.INSTAGRAM_APP_ID;
+    const appSecret = process.env.FACEBOOK_APP_SECRET || process.env.INSTAGRAM_APP_SECRET;
+    if (!appId || !appSecret) {
+      return res.status(500).json({ success: false, error: 'Meta app ID/secret not configured on the server' });
     }
-    
-    console.log('[WhatsApp Exchange] Exchanging authorization code...');
-    console.log('[WhatsApp Exchange] Signup data:', signupData);
-    
-    // Exchange code for long-lived access token
-    const redirectUri = `${req.protocol}://${req.get('host')}/api/admin/whatsapp/oauth/callback`;
-    
-    const tokenResponse = await axios.get('https://graph.facebook.com/v21.0/oauth/access_token', {
-      params: {
-        client_id: process.env.FACEBOOK_APP_ID,
-        client_secret: process.env.FACEBOOK_APP_SECRET,
-        code: code,
-        redirect_uri: redirectUri
-      }
-    });
-    
-    const accessToken = tokenResponse.data.access_token;
-    console.log('[WhatsApp Exchange] ✓ Got access token');
-    
-    // Get WABA ID and phone number ID from signup data or fetch from API
-    let wabaId = signupData?.waba_id;
-    let phoneNumberId = signupData?.phone_number_id;
-    let businessId = signupData?.business_id;
-    
-    // If we don't have signup data, try to fetch it using the token
-    if (!wabaId || !phoneNumberId) {
-      console.log('[WhatsApp Exchange] Fetching WABA info from Graph API...');
-      
-      try {
-        // Get the user's businesses
-        const businessesResponse = await axios.get('https://graph.facebook.com/v21.0/me/businesses', {
-          params: {
-            access_token: accessToken
-          }
+
+    // Codes from FB.login are exchanged without a redirect_uri.
+    const tokenRes = await fetch(facebookGraphUrl('oauth/access_token?' + new URLSearchParams({
+      client_id: appId, client_secret: appSecret, code
+    })));
+    const tokenData = await tokenRes.json().catch(() => ({}));
+    if (!tokenRes.ok || !tokenData.access_token) {
+      console.error('[WhatsApp Exchange] Code exchange failed:', tokenData.error?.message || tokenRes.status);
+      return res.status(400).json({ success: false, error: tokenData.error?.message || 'Could not exchange authorization code' });
+    }
+    const token = tokenData.access_token;
+
+    let wabaId = numericId(signupData.waba_id);
+    let phoneId = numericId(signupData.phone_number_id);
+
+    // No session-info event reached the page: ask Meta exactly which WABA was shared,
+    // instead of guessing with me/businesses[0].
+    if (!wabaId) {
+      const dbgRes = await fetch(facebookGraphUrl('debug_token?' + new URLSearchParams({
+        input_token: token, access_token: `${appId}|${appSecret}`
+      })));
+      const dbg = await dbgRes.json().catch(() => ({}));
+      const wabaIds = dbg.data?.granular_scopes?.find(s => s.scope === 'whatsapp_business_management')?.target_ids || [];
+      if (wabaIds.length !== 1) {
+        return res.status(400).json({
+          success: false,
+          error: wabaIds.length
+            ? 'Several WhatsApp Business Accounts were shared — run the signup again and select only one.'
+            : 'No WhatsApp Business Account was shared during signup.'
         });
-        
-        if (businessesResponse.data.data && businessesResponse.data.data.length > 0) {
-          businessId = businessesResponse.data.data[0].id;
-          console.log('[WhatsApp Exchange] Business ID:', businessId);
-          
-          // Get WhatsApp Business Accounts for this business
-          const wabaResponse = await axios.get(`https://graph.facebook.com/v21.0/${businessId}/owned_whatsapp_business_accounts`, {
-            params: {
-              access_token: accessToken
-            }
-          });
-          
-          if (wabaResponse.data.data && wabaResponse.data.data.length > 0) {
-            wabaId = wabaResponse.data.data[0].id;
-            console.log('[WhatsApp Exchange] WABA ID:', wabaId);
-            
-            // Get phone numbers for this WABA
-            const phonesResponse = await axios.get(`https://graph.facebook.com/v21.0/${wabaId}/phone_numbers`, {
-              params: {
-                access_token: accessToken
-              }
-            });
-            
-            if (phonesResponse.data.data && phonesResponse.data.data.length > 0) {
-              phoneNumberId = phonesResponse.data.data[0].id;
-              console.log('[WhatsApp Exchange] Phone Number ID:', phoneNumberId);
-            }
-          }
-        }
-      } catch (fetchError) {
-        console.error('[WhatsApp Exchange] Error fetching WABA info:', fetchError.response?.data || fetchError.message);
       }
+      wabaId = numericId(wabaIds[0]);
     }
-    
-    if (!phoneNumberId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Could not retrieve phone number ID. Please ensure you completed the signup flow.'
+
+    if (!phoneId) {
+      const phonesRes = await fetch(facebookGraphUrl(`${wabaId}/phone_numbers?fields=id,display_phone_number`), {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
-    }
-    
-    // Get phone number details
-    let phoneNumber = '';
-    let verifiedName = '';
-    let displayName = '';
-    
-    try {
-      const phoneDetailsResponse = await axios.get(`https://graph.facebook.com/v21.0/${phoneNumberId}`, {
-        params: {
-          access_token: accessToken,
-          fields: 'id,verified_name,display_phone_number,quality_rating'
-        }
-      });
-      
-      phoneNumber = phoneDetailsResponse.data.display_phone_number || '';
-      verifiedName = phoneDetailsResponse.data.verified_name || '';
-      displayName = phoneDetailsResponse.data.display_phone_number || phoneNumber;
-      
-      console.log('[WhatsApp Exchange] Phone details:');
-      console.log('  - Number:', phoneNumber);
-      console.log('  - Verified Name:', verifiedName);
-      console.log('  - Quality Rating:', phoneDetailsResponse.data.quality_rating);
-    } catch (detailsError) {
-      console.error('[WhatsApp Exchange] Error fetching phone details:', detailsError.response?.data || detailsError.message);
-    }
-    
-    // Save connection state
-    const connector = connectionManager.getConnector('whatsapp');
-    await connector.connect({
-      accessToken,
-      wabaId,
-      phoneNumberId,
-      phoneNumber,
-      verifiedName,
-      businessId
-    });
-    
-    // Update in-memory platform connections
-    platformConnections.whatsapp = {
-      connected: true,
-      token: accessToken,
-      phone_id: phoneNumberId,
-      waba_id: wabaId,
-      phoneNumber: phoneNumber,
-      verifiedName: verifiedName,
-      displayName: displayName
-    };
-    
-    console.log('[WhatsApp Exchange] ✓ Connection saved successfully');
-    
-    res.json({
-      success: true,
-      message: 'WhatsApp connected successfully',
-      connection: {
-        phoneNumber: phoneNumber,
-        verifiedName: verifiedName,
-        phoneNumberId: phoneNumberId,
-        wabaId: wabaId
+      const phones = (await phonesRes.json().catch(() => ({}))).data || [];
+      if (phones.length !== 1) {
+        return res.status(400).json({
+          success: false,
+          error: phones.length
+            ? 'This WhatsApp Business Account has several numbers — run the signup again and pick the number to connect.'
+            : 'No phone number found on the shared WhatsApp Business Account.'
+        });
       }
+      phoneId = numericId(phones[0].id);
+    }
+
+    const { status, body } = await saveWhatsAppConnection({
+      businessId, token, phoneId, wabaId, method: 'embedded_signup', register: true
     });
-    
+    res.status(status).json(body);
   } catch (error) {
-    console.error('[WhatsApp Exchange] Error:', error.response?.data || error.message);
-    res.status(500).json({
-      success: false,
-      error: error.response?.data?.error?.message || error.message,
-      details: error.response?.data
-    });
+    console.error('[WhatsApp Exchange] Error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -5168,7 +5141,7 @@ async function sendResponseToPlatform(platform, userId, message, business = null
       // Reply from the business's own number with its own token.
       const wa = business?.whatsapp && typeof business.whatsapp === 'object' ? business.whatsapp : null;
       const whatsappPhoneId = wa?.connected ? (wa.phoneNumberId || wa.phoneId) : null;
-      const whatsappToken = wa?.connected ? wa.accessToken : null;
+      const whatsappToken = wa?.connected ? (wa.accessToken || wa.token) : null; // older records use `token`
 
       if (!whatsappPhoneId || !whatsappToken) {
         const error = 'No WhatsApp connection for this business — reconnect WhatsApp in its settings.';
