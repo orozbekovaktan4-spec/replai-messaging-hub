@@ -3369,52 +3369,81 @@ app.post('/api/instagram/poll', async (req, res) => {
   });
 });
 
+// Manual per-business WhatsApp connect (Plan C): admin pastes a system-user
+// token + phone_number_id from the client's Meta Business Manager.
 app.post('/api/admin/connect/whatsapp', async (req, res) => {
   try {
-    const { token, phone_id } = req.body;
-    
-    if (!token) return res.status(400).json({ error: 'Access token is required' });
-    if (!phone_id) return res.status(400).json({ error: 'Phone number ID is required' });
+    const businessId = req.body.businessId;
+    const token = String(req.body.token || '').trim();
+    const phoneId = String(req.body.phone_id || '').trim();
+    const wabaId = String(req.body.waba_id || '').trim();
 
-    // Validate token by making test API call
-    console.log('[whatsapp] Validating credentials...');
-    try {
-      const testUrl = facebookGraphUrl(`${phone_id}?fields=id,display_phone_number`);
-      const testRes = await fetch(testUrl, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      const testData = await testRes.json();
-      
-      if (!testRes.ok || testData.error) {
-        const errorMsg = testData.error?.message || 'Invalid token or phone ID';
-        console.error('[whatsapp] Validation failed:', errorMsg);
-        return res.status(401).json({ error: errorMsg, code: testData.error?.code });
-      }
-      
-      console.log('[whatsapp] ✓ Credentials validated');
-      console.log('[whatsapp] Phone number:', testData.display_phone_number);
-    } catch (error) {
-      console.error('[whatsapp] Validation error:', error.message);
-      return res.status(400).json({ error: 'Failed to validate credentials' });
+    if (!businessId) return res.status(400).json({ success: false, error: 'businessId is required' });
+    if (!token) return res.status(400).json({ success: false, error: 'Access token is required' });
+    if (!/^\d+$/.test(phoneId)) return res.status(400).json({ success: false, error: 'Phone number ID must be numeric' });
+    if (wabaId && !/^\d+$/.test(wabaId)) return res.status(400).json({ success: false, error: 'WhatsApp Business Account ID must be numeric' });
+
+    const business = await db.findBusinessById(businessId);
+    if (!business) return res.status(404).json({ success: false, error: 'Business not found' });
+
+    // One number must belong to one business, or webhook routing is ambiguous.
+    const owner = await db.findBusinessByWhatsAppPhoneId(phoneId);
+    if (owner && owner.id !== businessId) {
+      return res.status(409).json({ success: false, error: `This number is already connected to "${owner.name}"` });
     }
 
-    // Save credentials
-    upsertEnvValues({
-      WHATSAPP_ACCESS_TOKEN: token,
-      WHATSAPP_PHONE_ID: phone_id
+    // Validate token against the number
+    const testRes = await fetch(facebookGraphUrl(`${phoneId}?fields=id,display_phone_number,verified_name,quality_rating`), {
+      headers: { 'Authorization': `Bearer ${token}` }
     });
-    
-    platformConnections.whatsapp = { 
-      connected: true, 
-      token, 
-      phone_id 
+    const testData = await testRes.json().catch(() => ({}));
+    if (!testRes.ok || testData.error) {
+      const errorMsg = testData.error?.message || 'Invalid token or phone number ID';
+      console.error('[whatsapp] Validation failed:', errorMsg);
+      return res.status(401).json({ success: false, error: errorMsg, code: testData.error?.code });
+    }
+
+    // Without this subscription Meta does not deliver this WABA's messages to our webhook.
+    let subscribed = null;
+    if (wabaId) {
+      const subRes = await fetch(facebookGraphUrl(`${wabaId}/subscribed_apps`), {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const subData = await subRes.json().catch(() => ({}));
+      subscribed = subRes.ok && subData.success === true;
+      if (!subscribed) console.warn('[whatsapp] subscribed_apps failed:', subData.error?.message || subRes.status);
+    }
+
+    const whatsapp = {
+      connected: true,
+      connectedAt: new Date().toISOString(),
+      method: 'manual',
+      phoneNumberId: phoneId,
+      phoneId, // older readers use phoneId
+      wabaId: wabaId || null,
+      phone: testData.display_phone_number || null,
+      verifiedName: testData.verified_name || null,
+      qualityRating: testData.quality_rating || null,
+      accessToken: token,
+      webhookSubscribed: subscribed
     };
-    
-    res.json({ success: true, message: 'WhatsApp connected successfully' });
+    await db.updateBusiness(businessId, { whatsapp });
+
+    console.log(`[whatsapp] ✓ Connected ${whatsapp.phone} to business ${businessId}`);
+    res.json({
+      success: true,
+      message: 'WhatsApp connected successfully',
+      phone: whatsapp.phone,
+      verifiedName: whatsapp.verifiedName,
+      webhookSubscribed: subscribed,
+      warning: subscribed === false
+        ? 'Saved, but subscribing the app to this WhatsApp Business Account failed — incoming messages may not arrive.'
+        : (subscribed === null ? 'No WhatsApp Business Account ID given — make sure the app is subscribed to its webhooks.' : undefined)
+    });
   } catch (error) {
     console.error('[WhatsApp Connect] Error:', error.message);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -3879,6 +3908,15 @@ app.post('/api/admin/whatsapp/oauth/exchange', async (req, res) => {
  */
 app.post('/api/admin/whatsapp/disconnect', async (req, res) => {
   try {
+    const businessId = req.body?.businessId;
+    if (businessId) {
+      const business = await db.findBusinessById(businessId);
+      if (!business) return res.status(404).json({ success: false, error: 'Business not found' });
+      await db.updateBusiness(businessId, { whatsapp: { connected: false, disconnectedAt: new Date().toISOString() } });
+      return res.json({ success: true, message: 'WhatsApp disconnected successfully' });
+    }
+
+    // Legacy global disconnect (admin-new.html / connections-ui.js)
     const connector = connectionManager.getConnector('whatsapp');
     await connector.disconnect();
     
@@ -5126,12 +5164,14 @@ async function sendResponseToPlatform(platform, userId, message, business = null
         console.warn(`[instagram] Cannot send message: ${error}`);
         return { ok: false, platform, error };
       }
-    } else if (platform === 'whatsapp' && platformConnections.whatsapp.connected) {
-      const whatsappPhoneId = platformConnections.whatsapp.phone_id;
-      const whatsappToken = platformConnections.whatsapp.token;
-      
+    } else if (platform === 'whatsapp') {
+      // Reply from the business's own number with its own token.
+      const wa = business?.whatsapp && typeof business.whatsapp === 'object' ? business.whatsapp : null;
+      const whatsappPhoneId = wa?.connected ? (wa.phoneNumberId || wa.phoneId) : null;
+      const whatsappToken = wa?.connected ? wa.accessToken : null;
+
       if (!whatsappPhoneId || !whatsappToken) {
-        const error = 'WhatsApp not properly configured (missing phone_id or token)';
+        const error = 'No WhatsApp connection for this business — reconnect WhatsApp in its settings.';
         console.error('[whatsapp]', error);
         return { ok: false, platform, error };
       }
@@ -5317,9 +5357,12 @@ app.post('/webhook/:platform', async (req, res) => {
         return res.sendStatus(200);
       }
       
+      // The business's own number this arrived on — decides whose AI context answers.
+      platformAccountId = value?.metadata?.phone_number_id || null;
       messageId = `wa_${message.id}`;
       userMessage = message.text?.body;
       userId = message.from;
+      userName = value?.contacts?.[0]?.profile?.name;
       
       // Status update - skip processing
       if (value?.statuses?.[0] && !message) {
@@ -5351,9 +5394,15 @@ app.post('/webhook/:platform', async (req, res) => {
           console.error(`[instagram] No business owns Instagram account ${platformAccountId} — not replying`);
           return res.sendStatus(200);
         }
+      } else if (platform === 'whatsapp') {
+        business = await db.findBusinessByWhatsAppPhoneId(platformAccountId);
+        if (!business) {
+          console.error(`[whatsapp] No business owns phone_number_id ${platformAccountId} — not replying`);
+          return res.sendStatus(200);
+        }
       } else {
         const businesses = await db.getAllBusinesses();
-        business = businesses[0]; // TODO: match telegram/whatsapp by platform config too
+        business = businesses[0]; // TODO: match telegram by platform config too
       }
 
       const aiResponse = await getAIResponse(userId.toString(), userMessage, 'auto', business?.id || null);

@@ -626,6 +626,23 @@
                         <strong>Phone:</strong> <span id="whatsapp-phone"></span>
                     </div>
 
+                    <div id="whatsapp-form">
+                        <div class="form-field" style="margin-bottom: 12px;">
+                            <label for="whatsapp-token">Access Token</label>
+                            <input type="password" id="whatsapp-token" placeholder="EAAG..." autocomplete="off">
+                            <span class="hint">System-user token from the client's Meta Business Manager</span>
+                        </div>
+                        <div class="form-field" style="margin-bottom: 12px;">
+                            <label for="whatsapp-phone-id">Phone Number ID</label>
+                            <input type="text" id="whatsapp-phone-id" placeholder="1098765432101234" inputmode="numeric">
+                        </div>
+                        <div class="form-field" style="margin-bottom: 12px;">
+                            <label for="whatsapp-waba-id">WhatsApp Business Account ID</label>
+                            <input type="text" id="whatsapp-waba-id" placeholder="2034567890123456" inputmode="numeric">
+                            <span class="hint">Needed to subscribe incoming messages</span>
+                        </div>
+                    </div>
+
                     <div class="platform-actions">
                         <button class="btn-success" id="whatsapp-connect-btn" onclick="connectWhatsApp()">
                             Connect WhatsApp
@@ -797,11 +814,9 @@
                 if (connectBtn) connectBtn.classList.add('hidden');
                 if (disconnectBtn) disconnectBtn.classList.remove('hidden');
 
-                // Hide Telegram form if connected
-                if (platform === 'telegram') {
-                    const form = document.getElementById('telegram-form');
-                    if (form) form.classList.add('hidden');
-                }
+                // Hide credential form if connected
+                const form = document.getElementById(`${platform}-form`);
+                if (form) form.classList.add('hidden');
             } else {
                 card.classList.remove('connected');
                 statusBadge.textContent = 'Not Connected';
@@ -812,11 +827,9 @@
                 if (connectBtn) connectBtn.classList.remove('hidden');
                 if (disconnectBtn) disconnectBtn.classList.add('hidden');
 
-                // Show Telegram form if disconnected
-                if (platform === 'telegram') {
-                    const form = document.getElementById('telegram-form');
-                    if (form) form.classList.remove('hidden');
-                }
+                // Show credential form if disconnected
+                const form = document.getElementById(`${platform}-form`);
+                if (form) form.classList.remove('hidden');
             }
         }
 
@@ -991,14 +1004,35 @@
 
         // WhatsApp connection
         async function connectWhatsApp() {
-            showToast('Redirecting to WhatsApp...', 'info');
+            const token = document.getElementById('whatsapp-token').value.trim();
+            const phoneId = document.getElementById('whatsapp-phone-id').value.trim();
+            const wabaId = document.getElementById('whatsapp-waba-id').value.trim();
+            if (!token || !phoneId) {
+                showToast('Enter access token and phone number ID', 'error');
+                return;
+            }
 
+            const btn = document.getElementById('whatsapp-connect-btn');
+            btn.disabled = true;
             try {
-                // For now, just show a message
-                showToast('WhatsApp connection coming soon', 'info');
+                const response = await fetch('/api/admin/connect/whatsapp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ businessId: currentBusinessId, token, phone_id: phoneId, waba_id: wabaId })
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok || !result.success) throw new Error(result.error || 'Failed to connect');
+
+                const connection = { connected: true, phone: result.phone || result.verifiedName };
+                businessData.whatsapp = JSON.stringify(connection);
+                updatePlatformUI('whatsapp', connection);
+                document.getElementById('whatsapp-token').value = '';
+                showToast(result.warning || 'WhatsApp connected!', result.warning ? 'info' : 'success');
             } catch (error) {
                 console.error('WhatsApp connect error:', error);
-                showToast('Failed to connect WhatsApp', 'error');
+                showToast('Failed to connect WhatsApp: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
             }
         }
 
@@ -1007,7 +1041,9 @@
 
             try {
                 const response = await fetch('/api/admin/whatsapp/disconnect', {
-                    method: 'POST'
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ businessId: currentBusinessId })
                 });
 
                 if (!response.ok) throw new Error('Failed to disconnect');

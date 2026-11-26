@@ -79,6 +79,29 @@ export async function findBusinessByInstagramAccountId(accountId) {
 }
 
 /**
+ * Pick the business whose connected WhatsApp number has this phone_number_id
+ * (Meta sends it as value.metadata.phone_number_id). Pure so it can be tested.
+ * @param {Object[]} businesses - parsed businesses (whatsapp already an object)
+ * @param {string} phoneNumberId
+ * @returns {Object|null}
+ */
+export function pickBusinessByWhatsAppPhoneId(businesses, phoneNumberId) {
+  if (!phoneNumberId) return null;
+  const wanted = String(phoneNumberId);
+  return (businesses || []).find(b => {
+    const wa = b.whatsapp;
+    if (!wa || typeof wa !== 'object' || wa.connected !== true) return false;
+    return String(wa.phoneNumberId || wa.phoneId || '') === wanted;
+  }) || null;
+}
+
+// shortcut: loads every business per webhook, same as the Instagram lookup above.
+export async function findBusinessByWhatsAppPhoneId(phoneNumberId) {
+  if (!phoneNumberId) return null;
+  return pickBusinessByWhatsAppPhoneId(await getAllBusinesses(), phoneNumberId);
+}
+
+/**
  * Create new business
  * @param {Object} data - Business data
  * @returns {Promise<Object>} Created business
