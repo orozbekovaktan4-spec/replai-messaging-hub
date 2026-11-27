@@ -3409,7 +3409,7 @@ async function saveWhatsAppConnection({ businessId, token, phoneId, wabaId, meth
   }
 
   // Validate token against the number
-  const testRes = await fetch(facebookGraphUrl(`${phoneId}?fields=id,display_phone_number,verified_name,quality_rating`), {
+  const testRes = await fetch(facebookGraphUrl(`${phoneId}?fields=id,display_phone_number,verified_name,quality_rating,status`), {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   const testData = await testRes.json().catch(() => ({}));
@@ -3421,10 +3421,14 @@ async function saveWhatsAppConnection({ businessId, token, phoneId, wabaId, meth
 
   const warnings = [];
 
-  // A number fresh from Embedded Signup can't send until registered; the PIN
-  // becomes its two-step verification code, so keep it.
-  let registrationPin = null;
-  if (register) {
+  // A number that isn't CONNECTED (fresh from Embedded Signup, or a test/manual
+  // number never registered) gets no message webhooks and can't send until
+  // registered. The PIN becomes its two-step verification code, so keep it.
+  const previous = typeof business.whatsapp === 'string'
+    ? (() => { try { return JSON.parse(business.whatsapp); } catch { return null; } })()
+    : business.whatsapp;
+  let registrationPin = previous?.registrationPin || null;
+  if (register || testData.status !== 'CONNECTED') {
     const pin = String(crypto.randomInt(100000, 1000000));
     const regRes = await fetch(facebookGraphUrl(`${phoneId}/register`), {
       method: 'POST',
@@ -3813,6 +3817,31 @@ app.get('/api/admin/whatsapp/config', (req, res) => {
   const configId = process.env.WHATSAPP_ES_CONFIG_ID || '893706532897953';
   if (!appId) return res.status(500).json({ success: false, error: 'Meta app ID not configured' });
   res.json({ success: true, appId, configId, graphVersion: META_GRAPH_API_VERSION });
+});
+
+/**
+ * POST /api/admin/whatsapp/repair/:businessId
+ * Re-runs the connect steps (validate, register if needed, subscribe) with the
+ * token already stored, so the owner doesn't have to paste it again.
+ */
+app.post('/api/admin/whatsapp/repair/:businessId', optionalAuth, async (req, res) => {
+  try {
+    const business = await db.findBusinessById(req.params.businessId);
+    if (!business) return res.status(404).json({ success: false, error: 'Business not found' });
+    const wa = typeof business.whatsapp === 'string' ? JSON.parse(business.whatsapp) : business.whatsapp;
+    const token = wa?.accessToken || wa?.token;
+    const phoneId = wa?.phoneNumberId || wa?.phoneId;
+    if (!wa?.connected || !token || !phoneId) {
+      return res.status(400).json({ success: false, error: 'WhatsApp is not connected for this business' });
+    }
+    const { status, body } = await saveWhatsAppConnection({
+      businessId: business.id, token, phoneId, wabaId: wa.wabaId || '', method: wa.method || 'manual'
+    });
+    res.status(status).json(body);
+  } catch (error) {
+    console.error('[WhatsApp Repair] Error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 /**
