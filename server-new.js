@@ -3816,6 +3816,37 @@ app.get('/api/admin/whatsapp/config', (req, res) => {
 });
 
 /**
+ * GET /api/admin/whatsapp/diagnose/:businessId
+ * Read-only: asks Meta why messages might not reach our webhook — which apps are
+ * subscribed to the WABA and where the number's webhooks are sent. Never returns the token.
+ */
+app.get('/api/admin/whatsapp/diagnose/:businessId', optionalAuth, async (req, res) => {
+  try {
+    const business = await db.findBusinessById(req.params.businessId);
+    if (!business) return res.status(404).json({ success: false, error: 'Business not found' });
+    const wa = typeof business.whatsapp === 'string' ? JSON.parse(business.whatsapp) : business.whatsapp;
+    const token = wa?.accessToken || wa?.token;
+    const phoneId = wa?.phoneNumberId || wa?.phoneId;
+    if (!wa?.connected || !token || !phoneId) {
+      return res.status(400).json({ success: false, error: 'WhatsApp is not connected for this business' });
+    }
+    const get = async path => {
+      const r = await fetch(facebookGraphUrl(path), { headers: { 'Authorization': `Bearer ${token}` } });
+      return r.json().catch(() => ({ error: { message: `HTTP ${r.status}` } }));
+    };
+    res.json({
+      success: true,
+      ourAppId: process.env.FACEBOOK_APP_ID || process.env.INSTAGRAM_APP_ID || null,
+      phone: await get(`${phoneId}?fields=display_phone_number,status,platform_type,webhook_configuration`),
+      subscribedApps: wa.wabaId ? await get(`${wa.wabaId}/subscribed_apps`) : null
+    });
+  } catch (error) {
+    console.error('[WhatsApp Diagnose] Error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * POST /api/admin/whatsapp/oauth/exchange
  * Embedded Signup (FB JS SDK): exchange the FB.login code for the client's
  * business token and connect that number to one business.
