@@ -487,6 +487,26 @@ function optionalAuth(req, res, next) {
   next();
 }
 
+// Secrets inside a business's platform connections must never reach the browser:
+// these admin endpoints are still reachable without a login (optionalAuth).
+const PLATFORM_SECRET_KEYS = ['accessToken', 'token', 'botToken', 'pageAccessToken', 'userAccessToken',
+  'refreshToken', 'registrationPin', 'appSecret', 'clientSecret', 'webhookSecret'];
+
+function redactBusinessSecrets(business) {
+  if (!business || typeof business !== 'object') return business;
+  const out = { ...business };
+  for (const platform of ['instagram', 'telegram', 'whatsapp', 'facebook']) {
+    const raw = out[platform];
+    if (!raw) continue;
+    let conn;
+    try { conn = typeof raw === 'string' ? JSON.parse(raw) : { ...raw }; } catch { conn = null; }
+    if (!conn || typeof conn !== 'object') { out[platform] = null; continue; }
+    for (const key of PLATFORM_SECRET_KEYS) delete conn[key];
+    out[platform] = typeof raw === 'string' ? JSON.stringify(conn) : conn;
+  }
+  return out;
+}
+
 // --- BOOKING STORAGE HELPERS ---
 const BOOKINGS_FILE = path.join(__dirname, 'bookings.json');
 
@@ -6160,7 +6180,7 @@ app.post('/api/admin/businesses', optionalAuth, async (req, res) => {
 
     res.json({
       success: true,
-      business: newBusiness,
+      business: redactBusinessSecrets(newBusiness),
       credentials: {
         email: businessEmail,
         password: businessPassword
@@ -6508,7 +6528,7 @@ app.get('/api/admin/businesses/:id', optionalAuth, async (req, res) => {
 
     res.json({
       success: true,
-      data: business
+      data: redactBusinessSecrets(business)
     });
   } catch (error) {
     console.error('[Admin] Error fetching business:', error);
@@ -6576,7 +6596,7 @@ app.put('/api/admin/businesses/:id', optionalAuth, async (req, res) => {
 
     res.json({
       success: true,
-      data: updatedBusiness,
+      data: redactBusinessSecrets(updatedBusiness),
       message: 'Business updated successfully'
     });
   } catch (error) {
@@ -7903,7 +7923,7 @@ app.post('/api/admin/init-database', async (req, res) => {
     res.json({ 
       success: true, 
       message: 'Database initialized',
-      business: newBusiness
+      business: redactBusinessSecrets(newBusiness)
     });
     
   } catch (error) {
