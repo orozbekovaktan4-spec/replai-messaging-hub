@@ -50,7 +50,13 @@ if (password !== await askHidden('Repeat it: ')) {
   process.exit(1);
 }
 
-const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+// The local .env may point at a database on this Mac; production's URL lives in Render's environment.
+let databaseUrl = process.env.DATABASE_URL || '';
+if (!databaseUrl || /(@|\/\/)(localhost|127\.0\.0\.1)([:/]|$)/.test(databaseUrl)) {
+  databaseUrl = (await askHidden('Paste the production DATABASE_URL (from Render > Environment): ')).trim();
+}
+
+const pool = new pg.Pool({ connectionString: databaseUrl, ssl: { rejectUnauthorized: false } });
 try {
   const hash = await bcrypt.hash(password, 10);
   const result = await pool.query(
