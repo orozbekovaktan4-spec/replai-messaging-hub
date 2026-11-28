@@ -3820,6 +3820,35 @@ app.get('/api/admin/whatsapp/config', (req, res) => {
 });
 
 /**
+ * POST /api/admin/whatsapp/test-send/:businessId  { to }
+ * shortcut: temporary debugging aid — sends only Meta's fixed "hello_world" template; remove after the live test.
+ */
+app.post('/api/admin/whatsapp/test-send/:businessId', optionalAuth, async (req, res) => {
+  try {
+    const to = String(req.body.to || '').replace(/\D/g, '');
+    if (to.length < 8 || to.length > 15) return res.status(400).json({ success: false, error: 'to must be a phone number' });
+    const business = await db.findBusinessById(req.params.businessId);
+    if (!business) return res.status(404).json({ success: false, error: 'Business not found' });
+    const wa = typeof business.whatsapp === 'string' ? JSON.parse(business.whatsapp) : business.whatsapp;
+    const token = wa?.accessToken || wa?.token;
+    const phoneId = wa?.phoneNumberId || wa?.phoneId;
+    if (!wa?.connected || !token || !phoneId) {
+      return res.status(400).json({ success: false, error: 'WhatsApp is not connected for this business' });
+    }
+    const r = await fetch(facebookGraphUrl(`${phoneId}/messages`), {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messaging_product: 'whatsapp', to, type: 'template', template: { name: 'hello_world', language: { code: 'en_US' } } })
+    });
+    const data = await r.json().catch(() => ({}));
+    res.status(r.ok ? 200 : 400).json({ success: r.ok, meta: data });
+  } catch (error) {
+    console.error('[WhatsApp Test Send] Error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * POST /api/admin/whatsapp/repair/:businessId
  * Re-runs the connect steps (validate, register if needed, subscribe) with the
  * token already stored, so the owner doesn't have to paste it again.
