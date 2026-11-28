@@ -549,7 +549,7 @@
                     localStorage.setItem('user', JSON.stringify(data.user));
                     
                     // Redirect based on user type
-                    if (email === 'admin@replai.com') {
+                    if (data.user?.type === 'admin') {
                         window.location.href = '/admin';  // Super Admin Panel
                     } else {
                         window.location.href = '/business';  // Business Owner Panel

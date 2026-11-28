@@ -441,49 +441,53 @@ setInterval(() => {
  * Middleware to require admin authentication
  * Checks if user has valid session and admin role
  */
-function requireAdminAuth(req, res, next) {
-  // Check if session exists
-  if (!req.session || !sessions.has(req.session)) {
-    console.warn('[Auth] Unauthorized access attempt to admin endpoint:', req.path);
-    return res.status(401).json({
-      error: 'Unauthorized',
-      message: 'Admin authentication required'
-    });
-  }
+const SESSION_COOKIE = 'replai_session';
 
-  const sessionData = sessions.get(req.session);
+// Session id comes from the HttpOnly cookie set at login, or the x-session-id header.
+function getSessionId(req) {
+  const fromCookie = (req.headers.cookie || '').match(/(?:^|;\s*)replai_session=([^;]+)/);
+  return fromCookie ? decodeURIComponent(fromCookie[1]) : req.headers['x-session-id'];
+}
+
+function newSessionId() {
+  return `session_${crypto.randomBytes(32).toString('hex')}`;
+}
+
+function setSessionCookie(req, res, sessionId) {
+  res.cookie(SESSION_COOKIE, sessionId, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
+    maxAge: 24 * 60 * 60 * 1000,
+    path: '/'
+  });
+}
+
+function requireAdminAuth(req, res, next) {
+  const sessionId = getSessionId(req);
+  const sessionData = sessionId && sessions.get(sessionId);
+  if (!sessionData) {
+    return res.status(401).json({ error: 'Unauthorized', message: 'Admin authentication required' });
+  }
 
   // Check if session is expired (24 hours)
   const sessionAge = Date.now() - new Date(sessionData.createdAt).getTime();
   if (sessionAge > 24 * 60 * 60 * 1000) {
-    sessions.delete(req.session);
-    return res.status(401).json({
-      error: 'Session expired',
-      message: 'Please log in again'
-    });
+    sessions.delete(sessionId);
+    return res.status(401).json({ error: 'Session expired', message: 'Please log in again' });
   }
 
-  // TODO: Add role check when implementing proper admin system
-  // For now, any authenticated user can access admin endpoints
+  // Only accounts from the "Admin" table; business owners and self-registered users are not admins.
+  if (sessionData.type !== 'admin') {
+    return res.status(403).json({ error: 'Forbidden', message: 'Admin access required' });
+  }
 
-  // Attach user info to request for use in route handlers
-  req.user = {
-    email: sessionData.email,
-    name: sessionData.name
-  };
-
+  req.user = { email: sessionData.email, name: sessionData.name, type: sessionData.type };
   next();
 }
 
-/**
- * Optional auth middleware - allows access but logs warning if not authenticated
- * Use for endpoints that are being migrated to require auth
- */
+// Kept as a no-op for existing route signatures: /api/admin/* is gated by requireAdminAuth via app.use.
 function optionalAuth(req, res, next) {
-  if (!req.session || !sessions.has(req.session)) {
-    console.warn('[Auth] ⚠️  Unauthenticated access to:', req.path);
-    console.warn('[Auth] ⚠️  This endpoint will require authentication soon!');
-  }
   next();
 }
 
@@ -1071,140 +1075,6 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Direct SQL test for admin login (bypasses Prisma completely)
-app.post('/api/test-login-direct', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    
-    // Use pg library directly to avoid Prisma pooling issues
-    const { Pool } = await import('pg');
-    const pool = new Pool({ connectionString: process.env.DIRECT_URL || process.env.DATABASE_URL });
-    
-    // Query admin directly
-    const result = await pool.query(
-      'SELECT id, email, password, name, role FROM "Admin" WHERE email = $1',
-      [email.toLowerCase()]
-    );
-    
-    await pool.end();
-    
-    if (result.rows.length === 0) {
-      return res.json({ success: false, message: 'No admin found with that email', email });
-    }
-    
-    const admin = result.rows[0];
-    
-    // Test password
-    const bcrypt = await import('bcryptjs');
-    const isValid = await bcrypt.default.compare(password, admin.password);
-    
-    res.json({
-      success: true,
-      adminFound: true,
-      passwordMatch: isValid,
-      admin: {
-        id: admin.id,
-        email: admin.email,
-        name: admin.name,
-        role: admin.role
-      },
-      passwordHashLength: admin.password.length,
-      note: 'This is a direct SQL test to diagnose login issues'
-    });
-    
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Debug endpoint to check admin user
-app.get('/debug-admin-check', async (req, res) => {
-  try {
-    const { prisma } = await import('./db.js');
-    
-    // Check if Admin table exists and has data
-    const adminCount = await prisma.admin.count();
-    const admins = await prisma.admin.findMany({
-      select: { id: true, email: true, name: true, role: true, createdAt: true }
-    });
-    
-    res.json({
-      success: true,
-      adminCount,
-      admins,
-      note: 'This shows all admins in database (passwords hidden)'
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// Database setup endpoint (run once to initialize production database)
-app.get('/setup-database-now', async (req, res) => {
-  try {
-    const { prisma } = await import('./db.js');
-    const bcrypt = await import('bcryptjs');
-    
-    const hashedPassword = await bcrypt.default.hash('admin123', 10);
-    
-    // Use raw SQL to avoid Prisma pooling issues
-    try {
-      await prisma.$executeRaw`
-        INSERT INTO "Admin" (id, email, password, name, role, "createdAt", "updatedAt")
-        VALUES (
-          ${('admin_' + Date.now())},
-          ${'admin@replai.com'},
-          ${hashedPassword},
-          ${'Super Admin'},
-          ${'admin'},
-          ${new Date()},
-          ${new Date()}
-        )
-        ON CONFLICT (email) DO NOTHING
-      `;
-      
-      // Check if admin exists now
-      const admin = await prisma.$queryRaw`
-        SELECT id, email, name FROM "Admin" WHERE email = 'admin@replai.com' LIMIT 1
-      `;
-      
-      if (admin && admin.length > 0) {
-        res.json({
-          success: true,
-          message: '✅ Admin user ready!',
-          credentials: {
-            email: 'admin@replai.com',
-            password: 'admin123'
-          },
-          loginUrl: 'https://replai-xc95.onrender.com/admin',
-          adminExists: true
-        });
-      } else {
-        res.json({
-          success: false,
-          message: 'Admin creation may have failed',
-          hint: 'Try again or check logs'
-        });
-      }
-      
-    } catch (sqlError) {
-      res.status(500).json({
-        success: false,
-        error: sqlError.message,
-        hint: 'Database tables might not exist. Check if migrations ran successfully in Render logs.'
-      });
-    }
-    
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
 
 // Serve public landing page as main page (for Meta verification)
 // Serve new landing page as main page
@@ -1459,16 +1329,20 @@ app.post('/api/auth/login', async (req, res) => {
     loginAttempts.delete(clientIp);
 
     // Create session
-    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const sessionId = newSessionId();
+    const type = user.type || 'user';
     sessions.set(sessionId, {
       email: user.email,
       name: user.name,
+      type,
+      businessId: user.businessId || null,
       createdAt: new Date().toISOString(),
       lastActivity: new Date().toISOString()
     });
 
     // Save sessions immediately
     saveSessions();
+    setSessionCookie(req, res, sessionId);
 
     console.log(`✓ [Auth] User logged in: ${email}`);
 
@@ -1477,7 +1351,8 @@ app.post('/api/auth/login', async (req, res) => {
       sessionId,
       user: {
         email: user.email,
-        name: user.name
+        name: user.name,
+        type
       }
     });
   } catch (error) {
@@ -1487,7 +1362,8 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 app.post('/api/auth/logout', (req, res) => {
-  const { sessionId } = req.body;
+  const sessionId = req.body?.sessionId || getSessionId(req);
+  res.clearCookie(SESSION_COOKIE, { path: '/' });
   if (sessionId) {
     sessions.delete(sessionId);
     saveSessions();
@@ -1497,7 +1373,7 @@ app.post('/api/auth/logout', (req, res) => {
 });
 
 app.get('/api/auth/verify', (req, res) => {
-  const sessionId = req.headers['x-session-id'];
+  const sessionId = getSessionId(req);
   const session = sessions.get(sessionId);
   
   if (session) {
@@ -1751,8 +1627,12 @@ app.get('/admin-test', (req, res) => {
   `);
 });
 
-// Static files AFTER explicit routes
-app.use(express.static(__dirname));
+// Static files AFTER explicit routes. Only pages and browser assets: the repo root also holds
+// data files (users.json, businessSessions.json, connections.json) and server source.
+const serveRoot = express.static(__dirname, { index: false });
+app.use((req, res, next) =>
+  /^\/[\w.-]+\.html$/.test(req.path) || req.path === '/connections-ui.js' ? serveRoot(req, res, next) : next());
+app.use('/images', express.static(path.join(__dirname, 'images')));
 
 // Simple root health check for Railway deployment
 app.get('/api/health', (req, res) => {
@@ -1885,6 +1765,11 @@ app.post('/webhook/twilio', async (req, res) => {
 // --- ADMIN SYSTEM CONFIGURATION APIS ---
 
 // Get business settings
+// Every /api/admin route requires an admin session, except the OAuth callbacks Meta redirects the browser to.
+const ADMIN_AUTH_EXEMPT = new Set(['/instagram/oauth/callback', '/whatsapp/oauth/callback']);
+app.use('/api/admin', (req, res, next) =>
+  req.method === 'GET' && ADMIN_AUTH_EXEMPT.has(req.path) ? next() : requireAdminAuth(req, res, next));
+
 app.get('/api/admin/settings', (req, res) => {
   try {
     const data = fs.readFileSync(path.join(__dirname, 'business-info.json'), 'utf8');
@@ -7284,7 +7169,7 @@ app.get('/api/business/:id/instagram/config', async (req, res) => {
 // ============================================
 
 // Get webhook configuration info for all platforms
-app.get('/api/webhooks/info', async (req, res) => {
+app.get('/api/webhooks/info', requireAdminAuth, async (req, res) => {
   try {
     const baseUrl = process.env.BASE_URL || `https://${req.get('host')}`;
 
