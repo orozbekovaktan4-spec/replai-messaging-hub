@@ -19,19 +19,22 @@ function askHidden(prompt) {
     stdin.resume();
     stdin.setEncoding('utf8');
     let value = '';
-    stdin.on('data', function onData(ch) {
-      if (ch === '\r' || ch === '\n') {
-        stdin.setRawMode(false);
-        stdin.pause();
-        stdin.removeListener('data', onData);
-        process.stdout.write('\n');
-        resolve(value);
-      } else if (ch === '\u0003') {
-        process.exit(130);
-      } else if (ch === '\u007f') {
-        value = value.slice(0, -1);
-      } else {
-        value += ch;
+    // A paste arrives as one chunk (possibly ending in Enter), so handle it character by character.
+    stdin.on('data', function onData(chunk) {
+      for (const ch of chunk.replace(/\x1b\[20[01]~/g, '')) {
+        if (ch === '\r' || ch === '\n') {
+          stdin.setRawMode(false);
+          stdin.pause();
+          stdin.removeListener('data', onData);
+          process.stdout.write('\n');
+          return resolve(value);
+        } else if (ch === '\u0003') {
+          process.exit(130);
+        } else if (ch === '\u007f' || ch === '\b') {
+          value = value.slice(0, -1);
+        } else {
+          value += ch;
+        }
       }
     });
   });
