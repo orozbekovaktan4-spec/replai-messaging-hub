@@ -3281,7 +3281,7 @@ app.post('/api/instagram/poll', async (req, res) => {
  * manual connect (Plan C) and Embedded Signup. Returns { status, body } for res.
  * register=true also activates the number on the Cloud API (new Embedded Signup numbers need it).
  */
-async function saveWhatsAppConnection({ businessId, token, phoneId, wabaId, method, register = false }) {
+async function saveWhatsAppConnection({ businessId, token, phoneId, wabaId, method, register = false, tokenExpiresAt = null }) {
   const fail = (status, error, extra = {}) => ({ status, body: { success: false, error, ...extra } });
 
   const business = await db.findBusinessById(businessId);
@@ -3357,6 +3357,7 @@ async function saveWhatsAppConnection({ businessId, token, phoneId, wabaId, meth
     verifiedName: testData.verified_name || null,
     qualityRating: testData.quality_rating || null,
     accessToken: token,
+    tokenExpiresAt, // null = never expires (manual system-user token)
     webhookSubscribed: subscribed,
     registrationPin
   };
@@ -3375,6 +3376,56 @@ async function saveWhatsAppConnection({ businessId, token, phoneId, wabaId, meth
     }
   };
 }
+
+// Expiring system-user tokens (Embedded Signup) must be refreshed before day 60 or they are
+// lost for good. Refresh anything expiring within 20 days; runs at startup and daily, so a
+// free-plan instance that sleeps still gets many chances (webhooks wake it).
+const WA_TOKEN_REFRESH_WINDOW_MS = 20 * 24 * 60 * 60 * 1000;
+
+async function refreshWhatsAppTokens() {
+  const appId = process.env.FACEBOOK_APP_ID || process.env.INSTAGRAM_APP_ID;
+  const appSecret = process.env.FACEBOOK_APP_SECRET || process.env.INSTAGRAM_APP_SECRET;
+  if (!appId || !appSecret) return;
+
+  for (const business of await db.getAllBusinesses()) {
+    let wa = business.whatsapp;
+    if (typeof wa === 'string') { try { wa = JSON.parse(wa); } catch { continue; } }
+    if (!wa?.connected || !wa.tokenExpiresAt || !wa.accessToken) continue;
+
+    const msLeft = new Date(wa.tokenExpiresAt).getTime() - Date.now();
+    if (msLeft > WA_TOKEN_REFRESH_WINDOW_MS) continue;
+    if (msLeft <= 0) {
+      console.error(`[whatsapp] Token expired for business ${business.id} — reconnect WhatsApp in its settings`);
+      continue;
+    }
+
+    try {
+      const r = await fetch(facebookGraphUrl('oauth/access_token?' + new URLSearchParams({
+        grant_type: 'fb_exchange_token', client_id: appId, client_secret: appSecret,
+        set_token_expires_in_60_days: 'true', fb_exchange_token: wa.accessToken
+      })));
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || !data.access_token) {
+        console.error(`[whatsapp] Token refresh failed for business ${business.id}:`, data.error?.message || r.status);
+        continue;
+      }
+      await db.updateBusiness(business.id, {
+        whatsapp: {
+          ...wa,
+          accessToken: data.access_token,
+          tokenExpiresAt: new Date(Date.now() + Number(data.expires_in || 60 * 24 * 60 * 60) * 1000).toISOString(),
+          tokenRefreshedAt: new Date().toISOString()
+        }
+      });
+      console.log(`[whatsapp] ✓ Token refreshed for business ${business.id}`);
+    } catch (error) {
+      console.error(`[whatsapp] Token refresh error for business ${business.id}:`, error.message);
+    }
+  }
+}
+
+setTimeout(() => refreshWhatsAppTokens().catch(e => console.error('[whatsapp] Token refresh run failed:', e.message)), 60 * 1000);
+setInterval(() => refreshWhatsAppTokens().catch(e => console.error('[whatsapp] Token refresh run failed:', e.message)), 24 * 60 * 60 * 1000);
 
 // Manual per-business WhatsApp connect (Plan C): admin pastes a system-user
 // token + phone_number_id from the client's Meta Business Manager.
@@ -3698,8 +3749,8 @@ app.post('/api/admin/whatsapp/validate', async (req, res) => {
  */
 app.get('/api/admin/whatsapp/config', (req, res) => {
   const appId = process.env.FACEBOOK_APP_ID || process.env.INSTAGRAM_APP_ID;
-  // shortcut: falls back to the config created earlier; set WHATSAPP_ES_CONFIG_ID to switch.
-  const configId = process.env.WHATSAPP_ES_CONFIG_ID || '893706532897953';
+  // Default: REPLAI app's "WhatsApp Embedded Signup" login configuration (60-day system-user token).
+  const configId = process.env.WHATSAPP_ES_CONFIG_ID || '3108414619498063';
   if (!appId) return res.status(500).json({ success: false, error: 'Meta app ID not configured' });
   res.json({ success: true, appId, configId, graphVersion: META_GRAPH_API_VERSION });
 });
@@ -3720,7 +3771,8 @@ app.post('/api/admin/whatsapp/repair/:businessId', optionalAuth, async (req, res
       return res.status(400).json({ success: false, error: 'WhatsApp is not connected for this business' });
     }
     const { status, body } = await saveWhatsAppConnection({
-      businessId: business.id, token, phoneId, wabaId: wa.wabaId || '', method: wa.method || 'manual'
+      businessId: business.id, token, phoneId, wabaId: wa.wabaId || '', method: wa.method || 'manual',
+      tokenExpiresAt: wa.tokenExpiresAt || null
     });
     res.status(status).json(body);
   } catch (error) {
@@ -3830,8 +3882,12 @@ app.post('/api/admin/whatsapp/oauth/exchange', async (req, res) => {
       phoneId = numericId(phones[0].id);
     }
 
+    // Embedded Signup issues 60-day system-user tokens; refreshWhatsAppTokens() renews them.
+    const tokenExpiresAt = tokenData.expires_in
+      ? new Date(Date.now() + Number(tokenData.expires_in) * 1000).toISOString()
+      : new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
     const { status, body } = await saveWhatsAppConnection({
-      businessId, token, phoneId, wabaId, method: 'embedded_signup', register: true
+      businessId, token, phoneId, wabaId, method: 'embedded_signup', register: true, tokenExpiresAt
     });
     res.status(status).json(body);
   } catch (error) {
